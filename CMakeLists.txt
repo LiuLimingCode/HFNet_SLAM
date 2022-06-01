@@ -1,32 +1,16 @@
 cmake_minimum_required(VERSION 2.8)
-project(ORB_SLAM3)
+project(HFNet_ORBSLAM3)
 
-IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE Release)
-ENDIF()
-
-MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall   -O3")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -march=native")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
-
-# Check C++11 or C++0x support
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-   add_definitions(-DCOMPILEDWITHC11)
-   message(STATUS "Using flag -std=c++11.")
-elseif(COMPILER_SUPPORTS_CXX0X)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-   add_definitions(-DCOMPILEDWITHC0X)
-   message(STATUS "Using flag -std=c++0x.")
-else()
-   message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-endif()
+set(DEFAULT_BUILD_TYPE "Release")
+if (NOT CMAKE_BUILD_TYPE)
+    message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
+    set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "Choose the type of build." FORCE)
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif ()
+MESSAGE("build type: " ${CMAKE_BUILD_TYPE})
+set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -fopenmp -march=native -pthread -DREGISTER_TIMES -DCOMPILEDWITHC11")
+set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS} -g")
+set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
@@ -36,9 +20,6 @@ NO_DEFAULT_PATH)
 if(NOT OpenCV_FOUND)
   message(FATAL_ERROR "OpenCV > 4.4 not found.")
 endif()
-
-MESSAGE("OPENCV VERSION:")
-MESSAGE(${OpenCV_VERSION})
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
@@ -60,7 +41,8 @@ src/System.cc
 src/Tracking.cc
 src/LocalMapping.cc
 src/LoopClosing.cc
-src/ORBextractor.cc
+src/Extractors/ORBextractor.cc
+src/Extractors/HFextractor.cc
 src/ORBmatcher.cc
 src/FrameDrawer.cc
 src/Converter.cc
@@ -88,7 +70,9 @@ include/System.h
 include/Tracking.h
 include/LocalMapping.h
 include/LoopClosing.h
-include/ORBextractor.h
+include/Extractors/BaseExtractor.h
+include/Extractors/ORBextractor.h
+include/Extractors/HFextractor.h
 include/ORBmatcher.h
 include/FrameDrawer.h
 include/Converter.h

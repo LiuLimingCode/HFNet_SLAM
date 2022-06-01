@@ -41,11 +41,11 @@ int main(int argc, char **argv)
     const int num_seq = (argc-3)/2;
     cout << "num_seq = " << num_seq << endl;
     bool bFileName= (((argc-3) % 2) == 1);
-    string file_name;
+    string strSavePath;
     if (bFileName)
     {
-        file_name = string(argv[argc-1]);
-        cout << "file name: " << file_name << endl;
+        strSavePath = string(argv[argc-1]);
+        cout << "result save path: " << strSavePath << endl;
     }
 
     // Load all sequences:
@@ -186,11 +186,13 @@ int main(int argc, char **argv)
     // Stop all threads
     SLAM.Shutdown();
 
+    int res;
     // Save camera trajectory
     if (bFileName)
     {
-        const string kf_file =  "kf_" + string(argv[argc-1]) + ".txt";
-        const string f_file =  "f_" + string(argv[argc-1]) + ".txt";
+        res = system(("mkdir -p " + strSavePath).c_str());
+        const string kf_file =  strSavePath + "trajectory_keyframe.txt";
+        const string f_file =  strSavePath + "trajectory.txt";
         SLAM.SaveTrajectoryEuRoC(f_file);
         SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
     }
@@ -199,6 +201,13 @@ int main(int argc, char **argv)
         SLAM.SaveTrajectoryEuRoC("CameraTrajectory.txt");
         SLAM.SaveKeyFrameTrajectoryEuRoC("KeyFrameTrajectory.txt");
     }
+#ifdef REGISTER_TIMES
+        res = system(("mv ExecMean.txt " + strSavePath + "ExecMean.txt").c_str());
+        res = system(("mv LBA_Stats.txt " + strSavePath + "LBA_Stats.txt").c_str());
+        res = system(("mv LocalMapTimeStats.txt " + strSavePath + "LocalMapTimeStats.txt").c_str());
+        res = system(("mv SessionInfo.txt " + strSavePath + "SessionInfo.txt").c_str());
+        res = system(("mv TrackingTimeStats.txt " + strSavePath + "TrackingTimeStats.txt").c_str());
+#endif
 
     return 0;
 }

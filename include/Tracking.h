@@ -31,7 +31,7 @@
 #include "Frame.h"
 #include "ORBVocabulary.h"
 #include "KeyFrameDatabase.h"
-#include "ORBextractor.h"
+#include "Extractors/ORBextractor.h"
 #include "MapDrawer.h"
 #include "System.h"
 #include "ImuTypes.h"
@@ -257,9 +257,10 @@ protected:
     LocalMapping* mpLocalMapper;
     LoopClosing* mpLoopClosing;
 
-    //ORB
-    ORBextractor* mpORBextractorLeft, *mpORBextractorRight;
-    ORBextractor* mpIniORBextractor;
+    //Extractor
+    ExtractorType mExtractorType = ExtractorType::kExtractorORB;
+    BaseExtractor* mpExtractorLeft, *mpExtractorRight;
+    BaseExtractor* mpIniExtractor;
 
     //BoW
     ORBVocabulary* mpORBVocabulary;

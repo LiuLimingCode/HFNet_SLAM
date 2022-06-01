@@ -164,7 +164,7 @@ namespace ORB_SLAM3 {
             cout << "\t-Loaded RGB-D calibration" << endl;
         }
 
-        readORB(fSettings);
+        readExtractor(fSettings);
         cout << "\t-Loaded ORB settings" << endl;
         readViewer(fSettings);
         cout << "\t-Loaded viewer settings" << endl;
@@ -440,14 +440,20 @@ namespace ORB_SLAM3 {
         bf_ = b_ * calibration1_->getParameter(0);
     }
 
-    void Settings::readORB(cv::FileStorage &fSettings) {
+    void Settings::readExtractor(cv::FileStorage &fSettings) {
         bool found;
 
-        nFeatures_ = readParameter<int>(fSettings,"ORBextractor.nFeatures",found);
-        scaleFactor_ = readParameter<float>(fSettings,"ORBextractor.scaleFactor",found);
-        nLevels_ = readParameter<int>(fSettings,"ORBextractor.nLevels",found);
-        initThFAST_ = readParameter<int>(fSettings,"ORBextractor.iniThFAST",found);
-        minThFAST_ = readParameter<int>(fSettings,"ORBextractor.minThFAST",found);
+        string type = readParameter<string>(fSettings, "Extractor.type",found);
+        if (type == "ORB") {
+            extractorType_ = kExtractorORB;
+        }
+        nFeatures_ = readParameter<int>(fSettings,"Extractor.nFeatures",found);
+        scaleFactor_ = readParameter<float>(fSettings,"Extractor.scaleFactor",found);
+        nLevels_ = readParameter<int>(fSettings,"Extractor.nLevels",found);
+        if (extractorType_ == kExtractorORB) {
+            initThFAST_ = readParameter<int>(fSettings,"Extractor.ORB.iniThFAST",found);
+            minThFAST_ = readParameter<int>(fSettings,"Extractor.ORB.minThFAST",found);
+        }
     }
 
     void Settings::readViewer(cv::FileStorage &fSettings) {

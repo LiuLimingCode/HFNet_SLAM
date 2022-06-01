@@ -24,6 +24,7 @@
 //#define REGISTER_TIMES
 
 #include "CameraModels/GeometricCamera.h"
+#include "Extractors/BaseExtractor.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -94,6 +95,7 @@ namespace ORB_SLAM3 {
 
         float depthMapFactor() {return depthMapFactor_;}
 
+        ExtractorType extractorType() {return extractorType_;}
         int nFeatures() {return nFeatures_;}
         int nLevels() {return nLevels_;}
         float initThFAST() {return initThFAST_;}
@@ -149,7 +151,7 @@ namespace ORB_SLAM3 {
         void readImageInfo(cv::FileStorage& fSettings);
         void readIMU(cv::FileStorage& fSettings);
         void readRGBD(cv::FileStorage& fSettings);
-        void readORB(cv::FileStorage& fSettings);
+        void readExtractor(cv::FileStorage& fSettings);
         void readViewer(cv::FileStorage& fSettings);
         void readLoadAndSave(cv::FileStorage& fSettings);
         void readOtherParameters(cv::FileStorage& fSettings);
@@ -199,8 +201,9 @@ namespace ORB_SLAM3 {
         float depthMapFactor_;
 
         /*
-         * ORB stuff
+         * Extractor stuff
          */
+        ExtractorType extractorType_;
         int nFeatures_;
         float scaleFactor_;
         int nLevels_;

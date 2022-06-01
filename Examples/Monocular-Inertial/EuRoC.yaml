@@ -49,26 +49,6 @@ IMU.AccWalk: 3.0000e-03 # 3e-03
 IMU.Frequency: 200.0
 
 #--------------------------------------------------------------------------------------------
-# ORB Parameters
-#--------------------------------------------------------------------------------------------
-
-# ORB Extractor: Number of features per image
-ORBextractor.nFeatures: 1000 # 1000
-
-# ORB Extractor: Scale factor between levels in the scale pyramid 	
-ORBextractor.scaleFactor: 1.2
-
-# ORB Extractor: Number of levels in the scale pyramid	
-ORBextractor.nLevels: 8
-
-# ORB Extractor: Fast threshold
-# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
-# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
-# You can lower these values if your images have low contrast			
-ORBextractor.iniThFAST: 20
-ORBextractor.minThFAST: 7
-
-#--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------
 Viewer.KeyFrameSize: 0.05
@@ -81,4 +61,32 @@ Viewer.ViewpointX: 0.0
 Viewer.ViewpointY: -0.7
 Viewer.ViewpointZ: -3.5 # -1.8
 Viewer.ViewpointF: 500.0
+
+
+#--------------------------------------------------------------------------------------------
+# Extractor Parameters
+#--------------------------------------------------------------------------------------------
+
+# Extractor: Type of extractor
+Extractor.type: "ORB" # [ORB ]
+
+# Extractor: Number of features per image
+Extractor.nFeatures: 1000 # 1000
+
+# Extractor: Scale factor between levels in the scale pyramid 	
+Extractor.scaleFactor: 1.2
+
+# Extractor: Number of levels in the scale pyramid	
+Extractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+Extractor.ORB.iniThFAST: 20
+Extractor.ORB.minThFAST: 7
+
+# HFNET Extractor
+Extractor.HFNetTF.modelPath: "/home/llm/Deep-Learning/HF-Net/my_demo/model/hfnet/"
+Extractor.HFNetTF.resamplerPath: "/home/llm/src/tensorflow_cc-2.9.0/tensorflow_cc/install/lib/core/user_ops/resampler/python/ops/_resampler_ops.so"
 

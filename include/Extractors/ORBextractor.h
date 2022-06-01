@@ -22,7 +22,7 @@
 #include <vector>
 #include <list>
 #include <opencv2/opencv.hpp>
-
+#include "Extractors/BaseExtractor.h"
 
 namespace ORB_SLAM3
 {
@@ -40,7 +40,7 @@ public:
     bool bNoMore;
 };
 
-class ORBextractor
+class ORBextractor : public BaseExtractor
 {
 public:
     
@@ -56,32 +56,8 @@ public:
     // Mask is ignored in the current implementation.
     int operator()( cv::InputArray _image, cv::InputArray _mask,
                     std::vector<cv::KeyPoint>& _keypoints,
-                    cv::OutputArray _descriptors, std::vector<int> &vLappingArea);
-
-    int inline GetLevels(){
-        return nlevels;}
-
-    float inline GetScaleFactor(){
-        return scaleFactor;}
-
-    std::vector<float> inline GetScaleFactors(){
-        return mvScaleFactor;
-    }
-
-    std::vector<float> inline GetInverseScaleFactors(){
-        return mvInvScaleFactor;
-    }
-
-    std::vector<float> inline GetScaleSigmaSquares(){
-        return mvLevelSigma2;
-    }
-
-    std::vector<float> inline GetInverseScaleSigmaSquares(){
-        return mvInvLevelSigma2;
-    }
-
-    std::vector<cv::Mat> mvImagePyramid;
-
+                    cv::OutputArray _descriptors, std::vector<int> &vLappingArea) override;
+                    
 protected:
 
     void ComputePyramid(cv::Mat image);
@@ -93,19 +69,12 @@ protected:
     std::vector<cv::Point> pattern;
 
     int nfeatures;
-    double scaleFactor;
-    int nlevels;
     int iniThFAST;
     int minThFAST;
 
     std::vector<int> mnFeaturesPerLevel;
 
     std::vector<int> umax;
-
-    std::vector<float> mvScaleFactor;
-    std::vector<float> mvInvScaleFactor;    
-    std::vector<float> mvLevelSigma2;
-    std::vector<float> mvInvLevelSigma2;
 };
 
 } //namespace ORB_SLAM
