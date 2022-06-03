@@ -8,7 +8,7 @@ namespace ORB_SLAM3
 
 #ifdef USE_TENSORFLOW
 
-bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vecKeypoints, int nKeypointsNum, int nRadius)
+bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, int nKeypointsNum, int nRadius)
 {
     Tensor tKeypointsNum(DT_INT32, TensorShape());
     Tensor tRadius(DT_INT32, TensorShape());
@@ -28,14 +28,14 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vecKe
     const Tensor &tScores = outputs[2];
     int nOutputDim = tKeypoints.shape().dim_size(1);
 
-    vecKeypoints.clear();
+    vKeypoints.clear();
     auto data = tKeypoints.tensor<int32, 3>();
     auto score = tScores.tensor<float, 2>();
     KeyPoint kp;
     for(int index = 0; index < nOutputDim; index++){
         kp.pt = Point2f(data(2 * index), data(2 * index + 1));
         kp.response = score(index);
-        vecKeypoints.push_back(kp);
+        vKeypoints.push_back(kp);
     }
     return true;
 }

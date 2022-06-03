@@ -29,7 +29,7 @@ public:
         LoadHFNetTFModel(strModelDir);
     }
 
-    bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vecKeypoints, int nKeypointsNum = 1000, int nRadius = 4);
+    bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, int nKeypointsNum = 1000, int nRadius = 4);
 
 private:
     bool LoadResamplerOp(const std::string &strResamplerDir);

@@ -87,6 +87,6 @@ Extractor.ORB.iniThFAST: 20
 Extractor.ORB.minThFAST: 7
 
 # HFNET Extractor
-Extractor.HFNetTF.modelPath: "/home/llm/Deep-Learning/HF-Net/my_demo/model/hfnet/"
+Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3/model/hfnet/"
 Extractor.HFNetTF.resamplerPath: "/home/llm/src/tensorflow_cc-2.9.0/tensorflow_cc/install/lib/core/user_ops/resampler/python/ops/_resampler_ops.so"
 

@@ -143,6 +143,10 @@ add_executable(test_hfnet_tf
         Examples/Test/test_hfnet_tf.cc)
 target_link_libraries(test_hfnet_tf ${PROJECT_NAME})
 
+add_executable(test_extractors
+        Examples/Test/test_extractors.cc)
+target_link_libraries(test_extractors ${PROJECT_NAME})
+
 #Monocular inertial examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
 
