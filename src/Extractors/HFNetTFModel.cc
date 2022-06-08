@@ -8,7 +8,8 @@ namespace ORB_SLAM3
 
 #ifdef USE_TENSORFLOW
 
-bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, int nKeypointsNum, int nRadius)
+bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &descriptors,
+                int nKeypointsNum, int nRadius)
 {
     Tensor tKeypointsNum(DT_INT32, TensorShape());
     Tensor tRadius(DT_INT32, TensorShape());
@@ -23,19 +24,25 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
                                  {"keypoints", "local_descriptors", "scores"}, {}, &outputs);
     if (!status.ok()) return false;
 
-    const Tensor &tKeypoints = outputs[0];
-    const Tensor &tLocalDescriptors = outputs[1];
-    const Tensor &tScores = outputs[2];
-    int nOutputDim = tKeypoints.shape().dim_size(1);
+    int nResNumber = outputs[0].shape().dim_size(1);
+
+    auto vResKeypoints = outputs[0].tensor<int32, 3>();
+    auto vResLocalDes = outputs[1].tensor<float, 3>();
+    auto vResScores = outputs[2].tensor<float, 2>();
 
     vKeypoints.clear();
-    auto data = tKeypoints.tensor<int32, 3>();
-    auto score = tScores.tensor<float, 2>();
+    descriptors = Mat::zeros(nResNumber, 256, CV_32F);
+
     KeyPoint kp;
-    for(int index = 0; index < nOutputDim; index++){
-        kp.pt = Point2f(data(2 * index), data(2 * index + 1));
-        kp.response = score(index);
+    for(int index = 0; index < nResNumber; index++)
+    {
+        kp.pt = Point2f(vResKeypoints(2 * index), vResKeypoints(2 * index + 1));
+        kp.response = vResScores(index);
         vKeypoints.push_back(kp);
+        for (int temp = 0; temp < 256; ++temp)
+        {
+            descriptors.ptr<float>(index)[temp] = vResLocalDes(256 * index + temp); 
+        }
     }
     return true;
 }

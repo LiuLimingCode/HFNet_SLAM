@@ -1,4 +1,4 @@
-/* 
+/**
  * To Test the performance of different dector
  * 
  * What we found in this test:
@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <random>
 
+#include "Settings.h"
 #include "Extractors/HFNetTFModel.h"
 #include "Examples/Test/test_utility.h"
 
@@ -17,9 +18,7 @@ using namespace cv;
 using namespace std;
 using namespace ORB_SLAM3;
 
-const int config_nfeature = 1000;
-const int config_iniThFAST = 20;
-const int config_minThFAST = 7;
+Settings *settings;
 const int EDGE_THRESHOLD = 19;
 
 class ExtractorNode
@@ -313,7 +312,7 @@ vector<cv::KeyPoint> DistributeOctTree(const vector<cv::KeyPoint>& vToDistribute
 
     // Retain the best point in each node
     vector<cv::KeyPoint> vResultKeys;
-    vResultKeys.reserve(config_nfeature);
+    vResultKeys.reserve(settings->nFeatures());
     for(list<ExtractorNode>::iterator lit=lNodes.begin(); lit!=lNodes.end(); lit++)
     {
         vector<cv::KeyPoint> &vNodeKeys = lit->vKeys;
@@ -345,7 +344,7 @@ void GetFAST(cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = fal
     const int maxBorderY = image.rows-EDGE_THRESHOLD+3;
 
     vector<cv::KeyPoint> vToDistributeKeys;
-    vToDistributeKeys.reserve(config_nfeature*10);
+    vToDistributeKeys.reserve(settings->nFeatures()*10);
 
     const float width = (maxBorderX-minBorderX);
     const float height = (maxBorderY-minBorderY);
@@ -377,12 +376,12 @@ void GetFAST(cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = fal
             vector<cv::KeyPoint> vKeysCell;
 
             FAST(image.rowRange(iniY,maxY).colRange(iniX,maxX),
-                vKeysCell,config_iniThFAST,true);
+                vKeysCell,settings->initThFAST(),true);
 
             if(vKeysCell.empty())
             {
                 FAST(image.rowRange(iniY,maxY).colRange(iniX,maxX),
-                    vKeysCell,config_minThFAST,true);
+                    vKeysCell,settings->minThFAST(),true);
             }
         
             if(!vKeysCell.empty())
@@ -397,12 +396,12 @@ void GetFAST(cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = fal
         }
     }
 
-    vKeypoints.reserve(config_nfeature);
+    vKeypoints.reserve(settings->nFeatures());
 
     if (bUseOctTree)
     {
         vKeypoints = DistributeOctTree(vToDistributeKeys, minBorderX, maxBorderX,
-                                        minBorderY, maxBorderY, config_nfeature);
+                                        minBorderY, maxBorderY, settings->nFeatures());
     }
     else
     {
@@ -421,26 +420,29 @@ void GetFAST(cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = fal
 }
 
 // Using HFNet
-void GetHFNet(HFNetTFModel &model, cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = false)
+void GetHFNet(HFNetTFModel::Ptr model, cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = false)
 {
     vKeypoints.clear();
-    vKeypoints.reserve(config_nfeature);
-    model.Detect(image, vKeypoints);
+    vKeypoints.reserve(settings->nFeatures());
+    cv::Mat descriptors;
+    model->Detect(image, vKeypoints, descriptors);
     if (bUseOctTree)
     {
         vKeypoints = DistributeOctTree(vKeypoints, 0, image.cols,
-                                       0, image.rows, config_nfeature);
+                                       0, image.rows, settings->nFeatures());
     }
 }
 
 int main(int argc, char* argv[]){
 
-    string model_path ="model/hfnet/";
-    string resampler_path ="/home/llm/src/tensorflow_cc-2.9.0/tensorflow_cc/install/lib/core/user_ops/resampler/python/ops/_resampler_ops.so";
-    string dataset_path("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
+    string strModelPath ="model/hfnet/";
+    string strResamplerPath ="/home/llm/src/tensorflow_cc-2.9.0/tensorflow_cc/install/lib/core/user_ops/resampler/python/ops/_resampler_ops.so";
+    string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
+    const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
 
-    vector<string> files = GetPngFiles(dataset_path); // get all image files
-    HFNetTFModel feature_point(resampler_path, model_path);
+    vector<string> files = GetPngFiles(strDatasetPath); // get all image files
+    settings = new Settings(strSettingsPath, 0);
+    HFNetTFModel::Ptr hfModel = make_shared<HFNetTFModel>(strResamplerPath, strModelPath);
 
     std::default_random_engine generator;
     std::uniform_int_distribution<unsigned int> distribution(0, files.size() - 1);
@@ -458,26 +460,26 @@ int main(int argc, char* argv[]){
     cv::moveWindow("HFNet & OctTree", 820, 540);
     do {
         unsigned int select = distribution(generator);
-        image = imread(dataset_path + files[select], IMREAD_GRAYSCALE);
+        image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
 
         cout << "============= FAST  =============" << endl;
         GetFAST(image, keypoints, false);
-        ImageShow("FAST", image, keypoints);
+        ShowKeypoints("FAST", image, keypoints);
         cout << "key point number: " << keypoints.size() << endl;
 
         cout << "============= FAST with OctTree =============" << endl;
         GetFAST(image, keypoints, true);
-        ImageShow("FAST with Oct", image, keypoints);
+        ShowKeypoints("FAST with Oct", image, keypoints);
         cout << "key point number: " << keypoints.size() << endl;
 
         cout << "============= HFNet =============" << endl;
-        GetHFNet(feature_point, image, keypoints, false);
-        ImageShow("HFNet", image, keypoints);
+        GetHFNet(hfModel, image, keypoints, false);
+        ShowKeypoints("HFNet", image, keypoints);
         cout << "key point number: " << keypoints.size() << endl;
 
         cout << "============= HFNet & OctTree =============" << endl;
-        GetHFNet(feature_point, image, keypoints, true);
-        ImageShow("HFNet & OctTree", image, keypoints);
+        GetHFNet(hfModel, image, keypoints, true);
+        ShowKeypoints("HFNet & OctTree", image, keypoints);
         cout << "key point number: " << keypoints.size() << endl;
 
     } while(cv::waitKey() != 'q');

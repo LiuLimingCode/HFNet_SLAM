@@ -5,6 +5,8 @@
 #include <list>
 #include <opencv2/opencv.hpp>
 #include "Extractors/BaseExtractor.h"
+#include "Extractors/HFNetTFModel.h"
+#include "Extractors/HFNetVINOModel.h"
 
 namespace ORB_SLAM3
 {
@@ -16,7 +18,7 @@ public:
     enum {HARRIS_SCORE=0, FAST_SCORE=1 };
 
     HFextractor(int nfeatures, float scaleFactor, int nlevels,
-                 int iniThFAST, int minThFAST);
+                HFNetBaseModel::Ptr model);
 
     ~HFextractor(){}
 
@@ -35,11 +37,9 @@ protected:
                                            const int &maxX, const int &minY, const int &maxY, const int &nFeatures, const int &level);
 
     void ComputeKeyPointsOld(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
-    std::vector<cv::Point> pattern;
 
     int nfeatures;
-    int iniThFAST;
-    int minThFAST;
+    HFNetBaseModel::Ptr model;
 
     std::vector<int> mnFeaturesPerLevel;
 

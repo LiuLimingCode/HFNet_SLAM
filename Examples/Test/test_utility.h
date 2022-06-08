@@ -34,7 +34,7 @@ vector<string> GetPngFiles(string png_dir)
    return ret;
 }
 
-void ImageShow(const string &title, Mat image, const std::vector<KeyPoint> &keypoints)
+void ShowKeypoints(const string &title, Mat image, const std::vector<KeyPoint> &keypoints)
 {
     Mat image_show;
     cvtColor(image, image_show, COLOR_GRAY2BGR);
