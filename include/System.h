@@ -21,7 +21,7 @@
 #define SYSTEM_H
 
 
-#include <unistd.h>
+#include<unistd.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<string>
@@ -35,11 +35,12 @@
 #include "LocalMapping.h"
 #include "LoopClosing.h"
 #include "KeyFrameDatabase.h"
-#include "ORBVocabulary.h"
 #include "Viewer.h"
 #include "ImuTypes.h"
 #include "Settings.h"
+#include "Extractors/HFNetTFModel.h"
 
+using namespace std;
 
 namespace ORB_SLAM3
 {
@@ -202,8 +203,8 @@ private:
     // Input sensor
     eSensor mSensor;
 
-    // ORB vocabulary used for place recognition and feature matching.
-    ORBVocabulary* mpVocabulary;
+    // Model
+    BaseModel* mpModel;
 
     // KeyFrame database for place recognition (relocalization and loop detection).
     KeyFrameDatabase* mpKeyFrameDatabase;

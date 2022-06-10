@@ -31,6 +31,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/export.hpp>
 
+using namespace std;
 
 namespace ORB_SLAM3
 {
@@ -132,9 +133,6 @@ public:
     void SetKeyFrameDababase(KeyFrameDatabase* pKFDB);
     KeyFrameDatabase* GetKeyFrameDatabase();
 
-    void SetORBVocabulary(ORBVocabulary* pORBVoc);
-    ORBVocabulary* GetORBVocabulary();
-
     long unsigned int GetNumLivedKF();
 
     long unsigned int GetNumLivedMP();
@@ -157,7 +155,6 @@ protected:
 
     // Class references for the map reconstruction from the save file
     KeyFrameDatabase* mpKeyFrameDB;
-    ORBVocabulary* mpORBVocabulary;
 
     // Mutex
     std::mutex mMutexAtlas;

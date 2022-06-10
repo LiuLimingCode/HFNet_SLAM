@@ -85,4 +85,22 @@ cv::Mat ShowCorrectMatches(const cv::Mat &image1, const cv::Mat &image2,
     return outImage;
 }
 
+std::vector<cv::KeyPoint> undistortPoints(const std::vector<cv::KeyPoint> &src, const cv::Mat &cameraMatrix, const cv::Mat &distCoeffs)
+{
+    std::vector<cv::Point2f> mat;
+    std::vector<cv::KeyPoint> res;
+    for (auto temp : src)
+    {
+        mat.emplace_back(temp.pt);
+    }
+    cv::undistortPoints(mat, mat, cameraMatrix, distCoeffs, cameraMatrix);
+    for (int index = 0; index < mat.size(); ++index) 
+    {
+        auto kpt = src[index];
+        kpt.pt = mat[index];
+        res.emplace_back(kpt);
+    }
+    return res;
+}
+
 #endif

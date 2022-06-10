@@ -9,8 +9,7 @@ namespace ORB_SLAM3
 {
 
 enum ExtractorType {
-    kExtractorORB,
-    kExtractorHF
+    kExtractorHFNetTF,
 };
 
 class BaseExtractor

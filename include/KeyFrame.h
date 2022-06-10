@@ -21,10 +21,6 @@
 #define KEYFRAME_H
 
 #include "MapPoint.h"
-#include "Thirdparty/DBoW2/DBoW2/BowVector.h"
-#include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
-#include "ORBVocabulary.h"
-#include "Extractors/ORBextractor.h"
 #include "Frame.h"
 #include "KeyFrameDatabase.h"
 #include "ImuTypes.h"
@@ -38,6 +34,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 
+using namespace std;
 
 namespace ORB_SLAM3
 {
@@ -126,9 +123,6 @@ class KeyFrame
         ar & const_cast<vector<float>& >(mvuRight);
         ar & const_cast<vector<float>& >(mvDepth);
         serializeMatrix<Archive>(ar,mDescriptors,version);
-        // BOW
-        ar & mBowVec;
-        ar & mFeatVec;
         // Pose relative to parent
         serializeSophusSE3<Archive>(ar, mTcp, version);
         // Scale
@@ -214,9 +208,6 @@ public:
     Eigen::Vector3f GetVelocity();
     bool isVelocitySet();
 
-    // Bag of Words Representation
-    void ComputeBoW();
-
     // Covisibility graph functions
     void AddConnection(KeyFrame* pKF, const int &weight);
     void EraseConnection(KeyFrame* pKF);
@@ -299,8 +290,6 @@ public:
     void PreSave(set<KeyFrame*>& spKF,set<MapPoint*>& spMP, set<GeometricCamera*>& spCam);
     void PostLoad(map<long unsigned int, KeyFrame*>& mpKFid, map<long unsigned int, MapPoint*>& mpMPid, map<unsigned int, GeometricCamera*>& mpCamId);
 
-
-    void SetORBVocabulary(ORBVocabulary* pORBVoc);
     void SetKeyFrameDatabase(KeyFrameDatabase* pKFDB);
 
     bool bImu;
@@ -384,10 +373,6 @@ public:
     const std::vector<float> mvDepth; // negative value for monocular points
     const cv::Mat mDescriptors;
 
-    //BoW
-    DBoW2::BowVector mBowVec;
-    DBoW2::FeatureVector mFeatVec;
-
     // Pose relative to parent (this is computed when bad flag is activated)
     Sophus::SE3f mTcp;
 
@@ -452,7 +437,6 @@ protected:
 
     // BoW
     KeyFrameDatabase* mpKeyFrameDB;
-    ORBVocabulary* mpORBvocabulary;
 
     // Grid over the image to speed up feature matching
     std::vector< std::vector <std::vector<size_t> > > mGrid;

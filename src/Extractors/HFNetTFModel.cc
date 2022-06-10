@@ -38,6 +38,8 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
     {
         kp.pt = Point2f(vResKeypoints(2 * index), vResKeypoints(2 * index + 1));
         kp.response = vResScores(index);
+        kp.angle = 0;
+        kp.octave = 0;
         vKeypoints.push_back(kp);
         for (int temp = 0; temp < 256; ++temp)
         {

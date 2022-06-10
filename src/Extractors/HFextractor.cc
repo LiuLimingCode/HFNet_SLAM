@@ -20,7 +20,7 @@ const int HALF_PATCH_SIZE = 15;
 const int EDGE_THRESHOLD = 19;
 
 HFextractor::HFextractor(int _nfeatures, float _scaleFactor, int _nlevels,
-                        HFNetBaseModel::Ptr _model) :
+                        BaseModel* _model) :
         nfeatures(_nfeatures), model(_model)
 {
     scaleFactor = _scaleFactor;

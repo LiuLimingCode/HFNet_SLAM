@@ -68,7 +68,7 @@ Viewer.ViewpointF: 500.0
 #--------------------------------------------------------------------------------------------
 
 # Extractor: Type of extractor
-Extractor.type: "ORB" # [ORB ]
+Extractor.type: "HF_TF" # [HFNetTF HFNetVINO]
 
 # Extractor: Number of features per image
 Extractor.nFeatures: 1000 # 1000
@@ -79,14 +79,9 @@ Extractor.scaleFactor: 1.2
 # Extractor: Number of levels in the scale pyramid	
 Extractor.nLevels: 8
 
-# ORB Extractor: Fast threshold
-# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
-# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
-# You can lower these values if your images have low contrast			
-Extractor.ORB.iniThFAST: 20
-Extractor.ORB.minThFAST: 7
 
 # HFNET Extractor
-Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3/model/hfnet/"
+Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet/"
 Extractor.HFNetTF.resamplerPath: "/home/llm/src/tensorflow_cc-2.9.0/tensorflow_cc/install/lib/core/user_ops/resampler/python/ops/_resampler_ops.so"
 
+loopClosing: 0

@@ -345,7 +345,7 @@ void Atlas::PostLoad()
     for(Map* pMi : mvpBackupMaps)
     {
         mspMaps.insert(pMi);
-        pMi->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
+        pMi->PostLoad(mpKeyFrameDB, mpCams);
         numKF += pMi->GetAllKeyFrames().size();
         numMP += pMi->GetAllMapPoints().size();
     }
@@ -360,16 +360,6 @@ void Atlas::SetKeyFrameDababase(KeyFrameDatabase* pKFDB)
 KeyFrameDatabase* Atlas::GetKeyFrameDatabase()
 {
     return mpKeyFrameDB;
-}
-
-void Atlas::SetORBVocabulary(ORBVocabulary* pORBVoc)
-{
-    mpORBVocabulary = pORBVoc;
-}
-
-ORBVocabulary* Atlas::GetORBVocabulary()
-{
-    return mpORBVocabulary;
 }
 
 long unsigned int Atlas::GetNumLivedKF()

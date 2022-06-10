@@ -47,6 +47,7 @@ match correct percentage: 0.366167
  * 4. SearchByBoW can increase the correct percentage of ORB descriptor
  * 5. SearchByBoW does not work well for HF descriptor, maybe it is because the vocabulary for HF is bad.
  * 6. The vocabulary costs too much time!
+ * 7. TODO: 加了去畸变后效果变差了，为什么？
  */
 #include <chrono>
 #include <fstream>
@@ -59,6 +60,7 @@ match correct percentage: 0.366167
 #include "Extractors/ORBextractor.h"
 #include "Extractors/HFextractor.h"
 #include "Examples/Utility/utility_common.h"
+#include "CameraModels/Pinhole.h"
 
 #include "fbow.h"
 #include "ORBVocabulary.h"
@@ -381,7 +383,6 @@ int main(int argc, char* argv[])
 
     ORBextractor extractorORB(settings->nFeatures(), settings->scaleFactor(), settings->nLevels(), settings->initThFAST(), settings->minThFAST());
     HFextractor extractorHF(settings->nFeatures(), settings->scaleFactor(), settings->nLevels(), hfModel);
-    cv::Mat distCoef = settings->camera1DistortionCoef();
     ORBmatcher matcher(0.9, true);
 
     const string strVocFileORB("Vocabulary/ORBvoc.txt");
@@ -402,19 +403,49 @@ int main(int argc, char* argv[])
         exit(-1);
     }
 
+    char command = ' ';
+    bool showUndistort = false;
+    unsigned int select;
+    auto cameraMatrix = settings->camera1();
+    auto distCoef = settings->camera1DistortionCoef();
     do {
-        unsigned int select = distribution(generator);
-        cv::Mat image1 = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        cv::Mat image2 = imread(strDatasetPath + files[select + 10], IMREAD_GRAYSCALE);
+        if (command != 'u') select = distribution(generator);
+        else showUndistort = !showUndistort;
+        cout << command << endl;
+        cout << select << endl;
+        cv::Mat imageRaw1 = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
+        cv::Mat imageRaw2 = imread(strDatasetPath + files[select + 10], IMREAD_GRAYSCALE);
         vector<int> vLapping = {0,1000};
 
 
         std::vector<cv::KeyPoint> keypointsORB1, keypointsORB2;
         cv::Mat descriptorsORB1, descriptorsORB2;
-        extractorORB(image1, cv::Mat(), keypointsORB1, descriptorsORB1, vLapping);
-        extractorORB(image2, cv::Mat(), keypointsORB2, descriptorsORB2, vLapping);
+        extractorORB(imageRaw1, cv::Mat(), keypointsORB1, descriptorsORB1, vLapping);
+        extractorORB(imageRaw2, cv::Mat(), keypointsORB2, descriptorsORB2, vLapping);
 
 
+        std::vector<cv::KeyPoint> keypointsHF1, keypointsHF2;
+        cv::Mat descriptorsHF1, descriptorsHF2;
+        extractorHF(imageRaw1, cv::Mat(), keypointsHF1, descriptorsHF1, vLapping);
+        extractorHF(imageRaw2, cv::Mat(), keypointsHF2, descriptorsHF2, vLapping);
+
+
+        cv::Mat image1, image2;
+        if (showUndistort)
+        {
+            cv::undistort(imageRaw1, image1, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
+            cv::undistort(imageRaw2, image2, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
+            keypointsORB1 = undistortPoints(keypointsORB1, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
+            keypointsORB2 = undistortPoints(keypointsORB2, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
+            keypointsHF1 = undistortPoints(keypointsHF1, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
+            keypointsHF2 = undistortPoints(keypointsHF2, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
+        }
+        else
+        {
+            image1 = imageRaw1, image2 = imageRaw2;
+        }
+
+        cout << "-------------------------------------------------------" << endl;
         std::vector<cv::DMatch> matchesORB, inlierMatchesORB, wrongMatchesORB;
         {
             auto t1 = chrono::steady_clock::now();
@@ -454,12 +485,6 @@ int main(int argc, char* argv[])
             cout << "correct matches number: " << inlierMatchesORB.size() << endl;
             cout << "match correct percentage: " << (float)inlierMatchesORB.size() / matchesORB.size() << endl;
         }
-
-
-        std::vector<cv::KeyPoint> keypointsHF1, keypointsHF2;
-        cv::Mat descriptorsHF1, descriptorsHF2;
-        extractorHF(image1, cv::Mat(), keypointsHF1, descriptorsHF1, vLapping);
-        extractorHF(image2, cv::Mat(), keypointsHF2, descriptorsHF2, vLapping);
 
 
         std::vector<cv::DMatch> matchesHF, inlierMatchesHF, wrongMatchesHF;
@@ -543,7 +568,7 @@ int main(int argc, char* argv[])
             cout << "correct matches number: " << inlierMatchesHF.size() << endl;
             cout << "match correct percentage: " << (float)inlierMatchesHF.size() / matchesHF.size() << endl;
         }
-    } while (cv::waitKey() != 'q');
+    } while ((command = cv::waitKey()) != 'q');
 
     return 0;
 }

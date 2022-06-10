@@ -1,13 +1,13 @@
-#ifndef HFNETBASEMODEL_H
-#define HFNETBASEMODEL_H
+#ifndef BaseModel_H
+#define BaseModel_H
 
 namespace ORB_SLAM3
 {
 
-class HFNetBaseModel
+class BaseModel
 {
 public:
-    typedef std::shared_ptr<HFNetBaseModel> Ptr;
+    typedef std::shared_ptr<BaseModel> Ptr;
 
     virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &descriptors,
                         int nKeypointsNum = 1000, int nRadius = 4) = 0;

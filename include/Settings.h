@@ -98,9 +98,9 @@ namespace ORB_SLAM3 {
         ExtractorType extractorType() {return extractorType_;}
         int nFeatures() {return nFeatures_;}
         int nLevels() {return nLevels_;}
-        float initThFAST() {return initThFAST_;}
-        float minThFAST() {return minThFAST_;}
         float scaleFactor() {return scaleFactor_;}
+        std::string strModelPath() {return strModelPath_;}
+        std::string strResamplerPath() {return strResamplerPath_;}
 
         float keyFrameSize() {return keyFrameSize_;}
         float keyFrameLineWidth() {return keyFrameLineWidth_;}
@@ -207,7 +207,8 @@ namespace ORB_SLAM3 {
         int nFeatures_;
         float scaleFactor_;
         int nLevels_;
-        int initThFAST_, minThFAST_;
+        std::string strModelPath_;
+        std::string strResamplerPath_;
 
         /*
          * Viewer stuff

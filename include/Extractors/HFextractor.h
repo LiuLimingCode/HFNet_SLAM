@@ -18,7 +18,7 @@ public:
     enum {HARRIS_SCORE=0, FAST_SCORE=1 };
 
     HFextractor(int nfeatures, float scaleFactor, int nlevels,
-                HFNetBaseModel::Ptr model);
+                BaseModel* model);
 
     ~HFextractor(){}
 
@@ -39,7 +39,7 @@ protected:
     void ComputeKeyPointsOld(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
 
     int nfeatures;
-    HFNetBaseModel::Ptr model;
+    BaseModel* model;
 
     std::vector<int> mnFeaturesPerLevel;
 

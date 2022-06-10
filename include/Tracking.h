@@ -29,9 +29,8 @@
 #include "LocalMapping.h"
 #include "LoopClosing.h"
 #include "Frame.h"
-#include "ORBVocabulary.h"
 #include "KeyFrameDatabase.h"
-#include "Extractors/ORBextractor.h"
+#include "Extractors/HFextractor.h"
 #include "MapDrawer.h"
 #include "System.h"
 #include "ImuTypes.h"
@@ -41,6 +40,8 @@
 
 #include <mutex>
 #include <unordered_set>
+
+using namespace std;
 
 namespace ORB_SLAM3
 {
@@ -58,7 +59,7 @@ class Tracking
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Atlas* pAtlas,
+    Tracking(System* pSys, BaseModel *pModel, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Atlas* pAtlas,
              KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq=std::string());
 
     ~Tracking();
@@ -258,13 +259,15 @@ protected:
     LoopClosing* mpLoopClosing;
 
     //Extractor
-    ExtractorType mExtractorType = ExtractorType::kExtractorORB;
+    ExtractorType mExtractorType;
     BaseExtractor* mpExtractorLeft, *mpExtractorRight;
     BaseExtractor* mpIniExtractor;
 
     //BoW
-    ORBVocabulary* mpORBVocabulary;
     KeyFrameDatabase* mpKeyFrameDB;
+
+    //Model
+    BaseModel* mpModel;
 
     // Initalization (only for monocular)
     bool mbReadyToInitializate;

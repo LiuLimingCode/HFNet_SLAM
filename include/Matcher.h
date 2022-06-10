@@ -17,8 +17,8 @@
 */
 
 
-#ifndef ORBMATCHER_H
-#define ORBMATCHER_H
+#ifndef MATCHER_H
+#define MATCHER_H
 
 #include<vector>
 #include<opencv2/core/core.hpp>
@@ -33,11 +33,11 @@
 namespace ORB_SLAM3
 {
 
-    class ORBmatcher
+    class Matcher
     {
     public:
 
-        ORBmatcher(float nnratio=0.6, bool checkOri=true);
+        Matcher(float nnratio=0.6);
 
         // Computes the Hamming distance between two ORB descriptors
         static int DescriptorDistance(const cv::Mat &a, const cv::Mat &b);
@@ -73,7 +73,7 @@ namespace ORB_SLAM3
 
         // Matching to triangulate new MapPoints. Check Epipolar Constraint.
         int SearchForTriangulation(KeyFrame *pKF1, KeyFrame* pKF2,
-                                   std::vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo, const bool bCoarse = false);
+                                   std::vector<std::pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo, const bool bCoarse = false);
 
         // Search matches between MapPoints seen in KF1 and KF2 transforming by a Sim3 [s12*R12|t12]
         // In the stereo and RGB-D case, s12=1
@@ -81,10 +81,10 @@ namespace ORB_SLAM3
         int SearchBySim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches12, const Sophus::Sim3f &S12, const float th);
 
         // Project MapPoints into KeyFrame and search for duplicated MapPoints.
-        int Fuse(KeyFrame* pKF, const vector<MapPoint *> &vpMapPoints, const float th=3.0, const bool bRight = false);
+        int Fuse(KeyFrame* pKF, const std::vector<MapPoint *> &vpMapPoints, const float th=3.0, const bool bRight = false);
 
         // Project MapPoints into KeyFrame using a given Sim3 and search for duplicated MapPoints.
-        int Fuse(KeyFrame* pKF, Sophus::Sim3f &Scw, const std::vector<MapPoint*> &vpPoints, float th, vector<MapPoint *> &vpReplacePoint);
+        int Fuse(KeyFrame* pKF, Sophus::Sim3f &Scw, const std::vector<MapPoint*> &vpPoints, float th, std::vector<MapPoint *> &vpReplacePoint);
 
     public:
 
@@ -99,7 +99,6 @@ namespace ORB_SLAM3
         void ComputeThreeMaxima(std::vector<int>* histo, const int L, int &ind1, int &ind2, int &ind3);
 
         float mfNNratio;
-        bool mbCheckOrientation;
     };
 
 }// namespace ORB_SLAM

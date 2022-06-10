@@ -444,15 +444,18 @@ namespace ORB_SLAM3 {
         bool found;
 
         string type = readParameter<string>(fSettings, "Extractor.type",found);
-        if (type == "ORB") {
-            extractorType_ = kExtractorORB;
+        if (type == "HFNetTF") {
+            extractorType_ = kExtractorHFNetTF;
+        }
+        else {
+            cerr << "Wrong extractor type!" << endl;
         }
         nFeatures_ = readParameter<int>(fSettings,"Extractor.nFeatures",found);
         scaleFactor_ = readParameter<float>(fSettings,"Extractor.scaleFactor",found);
         nLevels_ = readParameter<int>(fSettings,"Extractor.nLevels",found);
-        if (extractorType_ == kExtractorORB) {
-            initThFAST_ = readParameter<int>(fSettings,"Extractor.ORB.iniThFAST",found);
-            minThFAST_ = readParameter<int>(fSettings,"Extractor.ORB.minThFAST",found);
+        if (extractorType_ == kExtractorHFNetTF) {
+            strModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.modelPath",found);
+            strResamplerPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.resamplerPath",found);
         }
     }
 
@@ -636,8 +639,11 @@ namespace ORB_SLAM3 {
         output << "\t-Features per image: " << settings.nFeatures_ << endl;
         output << "\t-ORB scale factor: " << settings.scaleFactor_ << endl;
         output << "\t-ORB number of scales: " << settings.nLevels_ << endl;
-        output << "\t-Initial FAST threshold: " << settings.initThFAST_ << endl;
-        output << "\t-Min FAST threshold: " << settings.minThFAST_ << endl;
+        if (settings.extractorType_ == kExtractorHFNetTF)
+        {
+            output << "\t-Model path: " << settings.strModelPath_ << endl;
+            output << "\t-Resampler.so path: " << settings.strResamplerPath_ << endl;
+        }
 
         return output;
     }

@@ -26,7 +26,6 @@
 
 #include "KeyFrame.h"
 #include "Frame.h"
-#include "ORBVocabulary.h"
 #include "Map.h"
 
 #include <boost/serialization/base_object.hpp>
@@ -35,6 +34,7 @@
 
 #include<mutex>
 
+using namespace std;
 
 namespace ORB_SLAM3
 {
@@ -58,7 +58,6 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     KeyFrameDatabase(){}
-    KeyFrameDatabase(const ORBVocabulary &voc);
 
     void add(KeyFrame* pKF);
 
@@ -80,13 +79,8 @@ public:
 
     void PreSave();
     void PostLoad(map<long unsigned int, KeyFrame*> mpKFid);
-    void SetORBVocabulary(ORBVocabulary* pORBVoc);
 
 protected:
-
-   // Associated vocabulary
-   const ORBVocabulary* mpVoc;
-
    // Inverted file
    std::vector<list<KeyFrame*> > mvInvertedFile;
 

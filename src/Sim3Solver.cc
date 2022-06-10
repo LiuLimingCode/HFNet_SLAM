@@ -24,9 +24,7 @@
 #include <opencv2/core/core.hpp>
 
 #include "KeyFrame.h"
-#include "ORBmatcher.h"
-
-#include "Thirdparty/DBoW2/DUtils/Random.h"
+#include "Matcher.h"
 
 namespace ORB_SLAM3
 {
@@ -174,7 +172,7 @@ Eigen::Matrix4f Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool>
         // Get min set of points
         for(short i = 0; i < 3; ++i)
         {
-            int randi = DUtils::Random::RandomInt(0, vAvailableIndices.size()-1);
+            int randi =  int(((double)rand()/((double)RAND_MAX + 1.0)) * vAvailableIndices.size());
 
             int idx = vAvailableIndices[randi];
 
@@ -247,7 +245,7 @@ Eigen::Matrix4f Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool>
         // Get min set of points
         for(short i = 0; i < 3; ++i)
         {
-            int randi = DUtils::Random::RandomInt(0, vAvailableIndices.size()-1);
+            int randi =  int(((double)rand()/((double)RAND_MAX + 1.0)) * vAvailableIndices.size());
 
             int idx = vAvailableIndices[randi];
 

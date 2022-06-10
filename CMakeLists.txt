@@ -56,10 +56,9 @@ src/System.cc
 src/Tracking.cc
 src/LocalMapping.cc
 src/LoopClosing.cc
-src/Extractors/ORBextractor.cc
 src/Extractors/HFextractor.cc
 src/Extractors/HFNetTFModel.cc
-src/ORBmatcher.cc
+src/Matcher.cc
 src/FrameDrawer.cc
 src/Converter.cc
 src/MapPoint.cc
@@ -87,11 +86,10 @@ include/Tracking.h
 include/LocalMapping.h
 include/LoopClosing.h
 include/Extractors/BaseExtractor.h
-include/Extractors/ORBextractor.h
 include/Extractors/HFextractor.h
-include/Extractors/HFNetBaseModel.h
+include/Extractors/BaseModel.h
 include/Extractors/HFNetTFModel.h
-include/ORBmatcher.h
+include/Matcher.h
 include/FrameDrawer.h
 include/Converter.h
 include/MapPoint.h
@@ -123,8 +121,6 @@ target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
-${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
-${PROJECT_SOURCE_DIR}/Thirdparty/fbow/build/src/libfbow.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lboost_serialization
 -lcrypto
@@ -141,21 +137,21 @@ endif()
 #Utility examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Utility)
 
-add_executable(create_vocabulary
-        Examples/Utility/create_vocabulary.cc)
-target_link_libraries(create_vocabulary ${PROJECT_NAME})
+# add_executable(create_vocabulary
+#         Examples/Utility/create_vocabulary.cc)
+# target_link_libraries(create_vocabulary ${PROJECT_NAME})
 
-add_executable(test_hfnet_tf
-        Examples/Utility/test_hfnet_tf.cc)
-target_link_libraries(test_hfnet_tf ${PROJECT_NAME})
+# add_executable(test_hfnet_tf
+#         Examples/Utility/test_hfnet_tf.cc)
+# target_link_libraries(test_hfnet_tf ${PROJECT_NAME})
 
-add_executable(test_extractors
-        Examples/Utility/test_extractors.cc)
-target_link_libraries(test_extractors ${PROJECT_NAME})
+# add_executable(test_extractors
+#         Examples/Utility/test_extractors.cc)
+# target_link_libraries(test_extractors ${PROJECT_NAME})
 
-add_executable(test_matchers
-        Examples/Utility/test_matchers.cc)
-target_link_libraries(test_matchers ${PROJECT_NAME})
+# add_executable(test_matchers
+#         Examples/Utility/test_matchers.cc)
+# target_link_libraries(test_matchers ${PROJECT_NAME})
 
 #Monocular inertial examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)

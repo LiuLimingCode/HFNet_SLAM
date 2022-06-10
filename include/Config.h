@@ -38,10 +38,6 @@ class CameraConfig
 
 };
 
-class ORBExtractorConfig
-{
-
-};
 
 class IMUConfig
 {
@@ -57,7 +53,6 @@ private:
 
     ViewerConfig mViewerConfig;
     CameraConfig mCameraConfig;
-    ORBExtractorConfig mORBConfig;
     IMUConfig mIMUConfig;
 
 };

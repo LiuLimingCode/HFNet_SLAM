@@ -5,7 +5,7 @@
 #include <memory>
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include "Extractors/HFNetBaseModel.h"
+#include "Extractors/BaseModel.h"
 
 #ifdef USE_TENSORFLOW
 #include "tensorflow/cc/saved_model/loader.h"
@@ -20,7 +20,7 @@ namespace ORB_SLAM3
 #ifdef USE_TENSORFLOW
 
 
-class HFNetTFModel : public HFNetBaseModel
+class HFNetTFModel : public BaseModel
 {
 public:
     HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir)
@@ -46,7 +46,7 @@ private:
 
 #else // USE_TENSORFLOW
 
-class HFNetTFModel : public HFNetBaseModel
+class HFNetTFModel : public BaseModel
 {
 public:
     HFNetTFModel()
