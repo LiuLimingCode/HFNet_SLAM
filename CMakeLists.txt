@@ -46,6 +46,7 @@ ${PROJECT_SOURCE_DIR}/include/CameraModels
 ${PROJECT_SOURCE_DIR}/Thirdparty/Sophus
 ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
+${PROJECT_SOURCE_DIR}/Thirdparty/fbow/src
 )
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
@@ -123,6 +124,7 @@ ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+${PROJECT_SOURCE_DIR}/Thirdparty/fbow/build/src/libfbow.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lboost_serialization
 -lcrypto
@@ -136,19 +138,23 @@ endif()
 
 # Build examples
 
-#Test examples
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Test)
+#Utility examples
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Utility)
+
+add_executable(create_vocabulary
+        Examples/Utility/create_vocabulary.cc)
+target_link_libraries(create_vocabulary ${PROJECT_NAME})
 
 add_executable(test_hfnet_tf
-        Examples/Test/test_hfnet_tf.cc)
+        Examples/Utility/test_hfnet_tf.cc)
 target_link_libraries(test_hfnet_tf ${PROJECT_NAME})
 
 add_executable(test_extractors
-        Examples/Test/test_extractors.cc)
+        Examples/Utility/test_extractors.cc)
 target_link_libraries(test_extractors ${PROJECT_NAME})
 
 add_executable(test_matchers
-        Examples/Test/test_matchers.cc)
+        Examples/Utility/test_matchers.cc)
 target_link_libraries(test_matchers ${PROJECT_NAME})
 
 #Monocular inertial examples

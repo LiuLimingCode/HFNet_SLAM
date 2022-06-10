@@ -59,12 +59,12 @@ KeyFrameTrajectory.txt
 CameraTrajectory.txt
 kf_*.txt
 f_*.txt
-Thirdparty/DBoW2/build/
-Thirdparty/DBoW2/lib/
+Thirdparty/fbow/build/
+Thirdparty/fbow/lib/
 Thirdparty/g2o/build/
 Thirdparty/g2o/config.h
 Thirdparty/g2o/lib/
-Vocabulary/ORBvoc.txt
+Vocabulary/
 build/
 
 lib/
