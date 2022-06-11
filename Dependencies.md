@@ -14,10 +14,6 @@ This code can be found in popular BSD licensed computer vision libraries as [Ope
 This is a modified version of the MLPnP of Steffen Urban from [here](https://github.com/urbste/opengv). 
 The original code is BSD licensed.
 
-* Function *Matcher::DescriptorDistance* in *Matcher.cc*.
-The code is from: http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel.
-The code is in the public domain.
-
 #####Code in Thirdparty folder
 
 * All code in **g2o** folder.

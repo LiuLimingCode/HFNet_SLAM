@@ -39,8 +39,8 @@ namespace ORB_SLAM3
 
         Matcher(float nnratio=0.6);
 
-        // Computes the Hamming distance between two ORB descriptors
-        static int DescriptorDistance(const cv::Mat &a, const cv::Mat &b);
+        // Computes the distance between two descriptors
+        static float DescriptorDistance(const cv::Mat &a, const cv::Mat &b);
 
         // Search matches between Frame keypoints and projected MapPoints. Returns number of matches
         // Used to track the local map (Tracking)

@@ -39,7 +39,8 @@ LoopClosing::LoopClosing(Atlas *pAtlas, KeyFrameDatabase *pDB, const bool bFixSc
     mbLoopDetected(false), mbMergeDetected(false), mnLoopNumNotFound(0), mnMergeNumNotFound(0), mbActiveLC(bActiveLC)
 {
     mnCovisibilityConsistencyTh = 3;
-    mpLastCurrentKF = static_cast<KeyFrame*>(NULL);
+    mpLastCurrentKF = nullptr;
+    mpCurrentKF = nullptr;
 
 #ifdef REGISTER_TIMES
 
@@ -100,11 +101,6 @@ void LoopClosing::Run()
 
         if(CheckNewKeyFrames())
         {
-            if(mpLastCurrentKF)
-            {
-                mpLastCurrentKF->mvpLoopCandKFs.clear();
-                mpLastCurrentKF->mvpMergeCandKFs.clear();
-            }
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_StartPR = std::chrono::steady_clock::now();
 #endif

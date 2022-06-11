@@ -119,8 +119,8 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartExtORB = std::chrono::steady_clock::now();
 #endif
-    thread threadLeft(&Frame::ExtractORB,this,0,imLeft,0,0);
-    thread threadRight(&Frame::ExtractORB,this,1,imRight,0,0);
+    thread threadLeft(&Frame::ExtractKeyPoints,this,0,imLeft,0,0);
+    thread threadRight(&Frame::ExtractKeyPoints,this,1,imRight,0,0);
     threadLeft.join();
     threadRight.join();
 #ifdef REGISTER_TIMES
@@ -219,7 +219,7 @@ Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeSt
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartExtORB = std::chrono::steady_clock::now();
 #endif
-    ExtractORB(0,imGray,0,0);
+    ExtractKeyPoints(0,imGray,0,0);
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_EndExtORB = std::chrono::steady_clock::now();
 
@@ -308,7 +308,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, BaseExtractor* extr
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartExtORB = std::chrono::steady_clock::now();
 #endif
-    ExtractORB(0,imGray,0,1000);
+    ExtractKeyPoints(0,imGray,0,1000);
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_EndExtORB = std::chrono::steady_clock::now();
 
@@ -415,13 +415,13 @@ void Frame::AssignFeaturesToGrid()
     }
 }
 
-void Frame::ExtractORB(int flag, const cv::Mat &im, const int x0, const int x1)
+void Frame::ExtractKeyPoints(int flag, const cv::Mat &im, const int x0, const int x1)
 {
     vector<int> vLapping = {x0,x1};
     if(flag==0)
-        monoLeft = (*mpExtractorLeft)(im,cv::Mat(),mvKeys,mDescriptors,vLapping);
+        monoLeft = (*mpExtractorLeft)(im,cv::Mat(),mvKeys,mDescriptors,mGlobalDescriptors);
     else
-        monoRight = (*mpExtractorRight)(im,cv::Mat(),mvKeysRight,mDescriptorsRight,vLapping);
+        monoRight = (*mpExtractorRight)(im,cv::Mat(),mvKeysRight,mDescriptorsRight,mGlobalDescriptors);
 }
 
 bool Frame::isSet() const {
@@ -854,7 +854,7 @@ void Frame::ComputeStereoMatches()
         if(maxU<0)
             continue;
 
-        int bestDist = Matcher::TH_HIGH;
+        float bestDist = std::numeric_limits<float>::max();
         size_t bestIdxR = 0;
 
         const cv::Mat &dL = mDescriptors.row(iL);
@@ -873,7 +873,7 @@ void Frame::ComputeStereoMatches()
             if(uR>=minU && uR<=maxU)
             {
                 const cv::Mat &dR = mDescriptorsRight.row(iR);
-                const int dist = Matcher::DescriptorDistance(dL,dR);
+                const float dist = Matcher::DescriptorDistance(dL,dR);
 
                 if(dist<bestDist)
                 {
@@ -1046,8 +1046,8 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartExtORB = std::chrono::steady_clock::now();
 #endif
-    thread threadLeft(&Frame::ExtractORB,this,0,imLeft,static_cast<KannalaBrandt8*>(mpCamera)->mvLappingArea[0],static_cast<KannalaBrandt8*>(mpCamera)->mvLappingArea[1]);
-    thread threadRight(&Frame::ExtractORB,this,1,imRight,static_cast<KannalaBrandt8*>(mpCamera2)->mvLappingArea[0],static_cast<KannalaBrandt8*>(mpCamera2)->mvLappingArea[1]);
+    thread threadLeft(&Frame::ExtractKeyPoints,this,0,imLeft,static_cast<KannalaBrandt8*>(mpCamera)->mvLappingArea[0],static_cast<KannalaBrandt8*>(mpCamera)->mvLappingArea[1]);
+    thread threadRight(&Frame::ExtractKeyPoints,this,1,imRight,static_cast<KannalaBrandt8*>(mpCamera2)->mvLappingArea[0],static_cast<KannalaBrandt8*>(mpCamera2)->mvLappingArea[1]);
     threadLeft.join();
     threadRight.join();
 #ifdef REGISTER_TIMES

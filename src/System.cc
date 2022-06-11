@@ -113,8 +113,15 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     if (settings_->extractorType() == kExtractorHFNetTF)
     {
         mpModel = new HFNetTFModel(settings_->strResamplerPath(), settings_->strModelPath());
+        if (mpModel->IsValid())
+        {
+            cout << "Successfully loaded HFNetTF model" << endl;
+        }
+        else
+        {
+            exit(-1);
+        }
     }
-    cout << "Model loaded!" << endl << endl;
 
     //Create KeyFrame Database
     // TODO: The initialization of KeyFrameDatabase

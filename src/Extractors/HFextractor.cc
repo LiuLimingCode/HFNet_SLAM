@@ -19,9 +19,9 @@ const int PATCH_SIZE = 31;
 const int HALF_PATCH_SIZE = 15;
 const int EDGE_THRESHOLD = 19;
 
-HFextractor::HFextractor(int _nfeatures, float _scaleFactor, int _nlevels,
-                        BaseModel* _model) :
-        nfeatures(_nfeatures), model(_model)
+HFextractor::HFextractor(int _nfeatures, int _nNMSRadius, float _threshold,
+                        float _scaleFactor, int _nlevels, BaseModel* _model):
+        nfeatures(_nfeatures), nNMSRadius(_nNMSRadius), threshold(_threshold), model(_model)
 {
     scaleFactor = _scaleFactor;
     nlevels = _nlevels;
@@ -80,20 +80,22 @@ HFextractor::HFextractor(int _nfeatures, float _scaleFactor, int _nlevels,
 
 
 
-int HFextractor::operator()( cv::InputArray _image, cv::InputArray _mask,
+int HFextractor::operator() (cv::InputArray _image, cv::InputArray _mask,
                     std::vector<cv::KeyPoint>& _keypoints,
-                    cv::OutputArray _descriptors, std::vector<int> &vLappingArea) {
+                    cv::OutputArray _localDescriptors, cv::OutputArray _globalDescriptors) {
     if(_image.empty())
         return -1;
 
     Mat image = _image.getMat();
     assert(image.type() == CV_8UC1 );
 
-    cv::Mat descriptors;
-    model->Detect(image, _keypoints, descriptors, nfeatures);
+    cv::Mat localDescriptors, globalDescriptors;
+    model->Detect(image, _keypoints, localDescriptors, globalDescriptors, nfeatures, threshold, nNMSRadius);
     int nkeypoints = _keypoints.size();
-    _descriptors.create(nkeypoints, 256, CV_32F);
-    descriptors.copyTo(_descriptors.getMat());
+    _localDescriptors.create(nkeypoints, 256, CV_32F);
+    localDescriptors.copyTo(_localDescriptors.getMat());
+    _globalDescriptors.create(4096, 1, CV_32F);
+    globalDescriptors.copyTo(_globalDescriptors.getMat());
     return nkeypoints;
 }
 

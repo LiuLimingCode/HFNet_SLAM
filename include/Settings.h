@@ -99,6 +99,8 @@ namespace ORB_SLAM3 {
         int nFeatures() {return nFeatures_;}
         int nLevels() {return nLevels_;}
         float scaleFactor() {return scaleFactor_;}
+        int nNMSRadius() {return nNMSRadius_;}
+        float threshold() {return threshold_;} 
         std::string strModelPath() {return strModelPath_;}
         std::string strResamplerPath() {return strResamplerPath_;}
 
@@ -207,6 +209,8 @@ namespace ORB_SLAM3 {
         int nFeatures_;
         float scaleFactor_;
         int nLevels_;
+        int nNMSRadius_;
+        float threshold_;
         std::string strModelPath_;
         std::string strResamplerPath_;
 

@@ -25,12 +25,16 @@ class HFNetTFModel : public BaseModel
 public:
     HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir)
     {
-        LoadResamplerOp(strResamplerDir);
-        LoadHFNetTFModel(strModelDir);
+        bool bLoadedLib = LoadResamplerOp(strResamplerDir);
+        bool bLoadedModel = LoadHFNetTFModel(strModelDir);
+
+        mbVaild = bLoadedLib & bLoadedModel;
     }
 
-    bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &descriptors,
-                int nKeypointsNum = 1000, int nRadius = 4);
+    bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
+                int nKeypointsNum, int threshold, int nRadius) override;
+
+    bool IsValid(void) override { return mbVaild; }
 
 private:
     bool LoadResamplerOp(const std::string &strResamplerDir);
@@ -40,8 +44,9 @@ private:
     void Mat2Tensor(const cv::Mat &image, tensorflow::Tensor *tensor);
 
 
-    std::unique_ptr<tensorflow::Session> session;
-    tensorflow::GraphDef graph;
+    std::unique_ptr<tensorflow::Session> mSession;
+    tensorflow::GraphDef mGraph;
+    bool mbVaild;
 };
 
 #else // USE_TENSORFLOW

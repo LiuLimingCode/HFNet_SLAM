@@ -68,7 +68,7 @@ Viewer.ViewpointF: 500.0
 #--------------------------------------------------------------------------------------------
 
 # Extractor: Type of extractor
-Extractor.type: "HF_TF" # [HFNetTF HFNetVINO]
+Extractor.type: "HFNetTF" # [HFNetTF HFNetVINO]
 
 # Extractor: Number of features per image
 Extractor.nFeatures: 1000 # 1000
@@ -83,5 +83,7 @@ Extractor.nLevels: 8
 # HFNET Extractor
 Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet/"
 Extractor.HFNetTF.resamplerPath: "/home/llm/src/tensorflow_cc-2.9.0/tensorflow_cc/install/lib/core/user_ops/resampler/python/ops/_resampler_ops.so"
+Extractor.HFNetTF.nNMSRadius: 4
+Extractor.HFNetTF.threshold: 0.02
 
 loopClosing: 0

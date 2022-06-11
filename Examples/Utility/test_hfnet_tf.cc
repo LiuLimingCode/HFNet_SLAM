@@ -212,12 +212,12 @@ int main(int argc, char* argv[])
 {
     const string strModelPath("model/hfnet/");
     const string strResamplerPath("/home/llm/src/tensorflow_cc-2.9.0/tensorflow_cc/install/lib/core/user_ops/resampler/python/ops/_resampler_ops.so");
-    const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
+    const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_04_difficult/mav0/cam0/data/");
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
 
     std::default_random_engine generator;
-    std::uniform_int_distribution<unsigned int> distribution(0, files.size() - 1);
+    std::uniform_int_distribution<unsigned int> distribution(1020, 1400);
 
     cv::Mat image;
     vector<KeyPoint> keypoints;
@@ -257,8 +257,19 @@ int main(int argc, char* argv[])
     }
 
     // randomly detect an image and show the results
-    {
-        int select = distribution(generator);
+    char command = ' ';
+    float threshold = 0;
+    int select = 0;
+    while(1) {
+        if (command == 'q') break;
+        else if (command == 'a') threshold -= 0.005;
+        else if (command == 'd') threshold += 0.005;
+        else if (command == 'w') select += 1;
+        else if (command == 's') select -= 1;
+        else select = distribution(generator);
+        cout << "command: " << command << endl;
+        cout << "threshold: " << threshold << endl;
+
         image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
         
         Tensor tKeypointsNum(DT_INT32, TensorShape());
@@ -293,6 +304,8 @@ int main(int argc, char* argv[])
         KeyPoint kp;
         for(int index = 0; index < nResNumber; index++)
         {
+            if (vResScores(index) < threshold) continue;
+            
             kp.pt = Point2f(vResKeypoints(2 * index), vResKeypoints(2 * index + 1));
             kp.response = vResScores(index);
             keypoints.push_back(kp);
@@ -305,77 +318,77 @@ int main(int argc, char* argv[])
         {
             globalDescriptors.ptr<float>(0)[temp] = vResGlobalDes(temp);
         }
-        ShowKeypoints("superpoint", image, keypoints);
-        cv::waitKey();
+        ShowKeypoints("press 'q' to exit", image, keypoints);
+        command = cv::waitKey();
     }
 
-    // detect full dataset
-    chrono::steady_clock::time_point t1, t2;
-    int t;
+    // // detect full dataset
+    // chrono::steady_clock::time_point t1, t2;
+    // int t;
 
-    cout << "detect: {\"keypoints\"}" << endl;
-    t1 = chrono::steady_clock::now();
-    for (const string& file : files)
-    {
-        image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
-        Detect_1(image, keypoints);
-    }
-    t2 = chrono::steady_clock::now();
-    t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    std::cout << "cost time: " << t << " milliseconds" << endl;
-    std::cout << "average detect time: " << (double)t / files.size() << endl;
-
-
-    cout << "detect: {\"keypoints\", \"local_descriptors\"}" << endl;
-    t1 = chrono::steady_clock::now();
-    for (const string& file : files)
-    {
-        image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
-        Detect_2(image, keypoints, localDescriptors);
-    }
-    t2 = chrono::steady_clock::now();
-    t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    std::cout << "cost time: " << t << " milliseconds" << endl;
-    std::cout << "average detect time: " << (double)t / files.size() << endl;
+    // cout << "detect: {\"keypoints\"}" << endl;
+    // t1 = chrono::steady_clock::now();
+    // for (const string& file : files)
+    // {
+    //     image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
+    //     Detect_1(image, keypoints);
+    // }
+    // t2 = chrono::steady_clock::now();
+    // t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    // std::cout << "cost time: " << t << " milliseconds" << endl;
+    // std::cout << "average detect time: " << (double)t / files.size() << endl;
 
 
-    cout << "detect: {\"keypoints\", \"local_descriptors\", \"scores\"}" << endl;
-    t1 = chrono::steady_clock::now();
-    for (const string& file : files)
-    {
-        image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
-        Detect_3(image, keypoints, localDescriptors);
-    }
-    t2 = chrono::steady_clock::now();
-    t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    std::cout << "cost time: " << t << " milliseconds" << endl;
-    std::cout << "average detect time: " << (double)t / files.size() << endl;
+    // cout << "detect: {\"keypoints\", \"local_descriptors\"}" << endl;
+    // t1 = chrono::steady_clock::now();
+    // for (const string& file : files)
+    // {
+    //     image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
+    //     Detect_2(image, keypoints, localDescriptors);
+    // }
+    // t2 = chrono::steady_clock::now();
+    // t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    // std::cout << "cost time: " << t << " milliseconds" << endl;
+    // std::cout << "average detect time: " << (double)t / files.size() << endl;
 
 
-    cout << "detect: {\"keypoints\", \"local_descriptors\", \"scores\", \"global_descriptor\"}" << endl;
-    t1 = chrono::steady_clock::now();
-    for (const string& file : files)
-    {
-        image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
-        Detect_full(image, keypoints, localDescriptors, globalDescriptors);
-    }
-    t2 = chrono::steady_clock::now();
-    t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    std::cout << "cost time: " << t << " milliseconds" << endl;
-    std::cout << "average detect time: " << (double)t / files.size() << endl;
+    // cout << "detect: {\"keypoints\", \"local_descriptors\", \"scores\"}" << endl;
+    // t1 = chrono::steady_clock::now();
+    // for (const string& file : files)
+    // {
+    //     image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
+    //     Detect_3(image, keypoints, localDescriptors);
+    // }
+    // t2 = chrono::steady_clock::now();
+    // t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    // std::cout << "cost time: " << t << " milliseconds" << endl;
+    // std::cout << "average detect time: " << (double)t / files.size() << endl;
 
 
-    cout << "detect: {\"global_descriptor\"}" << endl;
-    t1 = chrono::steady_clock::now();
-    for (const string& file : files)
-    {
-        image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
-        Detect_g(image, globalDescriptors);
-    }
-    t2 = chrono::steady_clock::now();
-    t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    std::cout << "cost time: " << t << " milliseconds" << endl;
-    std::cout << "average detect time: " << (double)t / files.size() << endl;
+    // cout << "detect: {\"keypoints\", \"local_descriptors\", \"scores\", \"global_descriptor\"}" << endl;
+    // t1 = chrono::steady_clock::now();
+    // for (const string& file : files)
+    // {
+    //     image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
+    //     Detect_full(image, keypoints, localDescriptors, globalDescriptors);
+    // }
+    // t2 = chrono::steady_clock::now();
+    // t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    // std::cout << "cost time: " << t << " milliseconds" << endl;
+    // std::cout << "average detect time: " << (double)t / files.size() << endl;
+
+
+    // cout << "detect: {\"global_descriptor\"}" << endl;
+    // t1 = chrono::steady_clock::now();
+    // for (const string& file : files)
+    // {
+    //     image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
+    //     Detect_g(image, globalDescriptors);
+    // }
+    // t2 = chrono::steady_clock::now();
+    // t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    // std::cout << "cost time: " << t << " milliseconds" << endl;
+    // std::cout << "average detect time: " << (double)t / files.size() << endl;
 
     system("pause");
 

@@ -8,8 +8,8 @@ namespace ORB_SLAM3
 
 #ifdef USE_TENSORFLOW
 
-bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &descriptors,
-                int nKeypointsNum, int nRadius)
+bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
+                          int nKeypointsNum, int threshold, int nRadius) 
 {
     Tensor tKeypointsNum(DT_INT32, TensorShape());
     Tensor tRadius(DT_INT32, TensorShape());
@@ -20,8 +20,8 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
     Mat2Tensor(image, &tImage);
     
     vector<Tensor> outputs;
-    Status status = session->Run({{"image:0", tImage},{"pred/simple_nms/radius", tRadius},{"pred/top_k_keypoints/k", tKeypointsNum}},
-                                 {"keypoints", "local_descriptors", "scores"}, {}, &outputs);
+    Status status = mSession->Run({{"image:0", tImage},{"pred/simple_nms/radius", tRadius},{"pred/top_k_keypoints/k", tKeypointsNum}},
+                                 {"keypoints", "local_descriptors", "scores", "global_descriptor"}, {}, &outputs);
     if (!status.ok()) return false;
 
     int nResNumber = outputs[0].shape().dim_size(1);
@@ -29,13 +29,16 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
     auto vResKeypoints = outputs[0].tensor<int32, 3>();
     auto vResLocalDes = outputs[1].tensor<float, 3>();
     auto vResScores = outputs[2].tensor<float, 2>();
+    auto vResGlobalDes = outputs[3].tensor<float, 2>();
 
     vKeypoints.clear();
-    descriptors = Mat::zeros(nResNumber, 256, CV_32F);
+    localDescriptors = cv::Mat::zeros(nResNumber, 256, CV_32F);
+    globalDescriptors = cv::Mat::zeros(4096, 1, CV_32F);
 
     KeyPoint kp;
     for(int index = 0; index < nResNumber; index++)
     {
+        if (vResScores(index) < threshold) continue;
         kp.pt = Point2f(vResKeypoints(2 * index), vResKeypoints(2 * index + 1));
         kp.response = vResScores(index);
         kp.angle = 0;
@@ -43,8 +46,12 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
         vKeypoints.push_back(kp);
         for (int temp = 0; temp < 256; ++temp)
         {
-            descriptors.ptr<float>(index)[temp] = vResLocalDes(256 * index + temp); 
+            localDescriptors.ptr<float>(index)[temp] = vResLocalDes(256 * index + temp); 
         }
+    }
+    for (int temp = 0; temp < 4096; ++temp)
+    {
+        globalDescriptors.ptr<float>(0)[temp] = vResGlobalDes(temp);
     }
     return true;
 }
@@ -75,10 +82,10 @@ bool HFNetTFModel::LoadHFNetTFModel(const std::string &strModelDir)
         return false;
     }
 
-    session = std::move(bundle.session);
-    status = session->Create(graph);
+    mSession = std::move(bundle.session);
+    status = mSession->Create(mGraph);
     if(!status.ok()){
-        std::cerr << "Failed to create graph for HFNet" << std::endl;
+        std::cerr << "Failed to create mGraph for HFNet" << std::endl;
         return false;
     }
 

@@ -71,9 +71,9 @@ namespace ORB_SLAM3
                 if(!vIndices.empty()){
                     const cv::Mat MPdescriptor = pMP->GetDescriptor();
 
-                    int bestDist=256;
+                    float bestDist=std::numeric_limits<float>::max();
                     int bestLevel= -1;
-                    int bestDist2=256;
+                    float bestDist2=std::numeric_limits<float>::max();
                     int bestLevel2 = -1;
                     int bestIdx =-1 ;
 
@@ -95,7 +95,7 @@ namespace ORB_SLAM3
 
                         const cv::Mat &d = F.mDescriptors.row(idx);
 
-                        const int dist = DescriptorDistance(MPdescriptor,d);
+                        const float dist = DescriptorDistance(MPdescriptor,d);
 
                         if(dist<bestDist)
                         {
@@ -151,9 +151,9 @@ namespace ORB_SLAM3
 
                     const cv::Mat MPdescriptor = pMP->GetDescriptor();
 
-                    int bestDist=256;
+                    float bestDist=std::numeric_limits<float>::max();
                     int bestLevel= -1;
-                    int bestDist2=256;
+                    float bestDist2=std::numeric_limits<float>::max();
                     int bestLevel2 = -1;
                     int bestIdx =-1 ;
 
@@ -169,7 +169,7 @@ namespace ORB_SLAM3
 
                         const cv::Mat &d = F.mDescriptors.row(idx + F.Nleft);
 
-                        const int dist = DescriptorDistance(MPdescriptor,d);
+                        const float dist = DescriptorDistance(MPdescriptor,d);
 
                         if(dist<bestDist)
                         {
@@ -332,7 +332,7 @@ namespace ORB_SLAM3
             // Match to the most similar keypoint in the radius
             const cv::Mat dMP = pMP->GetDescriptor();
 
-            int bestDist = 256;
+            float bestDist = std::numeric_limits<float>::max();
             int bestIdx = -1;
             for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
             {
@@ -347,7 +347,7 @@ namespace ORB_SLAM3
 
                 const cv::Mat &dKF = pKF->mDescriptors.row(idx);
 
-                const int dist = DescriptorDistance(dMP,dKF);
+                const float dist = DescriptorDistance(dMP,dKF);
 
                 if(dist<bestDist)
                 {
@@ -445,7 +445,7 @@ namespace ORB_SLAM3
             // Match to the most similar keypoint in the radius
             const cv::Mat dMP = pMP->GetDescriptor();
 
-            int bestDist = 256;
+            float bestDist = std::numeric_limits<float>::max();
             int bestIdx = -1;
             for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
             {
@@ -460,7 +460,7 @@ namespace ORB_SLAM3
 
                 const cv::Mat &dKF = pKF->mDescriptors.row(idx);
 
-                const int dist = DescriptorDistance(dMP,dKF);
+                const float dist = DescriptorDistance(dMP,dKF);
 
                 if(dist<bestDist)
                 {
@@ -486,7 +486,7 @@ namespace ORB_SLAM3
         int nmatches=0;
         vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
 
-        vector<int> vMatchedDistance(F2.mvKeysUn.size(),INT_MAX);
+        vector<float> vMatchedDistance(F2.mvKeysUn.size(),std::numeric_limits<float>::max());
         vector<int> vnMatches21(F2.mvKeysUn.size(),-1);
 
         for(size_t i1=0, iend1=F1.mvKeysUn.size(); i1<iend1; i1++)
@@ -503,8 +503,8 @@ namespace ORB_SLAM3
 
             cv::Mat d1 = F1.mDescriptors.row(i1);
 
-            int bestDist = INT_MAX;
-            int bestDist2 = INT_MAX;
+            float bestDist = std::numeric_limits<float>::max();
+            float bestDist2 = std::numeric_limits<float>::max();
             int bestIdx2 = -1;
 
             for(vector<size_t>::iterator vit=vIndices2.begin(); vit!=vIndices2.end(); vit++)
@@ -513,7 +513,7 @@ namespace ORB_SLAM3
 
                 cv::Mat d2 = F2.mDescriptors.row(i2);
 
-                int dist = DescriptorDistance(d1,d2);
+                float dist = DescriptorDistance(d1,d2);
 
                 if(vMatchedDistance[i2]<=dist)
                     continue;
@@ -595,7 +595,7 @@ namespace ORB_SLAM3
             if(pMP2->isBad())
                 continue;
             vpRealMapPoints2.emplace_back(pMP2);
-            cv::vconcat(realDescriptors2, Descriptors1.row(realIdx2), realDescriptors2);
+            cv::vconcat(realDescriptors2, Descriptors2.row(realIdx2), realDescriptors2);
         }
 
         vector<cv::DMatch> matches;
@@ -651,14 +651,10 @@ namespace ORB_SLAM3
             Trr = Tr1w * Twr2;
         }
 
-        Eigen::Matrix3f Rll = Tll.rotationMatrix(), Rlr  = Tlr.rotationMatrix(), Rrl  = Trl.rotationMatrix(), Rrr  = Trr.rotationMatrix();
-        Eigen::Vector3f tll = Tll.translation(), tlr = Tlr.translation(), trl = Trl.translation(), trr = Trr.translation();
-
         // Find matches between not tracked keypoints
         // Matching speed-up by ORB Vocabulary
         // Compare only ORB that share the same node
         int nmatches=0;
-        vector<bool> vbMatched2(pKF2->N,false);
         vector<int> vMatches12(pKF1->N,-1);
 
         cv::BFMatcher matcher(cv::NORM_L2, true);
@@ -687,7 +683,7 @@ namespace ORB_SLAM3
                 continue;
             vRealIndex2.emplace_back(realIdx2);
             vpRealMapPoints2.emplace_back(pMP2);
-            cv::vconcat(realDescriptors2, Descriptors1.row(realIdx2), realDescriptors2);
+            cv::vconcat(realDescriptors2, Descriptors2.row(realIdx2), realDescriptors2);
         }
 
         vector<cv::DMatch> matches;
@@ -695,8 +691,8 @@ namespace ORB_SLAM3
 
         for (auto &m : matches)
         {
-            size_t idx1 = m.queryIdx;
-            size_t idx2 = m.trainIdx;
+            size_t idx1 = vRealIndex1[m.queryIdx];
+            size_t idx2 = vRealIndex2[m.trainIdx];
             const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1];
             const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2];
             
@@ -837,7 +833,7 @@ namespace ORB_SLAM3
 
             const cv::Mat dMP = pMP->GetDescriptor();
 
-            int bestDist = 256;
+            float bestDist = std::numeric_limits<float>::max();
             int bestIdx = -1;
             for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
             {
@@ -881,7 +877,7 @@ namespace ORB_SLAM3
 
                 const cv::Mat &dKF = pKF->mDescriptors.row(idx);
 
-                const int dist = DescriptorDistance(dMP,dKF);
+                const float dist = DescriptorDistance(dMP,dKF);
 
                 if(dist<bestDist)
                 {
@@ -994,7 +990,7 @@ namespace ORB_SLAM3
 
             const cv::Mat dMP = pMP->GetDescriptor();
 
-            int bestDist = INT_MAX;
+            float bestDist = std::numeric_limits<float>::max();
             int bestIdx = -1;
             for(vector<size_t>::const_iterator vit=vIndices.begin(); vit!=vIndices.end(); vit++)
             {
@@ -1006,7 +1002,7 @@ namespace ORB_SLAM3
 
                 const cv::Mat &dKF = pKF->mDescriptors.row(idx);
 
-                int dist = DescriptorDistance(dMP,dKF);
+                const float dist = DescriptorDistance(dMP,dKF);
 
                 if(dist<bestDist)
                 {
@@ -1126,7 +1122,7 @@ namespace ORB_SLAM3
             // Match to the most similar keypoint in the radius
             const cv::Mat dMP = pMP->GetDescriptor();
 
-            int bestDist = INT_MAX;
+            float bestDist = std::numeric_limits<float>::max();
             int bestIdx = -1;
             for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
             {
@@ -1139,7 +1135,7 @@ namespace ORB_SLAM3
 
                 const cv::Mat &dKF = pKF2->mDescriptors.row(idx);
 
-                const int dist = DescriptorDistance(dMP,dKF);
+                const float dist = DescriptorDistance(dMP,dKF);
 
                 if(dist<bestDist)
                 {
@@ -1206,7 +1202,7 @@ namespace ORB_SLAM3
             // Match to the most similar keypoint in the radius
             const cv::Mat dMP = pMP->GetDescriptor();
 
-            int bestDist = INT_MAX;
+            float bestDist = std::numeric_limits<float>::max();
             int bestIdx = -1;
             for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
             {
@@ -1219,7 +1215,7 @@ namespace ORB_SLAM3
 
                 const cv::Mat &dKF = pKF1->mDescriptors.row(idx);
 
-                const int dist = DescriptorDistance(dMP,dKF);
+                const float dist = DescriptorDistance(dMP,dKF);
 
                 if(dist<bestDist)
                 {
@@ -1313,7 +1309,7 @@ namespace ORB_SLAM3
 
                     const cv::Mat dMP = pMP->GetDescriptor();
 
-                    int bestDist = 256;
+                    float bestDist = std::numeric_limits<float>::max();
                     int bestIdx2 = -1;
 
                     for(vector<size_t>::const_iterator vit=vIndices2.begin(), vend=vIndices2.end(); vit!=vend; vit++)
@@ -1334,7 +1330,7 @@ namespace ORB_SLAM3
 
                         const cv::Mat &d = CurrentFrame.mDescriptors.row(i2);
 
-                        const int dist = DescriptorDistance(dMP,d);
+                        const float dist = DescriptorDistance(dMP,d);
 
                         if(dist<bestDist)
                         {
@@ -1369,7 +1365,7 @@ namespace ORB_SLAM3
 
                         const cv::Mat dMP = pMP->GetDescriptor();
 
-                        int bestDist = 256;
+                        float bestDist = std::numeric_limits<float>::max();
                         int bestIdx2 = -1;
 
                         for(vector<size_t>::const_iterator vit=vIndices2.begin(), vend=vIndices2.end(); vit!=vend; vit++)
@@ -1381,7 +1377,7 @@ namespace ORB_SLAM3
 
                             const cv::Mat &d = CurrentFrame.mDescriptors.row(i2 + CurrentFrame.Nleft);
 
-                            const int dist = DescriptorDistance(dMP,d);
+                            const float dist = DescriptorDistance(dMP,d);
 
                             if(dist<bestDist)
                             {
@@ -1455,7 +1451,7 @@ namespace ORB_SLAM3
 
                     const cv::Mat dMP = pMP->GetDescriptor();
 
-                    int bestDist = 256;
+                    float bestDist = std::numeric_limits<float>::max();
                     int bestIdx2 = -1;
 
                     for(vector<size_t>::const_iterator vit=vIndices2.begin(); vit!=vIndices2.end(); vit++)
@@ -1466,7 +1462,7 @@ namespace ORB_SLAM3
 
                         const cv::Mat &d = CurrentFrame.mDescriptors.row(i2);
 
-                        const int dist = DescriptorDistance(dMP,d);
+                        const float dist = DescriptorDistance(dMP,d);
 
                         if(dist<bestDist)
                         {
@@ -1531,25 +1527,11 @@ namespace ORB_SLAM3
         }
     }
 
-
-// Bit set count operation from
-// http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-    int Matcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
+    float Matcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
     {
-        const int *pa = a.ptr<int32_t>();
-        const int *pb = b.ptr<int32_t>();
+        assert(a.cols == b.cols);
 
-        int dist=0;
-
-        for(int i=0; i<8; i++, pa++, pb++)
-        {
-            unsigned  int v = *pa ^ *pb;
-            v = v - ((v >> 1) & 0x55555555);
-            v = (v & 0x33333333) + ((v >> 2) & 0x33333333);
-            dist += (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
-        }
-
-        return dist;
+        return cv::norm(a - b, cv::NORM_L2);
     }
 
 } //namespace ORB_SLAM

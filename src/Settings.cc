@@ -448,12 +448,15 @@ namespace ORB_SLAM3 {
             extractorType_ = kExtractorHFNetTF;
         }
         else {
-            cerr << "Wrong extractor type!" << endl;
+            cerr << "Wrong extractor type in setting file!" << endl;
+            exit(-1);
         }
         nFeatures_ = readParameter<int>(fSettings,"Extractor.nFeatures",found);
         scaleFactor_ = readParameter<float>(fSettings,"Extractor.scaleFactor",found);
         nLevels_ = readParameter<int>(fSettings,"Extractor.nLevels",found);
         if (extractorType_ == kExtractorHFNetTF) {
+            nNMSRadius_ = readParameter<int>(fSettings, "Extractor.HFNetTF.nNMSRadius",found);
+            threshold_ = readParameter<float>(fSettings, "Extractor.HFNetTF.threshold",found);
             strModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.modelPath",found);
             strResamplerPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.resamplerPath",found);
         }
@@ -641,6 +644,8 @@ namespace ORB_SLAM3 {
         output << "\t-ORB number of scales: " << settings.nLevels_ << endl;
         if (settings.extractorType_ == kExtractorHFNetTF)
         {
+            output << "\t-Detector threshold: " << settings.threshold_ << endl;
+            output << "\t-NMS radius: " << settings.nNMSRadius_ << endl;
             output << "\t-Model path: " << settings.strModelPath_ << endl;
             output << "\t-Resampler.so path: " << settings.strResamplerPath_ << endl;
         }

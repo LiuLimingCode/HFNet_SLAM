@@ -21,7 +21,7 @@ public:
 
     virtual int operator()( cv::InputArray _image, cv::InputArray _mask,
                     std::vector<cv::KeyPoint>& _keypoints,
-                    cv::OutputArray _descriptors, std::vector<int> &vLappingArea) = 0;
+                    cv::OutputArray _localDescriptors, cv::OutputArray _globalDescriptors) = 0;
 
     int inline GetLevels(void) {
         return nlevels;}

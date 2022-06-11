@@ -17,8 +17,8 @@ public:
     
     enum {HARRIS_SCORE=0, FAST_SCORE=1 };
 
-    HFextractor(int nfeatures, float scaleFactor, int nlevels,
-                BaseModel* model);
+    HFextractor(int nfeatures, int nNMSRadius, float threshold,
+                float scaleFactor, int nlevels, BaseModel* model);
 
     ~HFextractor(){}
 
@@ -27,7 +27,7 @@ public:
     // Mask is ignored in the current implementation.
     int operator()( cv::InputArray _image, cv::InputArray _mask,
                     std::vector<cv::KeyPoint>& _keypoints,
-                    cv::OutputArray _descriptors, std::vector<int> &vLappingArea) override;
+                    cv::OutputArray _localDescriptors, cv::OutputArray _globalDescriptors) override;
 
 protected:
 
@@ -39,6 +39,8 @@ protected:
     void ComputeKeyPointsOld(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
 
     int nfeatures;
+    int nNMSRadius;
+    float threshold;
     BaseModel* model;
 
     std::vector<int> mnFeaturesPerLevel;

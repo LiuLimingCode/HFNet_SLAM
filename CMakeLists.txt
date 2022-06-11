@@ -141,9 +141,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Utility)
 #         Examples/Utility/create_vocabulary.cc)
 # target_link_libraries(create_vocabulary ${PROJECT_NAME})
 
-# add_executable(test_hfnet_tf
-#         Examples/Utility/test_hfnet_tf.cc)
-# target_link_libraries(test_hfnet_tf ${PROJECT_NAME})
+add_executable(test_hfnet_tf
+        Examples/Utility/test_hfnet_tf.cc)
+target_link_libraries(test_hfnet_tf ${PROJECT_NAME})
 
 # add_executable(test_extractors
 #         Examples/Utility/test_extractors.cc)
