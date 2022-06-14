@@ -80,23 +80,15 @@ HFextractor::HFextractor(int _nfeatures, int _nNMSRadius, float _threshold,
 
 
 
-int HFextractor::operator() (cv::InputArray _image, cv::InputArray _mask,
-                    std::vector<cv::KeyPoint>& _keypoints,
-                    cv::OutputArray _localDescriptors, cv::OutputArray _globalDescriptors) {
+int HFextractor::operator() (const cv::Mat &_image, std::vector<cv::KeyPoint>& _keypoints,
+                             cv::Mat &_localDescriptors, cv::Mat &_globalDescriptors) {
     if(_image.empty())
         return -1;
 
-    Mat image = _image.getMat();
-    assert(image.type() == CV_8UC1 );
+    assert(_image.type() == CV_8UC1 );
 
-    cv::Mat localDescriptors, globalDescriptors;
-    model->Detect(image, _keypoints, localDescriptors, globalDescriptors, nfeatures, threshold, nNMSRadius);
-    int nkeypoints = _keypoints.size();
-    _localDescriptors.create(nkeypoints, 256, CV_32F);
-    localDescriptors.copyTo(_localDescriptors.getMat());
-    _globalDescriptors.create(4096, 1, CV_32F);
-    globalDescriptors.copyTo(_globalDescriptors.getMat());
-    return nkeypoints;
+    model->Detect(_image, _keypoints, _localDescriptors, _globalDescriptors, nfeatures, threshold, nNMSRadius);
+    return _keypoints.size();
 }
 
 } //namespace ORB_SLAM3

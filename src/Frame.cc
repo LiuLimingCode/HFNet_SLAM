@@ -419,9 +419,9 @@ void Frame::ExtractKeyPoints(int flag, const cv::Mat &im, const int x0, const in
 {
     vector<int> vLapping = {x0,x1};
     if(flag==0)
-        monoLeft = (*mpExtractorLeft)(im,cv::Mat(),mvKeys,mDescriptors,mGlobalDescriptors);
+        monoLeft = (*mpExtractorLeft)(im,mvKeys,mDescriptors,mGlobalDescriptors);
     else
-        monoRight = (*mpExtractorRight)(im,cv::Mat(),mvKeysRight,mDescriptorsRight,mGlobalDescriptors);
+        monoRight = (*mpExtractorRight)(im,mvKeysRight,mDescriptorsRight,mGlobalDescriptors);
 }
 
 bool Frame::isSet() const {

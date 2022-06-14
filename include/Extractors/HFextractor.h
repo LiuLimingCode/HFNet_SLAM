@@ -22,21 +22,11 @@ public:
 
     ~HFextractor(){}
 
-    // Compute the ORB features and descriptors on an image.
-    // ORB are dispersed on the image using an octree.
-    // Mask is ignored in the current implementation.
-    int operator()( cv::InputArray _image, cv::InputArray _mask,
-                    std::vector<cv::KeyPoint>& _keypoints,
-                    cv::OutputArray _localDescriptors, cv::OutputArray _globalDescriptors) override;
+    // Compute the features and descriptors on an image.
+    int operator()(const cv::Mat &_image, std::vector<cv::KeyPoint>& _keypoints,
+                   cv::Mat &_localDescriptors, cv::Mat &_globalDescriptors) override;
 
 protected:
-
-    void ComputePyramid(cv::Mat image);
-    void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);    
-    std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
-                                           const int &maxX, const int &minY, const int &maxY, const int &nFeatures, const int &level);
-
-    void ComputeKeyPointsOld(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
 
     int nfeatures;
     int nNMSRadius;

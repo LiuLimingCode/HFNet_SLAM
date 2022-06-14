@@ -19,9 +19,8 @@ public:
     BaseExtractor(){};
     ~BaseExtractor(){};
 
-    virtual int operator()( cv::InputArray _image, cv::InputArray _mask,
-                    std::vector<cv::KeyPoint>& _keypoints,
-                    cv::OutputArray _localDescriptors, cv::OutputArray _globalDescriptors) = 0;
+    virtual int operator()(const cv::Mat &_image, std::vector<cv::KeyPoint>& _keypoints,
+                           cv::Mat &_localDescriptors, cv::Mat &_globalDescriptors) = 0;
 
     int inline GetLevels(void) {
         return nlevels;}

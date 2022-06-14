@@ -137,21 +137,25 @@ endif()
 #Utility examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Utility)
 
-# add_executable(create_vocabulary
-#         Examples/Utility/create_vocabulary.cc)
-# target_link_libraries(create_vocabulary ${PROJECT_NAME})
+add_executable(test_eigen_cv
+        Examples/Utility/test_eigen_cv.cc)
+target_link_libraries(test_eigen_cv ${PROJECT_NAME})
 
 add_executable(test_hfnet_tf
         Examples/Utility/test_hfnet_tf.cc)
 target_link_libraries(test_hfnet_tf ${PROJECT_NAME})
 
+add_executable(test_match_global_feats
+        Examples/Utility/test_match_global_feats.cc)
+target_link_libraries(test_match_global_feats ${PROJECT_NAME})
+
 # add_executable(test_extractors
 #         Examples/Utility/test_extractors.cc)
 # target_link_libraries(test_extractors ${PROJECT_NAME})
 
-# add_executable(test_matchers
-#         Examples/Utility/test_matchers.cc)
-# target_link_libraries(test_matchers ${PROJECT_NAME})
+add_executable(test_match_local_feats
+        Examples/Utility/test_match_local_feats.cc)
+target_link_libraries(test_match_local_feats ${PROJECT_NAME})
 
 #Monocular inertial examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)

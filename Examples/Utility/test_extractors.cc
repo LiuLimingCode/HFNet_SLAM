@@ -420,7 +420,7 @@ void GetFAST(cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = fal
 }
 
 // Using HFNet
-void GetHFNet(HFNetTFModel::Ptr model, cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = false)
+void GetHFNet(HFNetTFModel *model, cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = false)
 {
     vKeypoints.clear();
     vKeypoints.reserve(settings->nFeatures());
@@ -442,7 +442,7 @@ int main(int argc, char* argv[])
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     settings = new Settings(strSettingsPath, 0);
-    HFNetTFModel::Ptr hfModel = make_shared<HFNetTFModel>(strResamplerPath, strModelPath);
+    HFNetTFModel *pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
 
     std::default_random_engine generator;
     std::uniform_int_distribution<unsigned int> distribution(0, files.size() - 1);
@@ -473,12 +473,12 @@ int main(int argc, char* argv[])
         cout << "key point number: " << keypoints.size() << endl;
 
         cout << "============= HFNet =============" << endl;
-        GetHFNet(hfModel, image, keypoints, false);
+        GetHFNet(pModel, image, keypoints, false);
         ShowKeypoints("HFNet", image, keypoints);
         cout << "key point number: " << keypoints.size() << endl;
 
         cout << "============= HFNet & OctTree =============" << endl;
-        GetHFNet(hfModel, image, keypoints, true);
+        GetHFNet(pModel, image, keypoints, true);
         ShowKeypoints("HFNet & OctTree", image, keypoints);
         cout << "key point number: " << keypoints.size() << endl;
 

@@ -36,6 +36,9 @@ public:
 
     bool IsValid(void) override { return mbVaild; }
 
+    std::shared_ptr<tensorflow::Session> mSession;
+    tensorflow::GraphDef mGraph;
+
 private:
     bool LoadResamplerOp(const std::string &strResamplerDir);
 
@@ -43,9 +46,6 @@ private:
 
     void Mat2Tensor(const cv::Mat &image, tensorflow::Tensor *tensor);
 
-
-    std::unique_ptr<tensorflow::Session> mSession;
-    tensorflow::GraphDef mGraph;
     bool mbVaild;
 };
 
