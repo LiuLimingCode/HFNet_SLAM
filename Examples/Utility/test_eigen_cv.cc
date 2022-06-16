@@ -121,7 +121,7 @@ int main(int argc, char** argv)
         auto t1 = chrono::steady_clock::now();
 
         float *data = dbCV.ptr<float>();
-        Eigen::Map<Eigen::MatrixXf> res(data, 4096, dbSize);
+        Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> res(data, 4096, dbSize);
 
         auto t2 = chrono::steady_clock::now();
         auto t = chrono::duration_cast<chrono::microseconds>(t2 - t1).count();

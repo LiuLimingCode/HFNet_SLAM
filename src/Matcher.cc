@@ -30,8 +30,8 @@ using namespace std;
 namespace ORB_SLAM3
 {
 
-    const int Matcher::TH_HIGH = 24;
-    const int Matcher::TH_LOW = 12;
+    const float Matcher::TH_HIGH = 0.8;
+    const float Matcher::TH_LOW = 0.5;
 
     Matcher::Matcher(float nnratio): mfNNratio(nnratio)
     {
@@ -228,9 +228,9 @@ namespace ORB_SLAM3
 
         cv::BFMatcher matcher(cv::NORM_L2, true);
 
-        vector<MapPoint*> vpRealMapPointsKF;
         cv::Mat realDescriptorsKF = cv::Mat(0, DescriptorsKF.cols, DescriptorsKF.type());
-        vpRealMapPointsKF.reserve(vpMapPointsKF.size());
+        vector<int> vRealIndexKF;
+        vRealIndexKF.reserve(vpMapPointsKF.size());
         for (int realIdxKF = 0; realIdxKF < DescriptorsKF.rows; ++realIdxKF)
         {
             MapPoint* pMP = vpMapPointsKF[realIdxKF];
@@ -241,19 +241,21 @@ namespace ORB_SLAM3
             if(pMP->isBad())
                 continue;
 
-            vpRealMapPointsKF.emplace_back(pMP);
+            vRealIndexKF.emplace_back(realIdxKF);
             cv::vconcat(realDescriptorsKF, DescriptorsKF.row(realIdxKF), realDescriptorsKF);
         }
 
         vector<cv::DMatch> matches;
         matcher.match(realDescriptorsKF, F.mDescriptors, matches);
 
-        for (auto &m : matches)
+        for (auto &match : matches)
         {
-            if (m.distance < TH_LOW)
+            if (match.distance < TH_LOW)
             {
                 nmatches++;
-                vpMapPointMatches[m.trainIdx] = vpRealMapPointsKF[m.queryIdx];
+                int realIdxKF = vRealIndexKF[match.queryIdx];
+                int bestIdxF = match.trainIdx;
+                vpMapPointMatches[bestIdxF] = vpMapPointsKF[realIdxKF]; // vpMapPointMatches[bestIdxF] = vpMapPointsKF[realIdxKF];
             }
         }
 
@@ -261,7 +263,7 @@ namespace ORB_SLAM3
     }
 
     int Matcher::SearchByProjection(KeyFrame* pKF, Sophus::Sim3f &Scw, const vector<MapPoint*> &vpPoints,
-                                       vector<MapPoint*> &vpMatched, int th, float ratioHamming)
+                                       vector<MapPoint*> &vpMatched, int th, float threshold)
     {
         // Get Calibration Parameters for later projection
         const float &fx = pKF->fx;
@@ -356,7 +358,7 @@ namespace ORB_SLAM3
                 }
             }
 
-            if(bestDist<=TH_LOW*ratioHamming)
+            if(bestDist<=threshold)
             {
                 vpMatched[bestIdx]=pMP;
                 nmatches++;
@@ -368,7 +370,7 @@ namespace ORB_SLAM3
     }
 
     int Matcher::SearchByProjection(KeyFrame* pKF, Sophus::Sim3<float> &Scw, const std::vector<MapPoint*> &vpPoints, const std::vector<KeyFrame*> &vpPointsKFs,
-                                       std::vector<MapPoint*> &vpMatched, std::vector<KeyFrame*> &vpMatchedKF, int th, float ratioHamming)
+                                       std::vector<MapPoint*> &vpMatched, std::vector<KeyFrame*> &vpMatchedKF, int th, float threshold)
     {
         // Get Calibration Parameters for later projection
         const float &fx = pKF->fx;
@@ -469,7 +471,7 @@ namespace ORB_SLAM3
                 }
             }
 
-            if(bestDist<=TH_LOW*ratioHamming)
+            if(bestDist<=threshold)
             {
                 vpMatched[bestIdx] = pMP;
                 vpMatchedKF[bestIdx] = pKFi;
@@ -571,9 +573,9 @@ namespace ORB_SLAM3
 
         cv::BFMatcher matcher(cv::NORM_L2, true);
 
-        vector<MapPoint*> vpRealMapPoints1;
-        vpRealMapPoints1.reserve(vpMapPoints1.size());
         cv::Mat realDescriptors1 = cv::Mat(0, Descriptors1.cols, Descriptors1.type());
+        vector<int> vRealIndex1;
+        vRealIndex1.reserve(vpMapPoints1.size());
         for (int realIdx1 = 0; realIdx1 < Descriptors1.rows; ++realIdx1)
         {
             MapPoint* pMP1 = vpMapPoints1[realIdx1];
@@ -581,12 +583,12 @@ namespace ORB_SLAM3
                 continue;
             if(pMP1->isBad())
                 continue;
-            vpRealMapPoints1.emplace_back(pMP1);
+            vRealIndex1.emplace_back(realIdx1);
             cv::vconcat(realDescriptors1, Descriptors1.row(realIdx1), realDescriptors1);
         }
-        vector<MapPoint*> vpRealMapPoints2;
-        vpRealMapPoints2.reserve(vpMapPoints2.size());
-        cv::Mat realDescriptors2 = cv::Mat(0, Descriptors2.cols, Descriptors2.type());
+
+        vector<int> vRealIndex2;
+        vRealIndex2.reserve(vpMapPoints2.size());
         for (int realIdx2 = 0; realIdx2 < Descriptors2.rows; ++realIdx2)
         {
             MapPoint* pMP2 = vpMapPoints2[realIdx2];
@@ -594,33 +596,51 @@ namespace ORB_SLAM3
                 continue;
             if(pMP2->isBad())
                 continue;
-            vpRealMapPoints2.emplace_back(pMP2);
-            cv::vconcat(realDescriptors2, Descriptors2.row(realIdx2), realDescriptors2);
+            vRealIndex2.emplace_back(realIdx2);
         }
+        cv::Mat realDescriptors2 = cv::Mat(vRealIndex2.size(), Descriptors2.cols, Descriptors2.type());
+        for (size_t index = 0; index < vRealIndex2.size(); ++index) Descriptors2.row(vRealIndex2[index]).copyTo(realDescriptors2.row(index));
 
         vector<cv::DMatch> matches;
+        // vector<cv::DMatch> correctMatches;
         matcher.match(realDescriptors1, realDescriptors2, matches);
 
-        for (auto &m : matches)
+        for (auto &match : matches)
         {
-            if (m.distance < TH_LOW)
+            if (match.distance < TH_LOW)
             {
                 nmatches++;
-                vpMatches12[m.queryIdx] = vpRealMapPoints2[m.trainIdx]; // vpMatches12[idx1]=vpMapPoints2[bestIdx2];
+                int idx1 = vRealIndex1[match.queryIdx];
+                int idx2 = vRealIndex2[match.trainIdx];
+                vpMatches12[idx1] = vpMapPoints2[idx2]; // vpMatches12[idx1]=vpMapPoints2[bestIdx2];
+                // correctMatches.emplace_back(m);
             }
         }
 
+
+        // { // For Debug
+        //     static unsigned int times = 0;
+        //     cv::Mat outImg, outImg1, outImg2;
+        //     cv::drawMatches(pKF1->imgLeft, vRealKeyPoints1, pKF2->imgLeft, vRealKeyPoints2, matches, outImg1);
+        //     cv::drawMatches(pKF1->imgLeft, vRealKeyPoints1, pKF2->imgLeft, vRealKeyPoints2, correctMatches, outImg2);
+        //     cv::vconcat(outImg1, outImg2, outImg);
+        //     cv::imwrite("output/SearchByBoW/"+std::to_string(times)+".png", outImg);
+        //     times++;
+        // }
+
         return nmatches;
     }
-
+/*
     int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2,
-                                           vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo, const bool bCoarse)
+                                           vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo, const bool bCoarse) const
     {
         const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
         const cv::Mat &Descriptors1 = pKF1->mDescriptors;
 
         const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
         const cv::Mat &Descriptors2 = pKF2->mDescriptors;
+
+        // cout << "\t" << "SearchForTriangulation: " << Descriptors1.rows << " : " << Descriptors2.rows << endl;
 
         //Compute epipole in second image
         Sophus::SE3f T1w = pKF1->GetPose();
@@ -659,45 +679,55 @@ namespace ORB_SLAM3
 
         cv::BFMatcher matcher(cv::NORM_L2, true);
 
+        auto tv1 = chrono::steady_clock::now();
         vector<size_t> vRealIndex1;
-        vector<MapPoint*> vpRealMapPoints1;
-        vpRealMapPoints1.reserve(vpMapPoints1.size());
-        cv::Mat realDescriptors1 = cv::Mat(0, Descriptors1.cols, Descriptors1.type());
+        vRealIndex1.reserve(vpMapPoints1.size());
         for (int realIdx1 = 0; realIdx1 < Descriptors1.rows; ++realIdx1)
         {
             MapPoint* pMP1 = vpMapPoints1[realIdx1];
             if(pMP1)
                 continue;
             vRealIndex1.emplace_back(realIdx1);
-            vpRealMapPoints1.emplace_back(pMP1);
-            cv::vconcat(realDescriptors1, Descriptors1.row(realIdx1), realDescriptors1);
         }
+        cv::Mat realDescriptors1 = cv::Mat(vRealIndex1.size(), Descriptors1.cols, Descriptors1.type());
+        for (size_t index = 0; index < vRealIndex1.size(); ++index) Descriptors1.row(vRealIndex1[index]).copyTo(realDescriptors1.row(index));
+
         vector<size_t> vRealIndex2;
-        vector<MapPoint*> vpRealMapPoints2;
-        vpRealMapPoints2.reserve(vpMapPoints2.size());
-        cv::Mat realDescriptors2 = cv::Mat(0, Descriptors2.cols, Descriptors2.type());
+        vRealIndex2.reserve(vpMapPoints2.size());
         for (int realIdx2 = 0; realIdx2 < Descriptors2.rows; ++realIdx2)
         {
             MapPoint* pMP2 = vpMapPoints2[realIdx2];
             if(pMP2)
                 continue;
             vRealIndex2.emplace_back(realIdx2);
-            vpRealMapPoints2.emplace_back(pMP2);
-            cv::vconcat(realDescriptors2, Descriptors2.row(realIdx2), realDescriptors2);
         }
+        cv::Mat realDescriptors2 = cv::Mat(vRealIndex2.size(), Descriptors2.cols, Descriptors2.type());
+        for (size_t index = 0; index < vRealIndex2.size(); ++index) Descriptors2.row(vRealIndex2[index]).copyTo(realDescriptors2.row(index));
 
+        auto tv2 = chrono::steady_clock::now();
+        double tv = chrono::duration_cast<chrono::duration<double,std::milli> >(tv2 - tv1).count();
+        // cout << "\t" << "voncat costs: " <<  tv << endl;
+
+        auto tc1 = chrono::steady_clock::now();
         vector<cv::DMatch> matches;
         matcher.match(realDescriptors1, realDescriptors2, matches);
+        auto tc2 = chrono::steady_clock::now();
+        auto tc = chrono::duration_cast<chrono::duration<double,std::milli> >(tc2 - tc1).count();
+        // cout << "\t" << "calculation costs: " <<  tc << endl;
 
+        auto ts1 = chrono::steady_clock::now();
         for (auto &m : matches)
         {
+            if (m.distance > TH_HIGH) continue;
+
             size_t idx1 = vRealIndex1[m.queryIdx];
             size_t idx2 = vRealIndex2[m.trainIdx];
-            const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1];
-            const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2];
+            const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1]; // pKF1->mvKeysUn[idx1]
+            const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2]; // pKF2->mvKeysUn[idx2]
             
             const float distex = ep(0)-kp2.pt.x;
             const float distey = ep(1)-kp2.pt.y;
+
             if(distex*distex+distey*distey<100*pKF2->mvScaleFactors[kp2.octave])
             {
                 continue;
@@ -707,6 +737,256 @@ namespace ORB_SLAM3
             {
                 vMatches12[idx1]=idx2; // vMatches12[idx1]=bestIdx2;
                 nmatches++;
+            }
+        }
+        auto ts2 = chrono::steady_clock::now();
+        auto ts = chrono::duration_cast<chrono::duration<double,std::milli> >(ts2 - ts1).count();
+        // cout << "\t" << "search costs: " <<  ts << endl;
+
+        vMatchedPairs.clear();
+        vMatchedPairs.reserve(nmatches);
+
+        for(size_t i=0, iend=vMatches12.size(); i<iend; i++)
+        {
+            if(vMatches12[i]<0)
+                continue;
+            vMatchedPairs.push_back(make_pair(i,vMatches12[i]));
+        }
+
+        return nmatches;
+    }
+*/
+
+    int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2,
+                                           vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo, const bool bCoarse) const
+    {
+        const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
+        const cv::Mat &Descriptors1 = pKF1->mDescriptors;
+
+        const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
+        const cv::Mat &Descriptors2 = pKF2->mDescriptors;
+
+        // cout << "\t" << "SearchForTriangulation: " << Descriptors1.rows << " : " << Descriptors2.rows << endl;
+
+        //Compute epipole in second image
+        Sophus::SE3f T1w = pKF1->GetPose();
+        Sophus::SE3f T2w = pKF2->GetPose();
+        Sophus::SE3f Tw2 = pKF2->GetPoseInverse(); // for convenience
+        Eigen::Vector3f Cw = pKF1->GetCameraCenter();
+        Eigen::Vector3f C2 = T2w * Cw;
+
+        Eigen::Vector2f ep = pKF2->mpCamera->project(C2);
+        Sophus::SE3f T12;
+        Sophus::SE3f Tll, Tlr, Trl, Trr;
+        Eigen::Matrix3f R12; // for fastest computation
+        Eigen::Vector3f t12; // for fastest computation
+
+        GeometricCamera* pCamera1 = pKF1->mpCamera, *pCamera2 = pKF2->mpCamera;
+
+        if(!pKF1->mpCamera2 && !pKF2->mpCamera2){
+            T12 = T1w * Tw2;
+            R12 = T12.rotationMatrix();
+            t12 = T12.translation();
+        }
+        else{
+            Sophus::SE3f Tr1w = pKF1->GetRightPose();
+            Sophus::SE3f Twr2 = pKF2->GetRightPoseInverse();
+            Tll = T1w * Tw2;
+            Tlr = T1w * Twr2;
+            Trl = Tr1w * Tw2;
+            Trr = Tr1w * Twr2;
+        }
+
+        int nmatches=0;
+        vector<bool> vbMatched2(pKF2->N,false);
+        vector<int> vMatches12(pKF1->N,-1);
+
+        auto tv1 = chrono::steady_clock::now();
+        vector<size_t> vRealIndex1;
+        vRealIndex1.reserve(vpMapPoints1.size());
+        for (int realIdx1 = 0; realIdx1 < Descriptors1.rows; ++realIdx1)
+        {
+            MapPoint* pMP1 = vpMapPoints1[realIdx1];
+            if(pMP1)
+                continue;
+            vRealIndex1.emplace_back(realIdx1);
+        }
+        cv::Mat realDescriptors1 = cv::Mat(vRealIndex1.size(), Descriptors1.cols, Descriptors1.type());
+        for (size_t index = 0; index < vRealIndex1.size(); ++index) Descriptors1.row(vRealIndex1[index]).copyTo(realDescriptors1.row(index));
+
+        vector<size_t> vRealIndex2;
+        vRealIndex2.reserve(vpMapPoints2.size());
+        for (int realIdx2 = 0; realIdx2 < Descriptors2.rows; ++realIdx2)
+        {
+            MapPoint* pMP2 = vpMapPoints2[realIdx2];
+            if(pMP2)
+                continue;
+            vRealIndex2.emplace_back(realIdx2);
+        }
+        cv::Mat realDescriptors2 = cv::Mat(vRealIndex2.size(), Descriptors2.cols, Descriptors2.type());
+        for (size_t index = 0; index < vRealIndex2.size(); ++index) Descriptors2.row(vRealIndex2[index]).copyTo(realDescriptors2.row(index));
+        auto tv2 = chrono::steady_clock::now();
+        double tv = chrono::duration_cast<chrono::duration<double,std::milli> >(tv2 - tv1).count();
+        // cout << "\t" << "voncat costs: " <<  tv << endl;
+
+        auto tc1 = chrono::steady_clock::now();
+        assert(realDescriptors1.isContinuous() && realDescriptors2.isContinuous());
+        Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> des1(realDescriptors1.ptr<float>(), realDescriptors1.rows, realDescriptors1.cols);
+        Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> des2(realDescriptors2.ptr<float>(), realDescriptors2.rows, realDescriptors2.cols);
+
+        Eigen::MatrixXf distance = 2 * (Eigen::MatrixXf::Ones(des1.rows(), des2.rows()) - des1 * des2.transpose()); // Approximate to norm(des1 - des2)^2
+
+        auto tc2 = chrono::steady_clock::now();
+        auto tc = chrono::duration_cast<chrono::duration<double,std::milli> >(tc2 - tc1).count();
+        // cout << "\t" << "calculation costs: " <<  tc << endl;
+
+        auto ts1 = chrono::steady_clock::now();
+        for (int realIdx1 = 0; realIdx1 < distance.rows(); ++realIdx1)
+        {
+            float bestDist1 = std::numeric_limits<float>::max();
+            int bestIdx2 = -1;
+            for (int realIdx2 = 0; realIdx2 < distance.cols(); ++realIdx2)
+            {
+                float dist =distance(realIdx1, realIdx2);
+
+                if(dist<bestDist1)
+                {
+                    bestDist1=dist;
+                    bestIdx2=realIdx2;
+                }
+            }
+            
+            if(bestDist1 < TH_HIGH * TH_HIGH)
+            {
+                int idx1 = vRealIndex1[realIdx1];
+                int idx2 = vRealIndex2[bestIdx2];
+
+                const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1]; // pKF1->mvKeysUn[idx1]
+                const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2]; // pKF2->mvKeysUn[idx2]
+                
+                const float distex = ep(0)-kp2.pt.x;
+                const float distey = ep(1)-kp2.pt.y;
+
+                if(distex*distex+distey*distey<100*pKF2->mvScaleFactors[kp2.octave])
+                {
+                    continue;
+                }
+
+                if(bCoarse || pCamera1->epipolarConstrain(pCamera2,kp1,kp2,R12,t12,pKF1->mvLevelSigma2[kp1.octave],pKF2->mvLevelSigma2[kp2.octave])) // MODIFICATION_2
+                {
+                    vMatches12[idx1]=idx2; // vMatches12[idx1]=bestIdx2;
+                    nmatches++;
+                }
+            }
+        }
+        auto ts2 = chrono::steady_clock::now();
+        auto ts = chrono::duration_cast<chrono::duration<double,std::milli> >(ts2 - ts1).count();
+        // cout << "\t" << "search costs: " <<  ts << endl;
+
+        vMatchedPairs.clear();
+        vMatchedPairs.reserve(nmatches);
+
+        for(size_t i=0, iend=vMatches12.size(); i<iend; i++)
+        {
+            if(vMatches12[i]<0)
+                continue;
+            vMatchedPairs.push_back(make_pair(i,vMatches12[i]));
+        }
+
+        return nmatches;
+    }
+
+/*
+    int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2,
+                                           vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo, const bool bCoarse)
+    {   
+        const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
+        const cv::Mat &Descriptors1 = pKF1->mDescriptors;
+
+        const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
+        const cv::Mat &Descriptors2 = pKF2->mDescriptors;
+
+        //Compute epipole in second image
+        Sophus::SE3f T1w = pKF1->GetPose();
+        Sophus::SE3f T2w = pKF2->GetPose();
+        Sophus::SE3f Tw2 = pKF2->GetPoseInverse(); // for convenience
+        Eigen::Vector3f Cw = pKF1->GetCameraCenter();
+        Eigen::Vector3f C2 = T2w * Cw;
+
+        Eigen::Vector2f ep = pKF2->mpCamera->project(C2);
+        Sophus::SE3f T12;
+        Sophus::SE3f Tll, Tlr, Trl, Trr;
+        Eigen::Matrix3f R12; // for fastest computation
+        Eigen::Vector3f t12; // for fastest computation
+
+        GeometricCamera* pCamera1 = pKF1->mpCamera, *pCamera2 = pKF2->mpCamera;
+
+        if(!pKF1->mpCamera2 && !pKF2->mpCamera2){
+            T12 = T1w * Tw2;
+            R12 = T12.rotationMatrix();
+            t12 = T12.translation();
+        }
+        else{
+            Sophus::SE3f Tr1w = pKF1->GetRightPose();
+            Sophus::SE3f Twr2 = pKF2->GetRightPoseInverse();
+            Tll = T1w * Tw2;
+            Tlr = T1w * Twr2;
+            Trl = Tr1w * Tw2;
+            Trr = Tr1w * Twr2;
+        }
+
+        assert(Descriptors1.isContinuous() && Descriptors2.isContinuous());
+        Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> des1(Descriptors1.ptr<float>(), Descriptors1.rows, Descriptors1.cols);
+        Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> des2(Descriptors2.ptr<float>(), Descriptors2.rows, Descriptors2.cols);
+
+        Eigen::MatrixXf distance = 2 * (Eigen::MatrixXf::Ones(des1.rows(), des2.rows()) - des1 * des2.transpose()); // Approximate to norm(des1 - des2)^2
+
+        int nmatches=0;
+        vector<bool> vbMatched2(pKF2->N,false);
+        vector<int> vMatches12(pKF1->N,-1);
+
+        for (int idx1 = 0; idx1 < Descriptors1.rows; ++idx1)
+        {
+            MapPoint* pMP1 = vpMapPoints1[idx1];
+            if(pMP1)
+                continue;
+
+            float bestDist1 = std::numeric_limits<float>::max();
+            int bestIdx2 = -1;
+
+            for (int idx2 = 0; idx2 < Descriptors2.rows; ++idx2)
+            {
+                MapPoint* pMP2 = vpMapPoints1[idx2];
+                if(pMP2)
+                    continue;
+
+                float dist = distance(idx1, idx2);
+
+                if(dist<bestDist1)
+                {
+                    bestDist1=dist;
+                    bestIdx2=idx2;
+                }
+            }
+            
+            if(bestDist1 < TH_HIGH)
+            {
+                const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1]; // pKF1->mvKeysUn[idx1]
+                const cv::KeyPoint &kp2 = pKF2->mvKeysUn[bestIdx2]; // pKF2->mvKeysUn[idx2]
+                
+                const float distex = ep(0)-kp2.pt.x;
+                const float distey = ep(1)-kp2.pt.y;
+
+                if(distex*distex+distey*distey<100*pKF2->mvScaleFactors[kp2.octave])
+                {
+                    continue;
+                }
+
+                if(bCoarse || pCamera1->epipolarConstrain(pCamera2,kp1,kp2,R12,t12,pKF1->mvLevelSigma2[kp1.octave],pKF2->mvLevelSigma2[kp2.octave])) // MODIFICATION_2
+                {
+                    vMatches12[idx1]=bestIdx2; // vMatches12[idx1]=bestIdx2;
+                    nmatches++;
+                }
             }
         }
 
@@ -722,7 +1002,7 @@ namespace ORB_SLAM3
 
         return nmatches;
     }
-
+*/
     int Matcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const float th, const bool bRight)
     {
         GeometricCamera* pCamera;
@@ -1400,7 +1680,7 @@ namespace ORB_SLAM3
         return nmatches;
     }
 
-    int Matcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set<MapPoint*> &sAlreadyFound, const float th , const int ORBdist)
+    int Matcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set<MapPoint*> &sAlreadyFound, const float th , const float threshold)
     {
         int nmatches = 0;
 
@@ -1471,7 +1751,7 @@ namespace ORB_SLAM3
                         }
                     }
 
-                    if(bestDist<=ORBdist)
+                    if(bestDist<=threshold)
                     {
                         CurrentFrame.mvpMapPoints[bestIdx2]=pMP;
                         nmatches++;
@@ -1527,11 +1807,14 @@ namespace ORB_SLAM3
         }
     }
 
+    // Eigen is much faster than OpenCV
     float Matcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
     {
         assert(a.cols == b.cols);
-
-        return cv::norm(a - b, cv::NORM_L2);
+        assert(a.isContinuous() && b.isContinuous());
+        Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> des1(a.ptr<float>(), a.rows, a.cols);
+        Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> des2(b.ptr<float>(), b.rows, b.cols);
+        return (des1 - des2).norm();
     }
 
 } //namespace ORB_SLAM

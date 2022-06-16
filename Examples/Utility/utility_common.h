@@ -61,7 +61,7 @@ void FindCorrectMatches(const std::vector<cv::KeyPoint> &keypoints1, const std::
 
     cv::Mat homography;
     std::vector<int> inliers;
-    cv::findHomography(vPt1, vPt2, cv::RANSAC, 4.0, inliers);
+    cv::findHomography(vPt1, vPt2, cv::RANSAC, 10.0, inliers);
 
     inlierMatches.clear();
     wrongMatches.clear();

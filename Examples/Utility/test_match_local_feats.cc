@@ -3,44 +3,24 @@
  * 
  * 
  * Result:
-ORB + BFMatcher:
-match costs time: 5ms
-matches total number: 490
-correct matches number: 331
-match correct percentage: 0.67551
-ORB + SearchByBoW:
-vocab costs time: 7ms
-match costs time: 0ms
-matches total number: 304
-correct matches number: 216
-match correct percentage: 0.710526
-HF + BFMatcher_L1:
-match costs time: 28ms
-matches total number: 831
-correct matches number: 614
-match correct percentage: 0.738869
 HF + BFMatcher_L2:
-match costs time: 15ms
+match costs time: 12ms
 matches total number: 832
-correct matches number: 637
-match correct percentage: 0.765625
-HF + SearchByBoW_L1:
-vocab costs time: 45ms
-match costs time: 4ms
-matches total number: 769
-correct matches number: 342
-match correct percentage: 0.444733
-HF + SearchByBoW_L2:
-vocab costs time: 45ms
-match costs time: 3ms
-matches total number: 693
-correct matches number: 342
-match correct percentage: 0.493506
+threshold matches total number: 832
+correct matches number: 767
+match correct percentage: 0.921875
+HF + BFMatcher_L1:
+match costs time: 25ms
+matches total number: 831
+threshold matches total number: 829
+correct matches number: 780
+match correct percentage: 0.940893
 HF + SearchByBoWV2:
-match costs time: 75ms
+match costs time: 5ms
 matches total number: 934
-correct matches number: 342
-match correct percentage: 0.366167
+threshold matches total number: 934
+correct matches number: 745
+match correct percentage: 0.797645
  * 1. HFNet is way better than ORB, but it is more time-consuming
  * 2. The L1 and L2 descriptor distance is the same for HFNet, but L2 norm is more effective
  * 3. SearchByBoW will increase the matching time
@@ -53,6 +33,10 @@ match correct percentage: 0.366167
 #include <fstream>
 #include <dirent.h>
 #include <random>
+
+#include <Eigen/Core>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/opencv.hpp>
 
 #include "Frame.h"
 #include "Settings.h"
@@ -73,18 +57,25 @@ int SearchByBoWV2(float mfNNratio, int threshold,
     vMatches.clear();
     vMatches.reserve(descriptors1.rows);
 
-    cv::Mat distance = 2 * (1 - descriptors1 * descriptors2.t());
+    // Eigen::MatrixXf des1, des2;
+    // cv::cv2eigen(descriptors1, des1);
+    // cv::cv2eigen(descriptors2, des2);
+    assert(descriptors1.isContinuous() && descriptors2.isContinuous());
+    Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> des1(descriptors1.ptr<float>(), descriptors1.rows, descriptors1.cols);
+    Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> des2(descriptors2.ptr<float>(), descriptors2.rows, descriptors2.cols);
+    // cv::Mat distanceCV = 2 * (1 - descriptors1 * descriptors2.t());
+    Eigen::MatrixXf distance = 2 * (Eigen::MatrixXf::Ones(descriptors1.rows, descriptors2.rows) - des1 * des2.transpose());
 
-    for(int idx1=0; idx1 < distance.rows; idx1++)
+    for(int idx1=0; idx1 < distance.rows(); idx1++)
     {
 
         float bestDist1 = std::numeric_limits<float>::max();
         int bestIdx2 = -1;
         float bestDist2 = std::numeric_limits<float>::max();
 
-        for(int idx2=0; idx2<distance.cols; idx2++)
+        for(int idx2=0; idx2<distance.cols(); idx2++)
         {
-            float dist =distance.at<float>(idx1, idx2);
+            float dist =distance(idx1, idx2);
 
             if(dist<bestDist1)
             {
@@ -130,15 +121,22 @@ int main(int argc, char* argv[])
     HFextractor extractorHF(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),settings->scaleFactor(),settings->nLevels(),pModel);
 
     char command = ' ';
+    float threshold = 10;
     bool showUndistort = false;
-    unsigned int select;
+    int select = 0;
     auto cameraMatrix = settings->camera1();
     auto distCoef = settings->camera1DistortionCoef();
     do {
-        if (command != 'u') select = distribution(generator);
-        else showUndistort = !showUndistort;
+        if (command == 'u') showUndistort = !showUndistort;
+        else if (command == 'w') select += 1;
+        else if (command == 's') select -= 1;
+        else if (command == 'a') threshold -= 0.5;
+        else if (command == 'd') threshold += 0.5;
+        else select = distribution(generator);
+
         cout << command << endl;
         cout << select << endl;
+        cout << threshold << endl;
         cv::Mat imageRaw1 = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
         cv::Mat imageRaw2 = imread(strDatasetPath + files[select + 10], IMREAD_GRAYSCALE);
 
@@ -164,44 +162,77 @@ int main(int argc, char* argv[])
         }
 
         cout << "-------------------------------------------------------" << endl;
-        std::vector<cv::DMatch> matchesHF, inlierMatchesHF, wrongMatchesHF;
-        {
-            auto t1 = chrono::steady_clock::now();
-            cv::BFMatcher cvMatcherHF(cv::NORM_L1, true);
-            cvMatcherHF.match(descriptorsHF1, descriptorsHF2, matchesHF);
-            auto t2 = chrono::steady_clock::now();
-            auto timeCost = chrono::duration_cast<chrono::milliseconds>(t2 - t1).count();
-            cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, matchesHF, inlierMatchesHF, wrongMatchesHF);
-            cv::imshow("HF + BFMatcher", plotHF);
-            cout << "HF + BFMatcher_L1:" << endl;
-            cout << "match costs time: " << timeCost << "ms" << endl;
-            cout << "matches total number: " << matchesHF.size() << endl;
-            cout << "correct matches number: " << inlierMatchesHF.size() << endl;
-            cout << "match correct percentage: " << (float)inlierMatchesHF.size() / matchesHF.size() << endl;
-        }
-        {
+        { // good threshold 0.4~0.55
+            std::vector<cv::DMatch> matchesHF, thresholdMatchesHF,inlierMatchesHF, wrongMatchesHF;
             auto t1 = chrono::steady_clock::now();
             cv::BFMatcher cvMatcherHF(cv::NORM_L2, true);
             cvMatcherHF.match(descriptorsHF1, descriptorsHF2, matchesHF);
             auto t2 = chrono::steady_clock::now();
             auto timeCost = chrono::duration_cast<chrono::milliseconds>(t2 - t1).count();
-            FindCorrectMatches(keypointsHF1, keypointsHF2, matchesHF, inlierMatchesHF, wrongMatchesHF);
+            thresholdMatchesHF.clear();
+            for (auto& match : matchesHF)
+            {
+                if (match.distance > threshold * 0.1) continue;
+                thresholdMatchesHF.emplace_back(match);
+            }
+            // {
+            //     cv::DMatch match = matchesHF[0];
+            //     cv::Mat d1 = descriptorsHF1.row(match.queryIdx);
+            //     cv::Mat d2 = descriptorsHF2.row(match.trainIdx);
+            //     cout << "distance by BFMatcher: " << match.distance << endl;
+            //     cout << "distance by cv::norm: " << cv::norm(d1 - d2, cv::NORM_L2) << endl;
+            // }
+            cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::imshow("HF + BFMatcher_L2", plotHF);
             cout << "HF + BFMatcher_L2:" << endl;
             cout << "match costs time: " << timeCost << "ms" << endl;
             cout << "matches total number: " << matchesHF.size() << endl;
+            cout << "threshold matches total number: " << thresholdMatchesHF.size() << endl;
             cout << "correct matches number: " << inlierMatchesHF.size() << endl;
-            cout << "match correct percentage: " << (float)inlierMatchesHF.size() / matchesHF.size() << endl;
+            cout << "match correct percentage: " << (float)inlierMatchesHF.size() / thresholdMatchesHF.size() << endl;
         }
-        {
+        { // good threshold 5 ~ 7
+            std::vector<cv::DMatch> matchesHF, thresholdMatchesHF,inlierMatchesHF, wrongMatchesHF;
             auto t1 = chrono::steady_clock::now();
-            SearchByBoWV2(0.9, 15, descriptorsHF1, descriptorsHF2, matchesHF);
+            cv::BFMatcher cvMatcherHF(cv::NORM_L1, true);
+            cvMatcherHF.match(descriptorsHF1, descriptorsHF2, matchesHF);
             auto t2 = chrono::steady_clock::now();
             auto timeCost = chrono::duration_cast<chrono::milliseconds>(t2 - t1).count();
+            thresholdMatchesHF.clear();
+            for (auto& match : matchesHF)
+            {
+                if (match.distance > threshold) continue;
+                thresholdMatchesHF.emplace_back(match);
+            }
+            cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::imshow("HF + BFMatcher_L1", plotHF);
+            cout << "HF + BFMatcher_L1:" << endl;
+            cout << "match costs time: " << timeCost << "ms" << endl;
+            cout << "matches total number: " << matchesHF.size() << endl;
+            cout << "threshold matches total number: " << thresholdMatchesHF.size() << endl;
+            cout << "correct matches number: " << inlierMatchesHF.size() << endl;
+            cout << "match correct percentage: " << (float)inlierMatchesHF.size() / thresholdMatchesHF.size() << endl;
+        }
+        { // The speed is faster than BFMather, but rhe correct percentage is lower
+            std::vector<cv::DMatch> matchesHF, thresholdMatchesHF,inlierMatchesHF, wrongMatchesHF;
+            auto t1 = chrono::steady_clock::now();
+            SearchByBoWV2(1, 15, descriptorsHF1, descriptorsHF2, matchesHF);
+            auto t2 = chrono::steady_clock::now();
+            auto timeCost = chrono::duration_cast<chrono::milliseconds>(t2 - t1).count();
+            thresholdMatchesHF.clear();
+            for (auto& match : matchesHF)
+            {
+                if (match.distance > (threshold * 0.1)*(threshold * 0.1)) continue;
+                thresholdMatchesHF.emplace_back(match);
+            }
+            cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::imshow("HF + SearchByBoWV2", plotHF);
             cout << "HF + SearchByBoWV2:" << endl;
             cout << "match costs time: " << timeCost << "ms" << endl;
             cout << "matches total number: " << matchesHF.size() << endl;
+            cout << "threshold matches total number: " << thresholdMatchesHF.size() << endl;
             cout << "correct matches number: " << inlierMatchesHF.size() << endl;
-            cout << "match correct percentage: " << (float)inlierMatchesHF.size() / matchesHF.size() << endl;
+            cout << "match correct percentage: " << (float)inlierMatchesHF.size() / thresholdMatchesHF.size() << endl;
         }
     } while ((command = cv::waitKey()) != 'q');
 

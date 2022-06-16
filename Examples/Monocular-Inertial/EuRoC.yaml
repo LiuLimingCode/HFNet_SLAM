@@ -87,3 +87,5 @@ Extractor.HFNetTF.nNMSRadius: 4
 Extractor.HFNetTF.threshold: 0.1
 # Extractor.ORB.iniThFAST: 20
 # Extractor.ORB.minThFAST: 7
+
+loopClosing: 0

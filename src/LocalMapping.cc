@@ -384,6 +384,58 @@ void LocalMapping::MapPointCulling()
     }
 }
 
+// class CreateNewMapPointsParallel : public cv::ParallelLoopBody
+// {
+// public:
+
+//     CreateNewMapPointsParallel (const vector<KeyFrame*>& vpNeighKFs, bool bMonocular, bool bCoarse, KeyFrame* pCurrentKeyFrame, vector<vector<pair<size_t,size_t> > >& res)
+//         : mvpNeighKFs(vpNeighKFs), mbMonocular(bMonocular), mbCoarse(bCoarse), mpCurrentKeyFrame(pCurrentKeyFrame), mRes(res)
+//     {
+//         mRes.resize(mvpNeighKFs.size());
+//     }
+
+//     virtual void operator ()(const cv::Range& range) const CV_OVERRIDE
+//     {
+//         Matcher matcher(0.6);
+//         Eigen::Vector3f Ow1 = mpCurrentKeyFrame->GetCameraCenter();
+//         for (int i = range.start; i < range.end; ++i)
+//         {
+//             KeyFrame* pKF2 = mvpNeighKFs[i];
+
+//             GeometricCamera* pCamera1 = mpCurrentKeyFrame->mpCamera, *pCamera2 = pKF2->mpCamera;
+
+//             // Check first that baseline is not too short
+//             Eigen::Vector3f Ow2 = pKF2->GetCameraCenter();
+//             Eigen::Vector3f vBaseline = Ow2-Ow1;
+//             const float baseline = vBaseline.norm();
+
+//             if(!mbMonocular)
+//             {
+//                 if(baseline<pKF2->mb)
+//                     continue;
+//             }
+//             else
+//             {
+//                 const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(2);
+//                 const float ratioBaselineDepth = baseline/medianDepthKF2;
+
+//                 if(ratioBaselineDepth<0.01)
+//                     continue;
+//             }
+
+//             matcher.SearchForTriangulation(mpCurrentKeyFrame,pKF2,mRes[i],false,mbCoarse);
+//         }
+//     }
+
+//     CreateNewMapPointsParallel& operator=(const CreateNewMapPointsParallel &) {
+//         return *this;
+//     };
+// private:
+//     const vector<KeyFrame*>& mvpNeighKFs;
+//     const bool mbMonocular, mbCoarse;
+//     KeyFrame* mpCurrentKeyFrame;
+//     vector<vector<pair<size_t,size_t> > >& mRes;
+// };
 
 void LocalMapping::CreateNewMapPoints()
 {

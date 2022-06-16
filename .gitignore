@@ -95,5 +95,7 @@ borrar/*
 workspace.code-workspace
 .vscode/
 model/
+output/
 
 TODO
+evaluation/

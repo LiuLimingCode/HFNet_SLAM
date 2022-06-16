@@ -39,12 +39,13 @@ void KeyFrameDatabase::erase(KeyFrame* pKF)
 {
     unique_lock<mutex> lock(mMutex);
 
-    if (mvDatabase.count(pKF))
-        mvDatabase.erase(pKF);
+    assert(mvDatabase.count(pKF));
+    mvDatabase.erase(pKF);
 }
 
 void KeyFrameDatabase::clear()
 {
+    unique_lock<mutex> lock(mMutex);
     mvDatabase.clear();
 }
 
@@ -78,19 +79,20 @@ void KeyFrameDatabase::DetectNBestCandidates(KeyFrame *pKF, vector<KeyFrame*> &v
     {
         unique_lock<mutex> lock(mMutex);
 
+        Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> queryDescriptors(pKF->mGlobalDescriptors.ptr<float>(), pKF->mGlobalDescriptors.rows, pKF->mGlobalDescriptors.cols);
         for (auto it = mvDatabase.begin(); it != mvDatabase.end(); ++it)
         {
             KeyFrame *pKFi = *it;
             // Compute the distance of global descriptors
             // Eigen is much faster than OpenCV Mat
-            Eigen::Map<Eigen::MatrixXf const> queryDescriptors(pKF->mGlobalDescriptors.ptr<float>(), pKF->mGlobalDescriptors.rows, pKF->mGlobalDescriptors.cols);
-            Eigen::Map<Eigen::MatrixXf const> pDBDescriptors(pKFi->mGlobalDescriptors.ptr<float>(), pKFi->mGlobalDescriptors.rows, pKFi->mGlobalDescriptors.cols);
+            assert(!pKFi->mGlobalDescriptors.empty());
+            Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> pDBDescriptors(pKFi->mGlobalDescriptors.ptr<float>(), pKFi->mGlobalDescriptors.rows, pKFi->mGlobalDescriptors.cols);
             pKFi->mPlaceRecognitionScore = (queryDescriptors - pDBDescriptors).norm();
+            pKFi->mnLoopQuery = pKF->mnId;
         }
         std::partial_sort_copy(mvDatabase.begin(), mvDatabase.end(), vpLoopCandidates.begin(), vpLoopCandidates.end(), [](KeyFrame* const f1, KeyFrame* const f2) {
             return f1->mPlaceRecognitionScore < f2->mPlaceRecognitionScore; // the smaller, the better
         });
-
     }
 
     vpLoopCand.reserve(nNumCandidates);
@@ -128,13 +130,13 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F, Map
     {
         unique_lock<mutex> lock(mMutex);
 
+        Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> queryDescriptors(F->mGlobalDescriptors.ptr<float>(), F->mGlobalDescriptors.rows, F->mGlobalDescriptors.cols);
         for (auto it = mvDatabase.begin(); it != mvDatabase.end(); ++it)
         {
             KeyFrame *pKFi = *it;
             // Compute the distance of global descriptors
             // Eigen is much faster than OpenCV Mat
-            Eigen::Map<Eigen::MatrixXf const> queryDescriptors(F->mGlobalDescriptors.ptr<float>(), F->mGlobalDescriptors.rows, F->mGlobalDescriptors.cols);
-            Eigen::Map<Eigen::MatrixXf const> pDBDescriptors(pKFi->mGlobalDescriptors.ptr<float>(), pKFi->mGlobalDescriptors.rows, pKFi->mGlobalDescriptors.cols);
+            Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> pDBDescriptors(pKFi->mGlobalDescriptors.ptr<float>(), pKFi->mGlobalDescriptors.rows, pKFi->mGlobalDescriptors.cols);
             pKFi->mPlaceRecognitionScore = (queryDescriptors - pDBDescriptors).norm();
         }
         std::partial_sort_copy(mvDatabase.begin(), mvDatabase.end(), vpLoopCandidates.begin(), vpLoopCandidates.end(), [](KeyFrame* const f1, KeyFrame* const f2) {

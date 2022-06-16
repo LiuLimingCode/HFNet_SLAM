@@ -294,6 +294,9 @@ public:
 
     bool bImu;
 
+    // For Debug
+    cv::Mat imgLeft;
+
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
 public:
 

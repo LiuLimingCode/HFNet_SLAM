@@ -62,11 +62,11 @@ vector<TestKeyFrame*> GetNCandidateLoopFrameCV(Frame* query, const KeyFrameDB &d
 vector<TestKeyFrame*> GetNCandidateLoopFrameEigen(Frame* query, const KeyFrameDB &db, int k)
 {
     vector<TestKeyFrame*> res(k);
+    Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> queryDescriptors(query->mGlobalDescriptors.ptr<float>(), query->mGlobalDescriptors.rows, query->mGlobalDescriptors.cols);
     for (auto it = db.begin(); it != db.end(); ++it)
     {
         TestKeyFrame *pKF = *it;
-        Eigen::Map<Eigen::MatrixXf const> queryDescriptors(query->mGlobalDescriptors.ptr<float>(), query->mGlobalDescriptors.rows, query->mGlobalDescriptors.cols);
-        Eigen::Map<Eigen::MatrixXf const> pKFDescriptors(pKF->mGlobalDescriptors.ptr<float>(), pKF->mGlobalDescriptors.rows, pKF->mGlobalDescriptors.cols);
+        Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> pKFDescriptors(pKF->mGlobalDescriptors.ptr<float>(), pKF->mGlobalDescriptors.rows, pKF->mGlobalDescriptors.cols);
         pKF->mPlaceRecognitionScore = (queryDescriptors - pKFDescriptors).norm();
     }
     std::partial_sort_copy(db.begin(), db.end(), res.begin(), res.end(), [](TestKeyFrame* const f1, TestKeyFrame* const f2) {
