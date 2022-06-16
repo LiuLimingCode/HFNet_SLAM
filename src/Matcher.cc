@@ -228,7 +228,6 @@ namespace ORB_SLAM3
 
         cv::BFMatcher matcher(cv::NORM_L2, true);
 
-        cv::Mat realDescriptorsKF = cv::Mat(0, DescriptorsKF.cols, DescriptorsKF.type());
         vector<int> vRealIndexKF;
         vRealIndexKF.reserve(vpMapPointsKF.size());
         for (int realIdxKF = 0; realIdxKF < DescriptorsKF.rows; ++realIdxKF)
@@ -242,8 +241,9 @@ namespace ORB_SLAM3
                 continue;
 
             vRealIndexKF.emplace_back(realIdxKF);
-            cv::vconcat(realDescriptorsKF, DescriptorsKF.row(realIdxKF), realDescriptorsKF);
         }
+        cv::Mat realDescriptorsKF = cv::Mat(vRealIndexKF.size(), DescriptorsKF.cols, DescriptorsKF.type());
+        for (size_t index = 0; index < vRealIndexKF.size(); ++index) DescriptorsKF.row(vRealIndexKF[index]).copyTo(realDescriptorsKF.row(index));
 
         vector<cv::DMatch> matches;
         matcher.match(realDescriptorsKF, F.mDescriptors, matches);
@@ -573,7 +573,6 @@ namespace ORB_SLAM3
 
         cv::BFMatcher matcher(cv::NORM_L2, true);
 
-        cv::Mat realDescriptors1 = cv::Mat(0, Descriptors1.cols, Descriptors1.type());
         vector<int> vRealIndex1;
         vRealIndex1.reserve(vpMapPoints1.size());
         for (int realIdx1 = 0; realIdx1 < Descriptors1.rows; ++realIdx1)
@@ -584,8 +583,9 @@ namespace ORB_SLAM3
             if(pMP1->isBad())
                 continue;
             vRealIndex1.emplace_back(realIdx1);
-            cv::vconcat(realDescriptors1, Descriptors1.row(realIdx1), realDescriptors1);
         }
+        cv::Mat realDescriptors1 = cv::Mat(vRealIndex1.size(), Descriptors1.cols, Descriptors1.type());
+        for (size_t index = 0; index < vRealIndex1.size(); ++index) Descriptors1.row(vRealIndex1[index]).copyTo(realDescriptors1.row(index));
 
         vector<int> vRealIndex2;
         vRealIndex2.reserve(vpMapPoints2.size());
