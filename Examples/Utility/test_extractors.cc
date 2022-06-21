@@ -376,12 +376,12 @@ void GetFAST(cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = fal
             vector<cv::KeyPoint> vKeysCell;
 
             FAST(image.rowRange(iniY,maxY).colRange(iniX,maxX),
-                vKeysCell,settings->initThFAST(),true);
+                vKeysCell,20,true);
 
             if(vKeysCell.empty())
             {
                 FAST(image.rowRange(iniY,maxY).colRange(iniX,maxX),
-                    vKeysCell,settings->minThFAST(),true);
+                    vKeysCell,7,true);
             }
         
             if(!vKeysCell.empty())
@@ -420,12 +420,10 @@ void GetFAST(cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = fal
 }
 
 // Using HFNet
-void GetHFNet(HFNetTFModel *model, cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = false)
+void GetHFNet(HFNetTFModel *model, cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree, int nKeypointsNum, float threshold, int nRadius)
 {
-    vKeypoints.clear();
-    vKeypoints.reserve(settings->nFeatures());
-    cv::Mat descriptors;
-    model->Detect(image, vKeypoints, descriptors);
+    cv::Mat descriptors, globalDescriptors;
+    model->Detect(image, vKeypoints, descriptors, globalDescriptors, nKeypointsNum, threshold, nRadius);
     if (bUseOctTree)
     {
         vKeypoints = DistributeOctTree(vKeypoints, 0, image.cols,
@@ -435,10 +433,10 @@ void GetHFNet(HFNetTFModel *model, cv::Mat image, vector<KeyPoint> &vKeypoints, 
 
 int main(int argc, char* argv[])
 {
-    const string strModelPath("model/hfnet/");
-    const string strResamplerPath("/home/llm/src/tensorflow_cc-2.9.0/tensorflow_cc/install/lib/core/user_ops/resampler/python/ops/_resampler_ops.so");
-    const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
-    const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
+    // const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
+    // const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
+    const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
+    const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     settings = new Settings(strSettingsPath, 0);
@@ -458,8 +456,26 @@ int main(int argc, char* argv[])
     cv::moveWindow("HFNet", 0, 540);
     cv::namedWindow("HFNet & OctTree");
     cv::moveWindow("HFNet & OctTree", 820, 540);
-    do {
-        unsigned int select = distribution(generator);
+
+    char command = ' ';
+    float threshold = 0;
+    int nNMSRadius = 4;
+    int select = 0;
+    while(1)
+    {
+        if (command == 'q') break;
+        else if (command == 'a') threshold = std::max(threshold - 0.01, 0.0);
+        else if (command == 'd') threshold += 0.01;
+        else if (command == 's') select = std::max(select - 1, 0);
+        else if (command == 'w') select += 1;
+        else if (command == 'z') nNMSRadius = std::max(nNMSRadius - 1, 0);
+        else if (command == 'c') nNMSRadius += 1;
+        else select = distribution(generator);
+        cout << "command: " << command << endl;
+        cout << "select: " << select << endl;
+        cout << "threshold: " << threshold << endl;
+        cout << "nNMSRadius: " << nNMSRadius << endl;
+
         image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
 
         cout << "============= FAST  =============" << endl;
@@ -469,20 +485,21 @@ int main(int argc, char* argv[])
 
         cout << "============= FAST with OctTree =============" << endl;
         GetFAST(image, keypoints, true);
-        ShowKeypoints("FAST with Oct", image, keypoints);
+        ShowKeypoints("FAST & OctTree", image, keypoints);
         cout << "key point number: " << keypoints.size() << endl;
 
         cout << "============= HFNet =============" << endl;
-        GetHFNet(pModel, image, keypoints, false);
+        GetHFNet(pModel, image, keypoints, false, settings->nFeatures()*2, threshold, nNMSRadius);
         ShowKeypoints("HFNet", image, keypoints);
         cout << "key point number: " << keypoints.size() << endl;
 
         cout << "============= HFNet & OctTree =============" << endl;
-        GetHFNet(pModel, image, keypoints, true);
+        GetHFNet(pModel, image, keypoints, true, settings->nFeatures()*2, threshold, nNMSRadius);
         ShowKeypoints("HFNet & OctTree", image, keypoints);
         cout << "key point number: " << keypoints.size() << endl;
 
-    } while(cv::waitKey() != 'q');
+        command = cv::waitKey();
+    };
 
     system("pause");
 

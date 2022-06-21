@@ -1,3 +1,9 @@
+/**
+ * Result
+ * 1. We do not need OctTree, because we have NMS
+ * 2. Set NMS radius to zero is catastrophic, one is much better
+ * 3. It is reasonable to set threshold to zero
+ */
 #include "Extractors/HFNetTFModel.h"
 using namespace cv;
 using namespace std;
@@ -9,7 +15,7 @@ namespace ORB_SLAM3
 #ifdef USE_TENSORFLOW
 
 bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                          int nKeypointsNum, int threshold, int nRadius) 
+                          int nKeypointsNum, float threshold, int nRadius) 
 {
     Tensor tKeypointsNum(DT_INT32, TensorShape());
     Tensor tRadius(DT_INT32, TensorShape());
@@ -32,9 +38,7 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
     auto vResGlobalDes = outputs[3].tensor<float, 2>();
 
     vKeypoints.clear();
-    localDescriptors = cv::Mat::zeros(nResNumber, 256, CV_32F);
-    globalDescriptors = cv::Mat::zeros(4096, 1, CV_32F);
-
+    vKeypoints.reserve(nResNumber);
     KeyPoint kp;
     kp.angle = 0;
     kp.octave = 0;
@@ -44,11 +48,16 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
         kp.pt = Point2f(vResKeypoints(2 * index), vResKeypoints(2 * index + 1));
         kp.response = vResScores(index);
         vKeypoints.emplace_back(kp);
+    }
+    localDescriptors = cv::Mat::zeros(vKeypoints.size(), 256, CV_32F);
+    for (int index = 0; index < vKeypoints.size(); ++index)
+    {
         for (int temp = 0; temp < 256; ++temp)
         {
             localDescriptors.ptr<float>(index)[temp] = vResLocalDes(256 * index + temp); 
         }
     }
+    globalDescriptors = cv::Mat::zeros(4096, 1, CV_32F);
     for (int temp = 0; temp < 4096; ++temp)
     {
         globalDescriptors.ptr<float>(0)[temp] = vResGlobalDes(temp);

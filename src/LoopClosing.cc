@@ -614,8 +614,8 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
     for(KeyFrame* pKFi : vpBowCand)
     {
         // For Debug
-        if (mpCurrentKF->mTimeStamp - pKFi->mTimeStamp < 5)
-            continue;
+        // if (mpCurrentKF->mTimeStamp - pKFi->mTimeStamp < 5)
+        //     continue;
 
         if(!pKFi || pKFi->isBad())
             continue;
@@ -639,20 +639,20 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
         }
 
         // For Debug: delete this becasue this is not work for HFNET
-        // bool bAbortByNearKF = false;
-        // for(int j=0; j<vpCovKFi.size(); ++j)
-        // {
-        //     if(spConnectedKeyFrames.find(vpCovKFi[j]) != spConnectedKeyFrames.end())
-        //     {
-        //         bAbortByNearKF = true;
-        //         break;
-        //     }
-        // }
-        // if(bAbortByNearKF)
-        // {
-        //     //std::cout << "Check BoW aborted because is close to the matched one " << std::endl;
-        //     continue;
-        // }
+        bool bAbortByNearKF = false;
+        for(int j=0; j<vpCovKFi.size(); ++j)
+        {
+            if(spConnectedKeyFrames.find(vpCovKFi[j]) != spConnectedKeyFrames.end())
+            {
+                bAbortByNearKF = true;
+                break;
+            }
+        }
+        if(bAbortByNearKF)
+        {
+            //std::cout << "Check BoW aborted because is close to the matched one " << std::endl;
+            continue;
+        }
         //std::cout << "Check BoW continue because is far to the matched one " << std::endl;
 
         // { // For Debug

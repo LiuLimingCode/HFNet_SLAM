@@ -32,7 +32,7 @@ public:
     }
 
     bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                int nKeypointsNum, int threshold, int nRadius) override;
+                int nKeypointsNum, float threshold, int nRadius) override;
 
     bool IsValid(void) override { return mbVaild; }
 

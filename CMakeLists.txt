@@ -10,7 +10,7 @@ endif ()
 MESSAGE("build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -fopenmp -march=native -pthread -DREGISTER_TIMES -DCOMPILEDWITHC11")
 set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS} -g")
-set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS} -O3")
+set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS} -O3") # -DNDEBUG
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
@@ -29,14 +29,21 @@ find_package(Pangolin REQUIRED)
 
 if(${USE_TENSORFLOW})
     ADD_DEFINITIONS(-DUSE_TENSORFLOW)
-    set(Tensorflow_Root "~/src/tensorflow_cc-2.9.0/tensorflow_cc/install")
+    set(Tensorflow_Root "/home/llm/src/tensorflow-1.15.5")
     set(Tensorflow_INCLUDE_DIRS
-        ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include
-        ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include/src
-    )
+        ${Tensorflow_Root}/bazel-bin/tensorflow/include
+        ${Tensorflow_Root}/bazel-bin/tensorflow/include/src)
     set(Tensorflow_LIBS
-        ${Tensorflow_Root}/lib/libtensorflow_cc.so
-        ${Tensorflow_Root}/lib/libtensorflow_framework.so)
+        ${Tensorflow_Root}/bazel-bin/tensorflow/libtensorflow_cc.so
+        ${Tensorflow_Root}/bazel-bin/tensorflow/libtensorflow_framework.so)
+#     set(Tensorflow_Root "~/src/tensorflow_cc-2.9.0/tensorflow_cc/install")
+#     set(Tensorflow_INCLUDE_DIRS
+#         ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include
+#         ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include/src
+#     )
+#     set(Tensorflow_LIBS
+#         ${Tensorflow_Root}/lib/libtensorflow_cc.so
+#         ${Tensorflow_Root}/lib/libtensorflow_framework.so)
 endif()
 
 include_directories(
@@ -145,17 +152,28 @@ add_executable(test_hfnet_tf
         Examples/Utility/test_hfnet_tf.cc)
 target_link_libraries(test_hfnet_tf ${PROJECT_NAME})
 
+add_executable(test_extractors
+        Examples/Utility/test_extractors.cc)
+target_link_libraries(test_extractors ${PROJECT_NAME})
+
 add_executable(test_match_global_feats
         Examples/Utility/test_match_global_feats.cc)
 target_link_libraries(test_match_global_feats ${PROJECT_NAME})
 
-# add_executable(test_extractors
-#         Examples/Utility/test_extractors.cc)
-# target_link_libraries(test_extractors ${PROJECT_NAME})
-
 add_executable(test_match_local_feats
         Examples/Utility/test_match_local_feats.cc)
 target_link_libraries(test_match_local_feats ${PROJECT_NAME})
+
+#Monocular examples
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular)
+
+add_executable(mono_euroc
+        Examples/Monocular/mono_euroc.cc)
+target_link_libraries(mono_euroc ${PROJECT_NAME})
+
+add_executable(mono_tum_vi
+        Examples/Monocular/mono_tum_vi.cc)
+target_link_libraries(mono_tum_vi ${PROJECT_NAME})
 
 #Monocular inertial examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)

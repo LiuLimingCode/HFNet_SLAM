@@ -7,18 +7,46 @@ outputs[0].shape(): [1,1000,2]
 outputs[1].shape(): [1,1000,256]
 outputs[2].shape(): [1,1000]
 outputs[3].shape(): [1,4096]
- * 
+
+ * Test with "Extractor.HFNetTF.nNMSRadius: 10, Extractor.HFNetTF.threshold: 0.01" :
 Only detect the local keypoints: 
-cost time: 19445 milliseconds
-average detect time: 9.56468
+cost time: 32141 milliseconds
+average detect time: 15.8096
 
-Only detect the full features: 
-cost time: 24720 milliseconds
-average detect time: 12.1594
+Detect the full features: 
+cost time: 38501 milliseconds
+average detect time: 18.938
 
-Only detect the full features: 
-cost time: 24961 milliseconds
-average detect time: 12.2779
+Detect the full features with HFextractor: 
+cost time: 38848 milliseconds
+average detect time: 19.1087
+
+ * Test with "Extractor.HFNetTF.nNMSRadius: 4, Extractor.HFNetTF.threshold: 0.01" :
+Only detect the local keypoints: 
+cost time: 19478 milliseconds
+average detect time: 9.58091
+
+Detect the full features: 
+cost time: 25045 milliseconds
+average detect time: 12.3192
+
+Detect the full features with HFextractor: 
+cost time: 25528 milliseconds
+average detect time: 12.5568
+
+ * Test with "Extractor.HFNetTF.nNMSRadius: 0, Extractor.HFNetTF.threshold: 0.01" :
+Only detect the local keypoints: 
+cost time: 17293 milliseconds
+average detect time: 8.50615
+
+Detect the full features: 
+cost time: 22868 milliseconds
+average detect time: 11.2484
+
+Detect the full features with HFextractor: 
+cost time: 23553 milliseconds
+average detect time: 11.5853
+
  *
  */
 #include <chrono>
@@ -47,7 +75,7 @@ void Mat2Tensor(const cv::Mat &image, tensorflow::Tensor *tensor)
 }
 
 bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors,
-                     int nKeypointsNum = 1000, float threshold = 0.02, int nRadius = 4)
+                     int nKeypointsNum, int nRadius, float threshold)
 {
     Tensor tKeypointsNum(DT_INT32, TensorShape());
     Tensor tRadius(DT_INT32, TensorShape());
@@ -69,15 +97,20 @@ bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints
     auto vResScores = outputs[2].tensor<float, 2>();
 
     vKeypoints.clear();
-    localDescriptors = cv::Mat::zeros(nResNumber, 256, CV_32F);
-
+    vKeypoints.reserve(nResNumber);
     KeyPoint kp;
+    kp.angle = 0;
+    kp.octave = 0;
     for(int index = 0; index < nResNumber; index++)
     {
         if (vResScores(index) < threshold) continue;
         kp.pt = Point2f(vResKeypoints(2 * index), vResKeypoints(2 * index + 1));
         kp.response = vResScores(index);
         vKeypoints.emplace_back(kp);
+    }
+    localDescriptors = cv::Mat::zeros(vKeypoints.size(), 256, CV_32F);
+    for (int index = 0; index < vKeypoints.size(); ++index)
+    {
         for (int temp = 0; temp < 256; ++temp)
         {
             localDescriptors.ptr<float>(index)[temp] = vResLocalDes(256 * index + temp); 
@@ -87,7 +120,7 @@ bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints
 }
 
 bool DetectFull(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                int nKeypointsNum = 1000, float threshold = 0.02, int nRadius = 4)
+                int nKeypointsNum, int nRadius, float threshold)
 {
     Tensor tKeypointsNum(DT_INT32, TensorShape());
     Tensor tRadius(DT_INT32, TensorShape());
@@ -116,21 +149,26 @@ bool DetectFull(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv:
     // cout << "outputs[3].shape(): " << outputs[3].shape() << endl;
 
     vKeypoints.clear();
-    localDescriptors = cv::Mat::zeros(nResNumber, 256, CV_32F);
-    globalDescriptors = cv::Mat::zeros(4096, 1, CV_32F);
-
+    vKeypoints.reserve(nResNumber);
     KeyPoint kp;
+    kp.angle = 0;
+    kp.octave = 0;
     for(int index = 0; index < nResNumber; index++)
     {
         if (vResScores(index) < threshold) continue;
         kp.pt = Point2f(vResKeypoints(2 * index), vResKeypoints(2 * index + 1));
         kp.response = vResScores(index);
         vKeypoints.emplace_back(kp);
+    }
+    localDescriptors = cv::Mat::zeros(vKeypoints.size(), 256, CV_32F);
+    for (int index = 0; index < vKeypoints.size(); ++index)
+    {
         for (int temp = 0; temp < 256; ++temp)
         {
             localDescriptors.ptr<float>(index)[temp] = vResLocalDes(256 * index + temp); 
         }
     }
+    globalDescriptors = cv::Mat::zeros(4096, 1, CV_32F);
     for (int temp = 0; temp < 4096; ++temp)
     {
         globalDescriptors.ptr<float>(0)[temp] = vResGlobalDes(temp);
@@ -156,6 +194,7 @@ bool DetectOnlyGlobal(const cv::Mat &image, cv::Mat &globalDescriptors,
 
     auto vResGlobalDes = outputs[0].tensor<float, 2>();
 
+    globalDescriptors = cv::Mat::zeros(4096, 1, CV_32F);
     for (int temp = 0; temp < 4096; ++temp)
     {
         globalDescriptors.ptr<float>(0)[temp] = vResGlobalDes(temp);
@@ -188,10 +227,10 @@ int main(int argc, char* argv[])
     while(1)
     {
         if (command == 'q') break;
-        else if (command == 'a') threshold = std::max(threshold - 0.01, 0.0);
-        else if (command == 'd') threshold += 0.01;
         else if (command == 's') select = std::max(select - 1, 0);
         else if (command == 'w') select += 1;
+        else if (command == 'a') threshold = std::max(threshold - 0.01, 0.0);
+        else if (command == 'd') threshold += 0.01;
         else if (command == 'z') nNMSRadius = std::max(nNMSRadius - 1, 0);
         else if (command == 'c') nNMSRadius += 1;
         else select = distribution(generator);
@@ -202,7 +241,7 @@ int main(int argc, char* argv[])
 
         image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
         
-        DetectFull(image, vKeypoints, localDescriptors, globalDescriptors, 1000, threshold, nNMSRadius);
+        DetectFull(image, vKeypoints, localDescriptors, globalDescriptors, 1000, nNMSRadius, threshold);
         cout << "Get features number: " << vKeypoints.size() << endl;
         
         ShowKeypoints("press 'q' to exit", image, vKeypoints);
@@ -217,7 +256,7 @@ int main(int argc, char* argv[])
         for (const string& file : files)
         {
             image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
-            DetectOnlyLocal(image, vKeypoints, localDescriptors);
+            DetectOnlyLocal(image, vKeypoints, localDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
         }
         auto t2 = chrono::steady_clock::now();
         auto t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
@@ -230,7 +269,7 @@ int main(int argc, char* argv[])
         for (const string& file : files)
         {
             image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
-            DetectFull(image, vKeypoints, localDescriptors, globalDescriptors);
+            DetectFull(image, vKeypoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
         }
         auto t2 = chrono::steady_clock::now();
         auto t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();

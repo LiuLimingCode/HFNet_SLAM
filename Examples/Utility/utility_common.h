@@ -52,6 +52,12 @@ void ShowKeypoints(const string &title, Mat image, const std::vector<KeyPoint> &
 void FindCorrectMatches(const std::vector<cv::KeyPoint> &keypoints1, const std::vector<cv::KeyPoint> &keypoints2, 
                         const std::vector<cv::DMatch> &matches, std::vector<cv::DMatch> &inlierMatches, std::vector<cv::DMatch> &wrongMatches)
 {
+    if (matches.size() < 10) 
+    {
+        wrongMatches = matches;
+        inlierMatches.clear();
+        return;
+    }
     vector<cv::Point2f> vPt1, vPt2;
     for (const auto &match : matches)
     {

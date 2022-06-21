@@ -42,19 +42,16 @@ int main(int argc, char *argv[])
 
     if(argc < 5)
     {
-        cerr << endl << "Usage: ./mono_inertial_euroc path_to_vocabulary path_to_settings path_to_sequence_folder_1 path_to_times_file_1 (path_to_image_folder_2 path_to_times_file_2 ... path_to_image_folder_N path_to_times_file_N) " << endl;
+        cerr << endl << "Usage: ./mono_inertial_euroc path_to_settings path_to_saving path_to_sequence_folder_1 path_to_times_file_1 (path_to_image_folder_2 path_to_times_file_2 ... path_to_image_folder_N path_to_times_file_N) " << endl;
         return 1;
     }
 
     const int num_seq = (argc-3)/2;
     cout << "num_seq = " << num_seq << endl;
-    bool bFileName= (((argc-3) % 2) == 1);
-    string strSavePath;
-    if (bFileName)
-    {
-        strSavePath = string(argv[argc-1]);
-        cout << "result save path: " << strSavePath << endl;
-    }
+    string strPathSetting = argv[1];
+    string strPathSaving = string(argv[2]);
+    cout << "settings path: " << strPathSaving << endl;
+    cout << "result save path: " << strPathSaving << endl;
 
     // Load all sequences:
     int seq;
@@ -117,7 +114,7 @@ int main(int argc, char *argv[])
     cout.precision(17);
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::IMU_MONOCULAR, true);
+    ORB_SLAM3::System SLAM(strPathSetting ,ORB_SLAM3::System::IMU_MONOCULAR, true);
     float imageScale = SLAM.GetImageScale();
 
     double t_resize = 0.f;
@@ -234,26 +231,28 @@ int main(int argc, char *argv[])
 
     int res;
     // Save camera trajectory
-    if (bFileName)
-    {
-        res = system(("mkdir -p " + strSavePath).c_str());
-        const string kf_file =  strSavePath + "trajectory_keyframe.txt";
-        const string f_file =  strSavePath + "trajectory.txt";
-        SLAM.SaveTrajectoryEuRoC(f_file);
-        SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
-    }
-    else
-    {
-        SLAM.SaveTrajectoryEuRoC("CameraTrajectory.txt");
-        SLAM.SaveKeyFrameTrajectoryEuRoC("KeyFrameTrajectory.txt");
-    }
+    res = system(("mkdir -p " + strPathSaving).c_str());
+    const string kf_file =  strPathSaving + "trajectory_keyframe.txt";
+    const string f_file =  strPathSaving + "trajectory.txt";
+    SLAM.SaveTrajectoryEuRoC(f_file);
+    SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
 #ifdef REGISTER_TIMES
-        res = system(("mv ExecMean.txt " + strSavePath + "ExecMean.txt").c_str());
-        res = system(("mv LBA_Stats.txt " + strSavePath + "LBA_Stats.txt").c_str());
-        res = system(("mv LocalMapTimeStats.txt " + strSavePath + "LocalMapTimeStats.txt").c_str());
-        res = system(("mv SessionInfo.txt " + strSavePath + "SessionInfo.txt").c_str());
-        res = system(("mv TrackingTimeStats.txt " + strSavePath + "TrackingTimeStats.txt").c_str());
+    res = system(("mv ExecMean.txt " + strPathSaving + "ExecMean.txt").c_str());
+    res = system(("mv LBA_Stats.txt " + strPathSaving + "LBA_Stats.txt").c_str());
+    res = system(("mv LocalMapTimeStats.txt " + strPathSaving + "LocalMapTimeStats.txt").c_str());
+    res = system(("mv SessionInfo.txt " + strPathSaving + "SessionInfo.txt").c_str());
+    res = system(("mv TrackingTimeStats.txt " + strPathSaving + "TrackingTimeStats.txt").c_str());
 #endif
+
+    sort(vTimesTrack.begin(),vTimesTrack.end());
+    float totaltime = 0;
+    for(int ni=0; ni<nImages[0]; ni++)
+    {
+        totaltime+=vTimesTrack[ni];
+    }
+    cout << "-------" << endl << endl;
+    cout << "median tracking time: " << vTimesTrack[nImages[0]/2] << endl;
+    cout << "mean tracking time: " << totaltime/proccIm << endl;
 
     return 0;
 }
@@ -263,6 +262,12 @@ void LoadImages(const string &strImagePath, const string &strPathTimes,
 {
     ifstream fTimes;
     fTimes.open(strPathTimes.c_str());
+    if (!fTimes.is_open())
+    {
+        cerr << "Failed to open timestamp data at: " << strPathTimes << endl;
+        exit(-1);
+    }
+
     vTimeStamps.reserve(5000);
     vstrImages.reserve(5000);
     while(!fTimes.eof())
@@ -286,6 +291,12 @@ void LoadIMU(const string &strImuPath, vector<double> &vTimeStamps, vector<cv::P
 {
     ifstream fImu;
     fImu.open(strImuPath.c_str());
+    if (!fImu.is_open())
+    {
+        cerr << "Failed to open IMU data at: " << strImuPath << endl;
+        exit(-1);
+    }
+    
     vTimeStamps.reserve(5000);
     vAcc.reserve(5000);
     vGyro.reserve(5000);

@@ -128,6 +128,27 @@ def plot_traj(ax,stamps,traj,style,color,label):
         last= stamps[i]
     if len(x)>0:
         ax.plot(x,y,style,color=color,label=label)
+
+def plot_error(ax,stamps,error,style,color,label):
+    """
+    Plot the relationship between error and time using matplotlib. 
+    
+    Input:
+    ax -- the plot
+    stamps -- time stamps (1xn)
+    error -- trajectory error (1xn)
+    style -- line style
+    color -- line color
+    label -- plot legend
+    
+    """
+    stamps.sort()
+    x = []
+    y = []
+    for i in range(len(stamps)):
+        x.append((stamps[i] - stamps[0])/1e9)
+        y.append(error[i])
+    ax.plot(x,y,style,color=color,label=label)
             
 
 if __name__=="__main__":
@@ -140,12 +161,8 @@ if __name__=="__main__":
     parser.add_argument('--offset', help='time offset added to the timestamps of the second file (default: 0.0)',default=0.0)
     parser.add_argument('--scale', help='scaling factor for the second trajectory (default: 1.0)',default=1.0)
     parser.add_argument('--max_difference', help='maximally allowed time difference for matching entries (default: 10000000 ns)',default=20000000)
-    parser.add_argument('--save', help='save aligned second trajectory to disk (format: stamp2 x2 y2 z2)')
-    parser.add_argument('--save_associations', help='save associated first and aligned second trajectory to disk (format: stamp1 x1 y1 z1 stamp2 x2 y2 z2)')
-    parser.add_argument('--save_results', help='save the evaluation results to disk')
-    parser.add_argument('--plot', help='plot the first and the aligned second trajectory to an image (format: png)')
+    parser.add_argument('--save_path', help='the path to save the evaluation results')
     parser.add_argument('--verbose', help='print all evaluation data (otherwise, only the RMSE absolute translational error in meters after alignment will be printed)', action='store_true')
-    parser.add_argument('--verbose2', help='print scale eror and RMSE absolute translational error in meters after alignment with and without scale correction', action='store_true')
     args = parser.parse_args()
 
     first_list = associate.read_file_list(args.first_file, False)
@@ -154,6 +171,8 @@ if __name__=="__main__":
     matches = associate.associate(first_list, second_list,float(args.offset),float(args.max_difference))    
     if len(matches)<2:
         sys.exit("Couldn't find matching timestamp pairs between groundtruth and estimated trajectory! Did you choose the correct sequence?")
+    first_match_timestamps = [(a) for a,b in matches]
+    second_match_timestamps = [(b) for a,b in matches]
     first_xyz = numpy.matrix([[float(value) for value in first_list[a][0:3]] for a,b in matches]).transpose()
     second_xyz = numpy.matrix([[float(value)*float(args.scale) for value in second_list[b][0:3]] for a,b in matches]).transpose()
     dictionary_items = second_list.items()
@@ -185,32 +204,32 @@ if __name__=="__main__":
         results += ("absolute_translational_error.min %f m\n"%numpy.min(trans_error))
         results += ("absolute_translational_error.max %f m\n"%numpy.max(trans_error))
         results += ("max idx: %i\n" %numpy.argmax(trans_error))
+
+        results += ("absolute_translational_errorGT.rmse %f m\n"%numpy.sqrt(numpy.dot(trans_errorGT,trans_errorGT) / len(trans_errorGT)))
+        results += ("scale %f\n"%scale)
+
     else:
-    
         results += ("%f,%f,%f\n" % (numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error)), scale, numpy.sqrt(numpy.dot(trans_errorGT,trans_errorGT) / len(trans_errorGT))))
         
-    if args.verbose2:
-        results += ("compared_pose_pairs %d pairs\n"%(len(trans_error)))
-        results += ("absolute_translational_error.rmse %f m\n"%numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error)))
-        results += ("absolute_translational_errorGT.rmse %f m\n"%numpy.sqrt(numpy.dot(trans_errorGT,trans_errorGT) / len(trans_errorGT)))
-        
     print(results)
-    if args.save_results:
-        file = open(args.save_results,"w")
+
+    if args.save_path:
+        from pathlib import Path
+        file_path = Path(args.save_path, "evaluation.txt")
+        file = open(file_path,"w")
         file.write(results)
         file.close()
 
-    if args.save_associations:
-        file = open(args.save_associations,"w")
+        file_path = Path(args.save_path, "associations.txt")
+        file = open(file_path,"w")
         file.write("\n".join(["%f %f %f %f %f %f %f %f"%(a,x1,y1,z1,b,x2,y2,z2) for (a,b),(x1,y1,z1),(x2,y2,z2) in zip(matches,first_xyz.transpose().A,second_xyz_aligned.transpose().A)]))
         file.close()
         
-    if args.save:
-        file = open(args.save,"w")
-        file.write("\n".join(["%f "%stamp+" ".join(["%f"%d for d in line]) for stamp,line in zip(second_stamps,second_xyz_notscaled_full.transpose().A)]))
-        file.close()
+        # file_path = Path(args.save_path, "evaluation.txt")
+        # file = open(file_path,"w")
+        # file.write("\n".join(["%f "%stamp+" ".join(["%f"%d for d in line]) for stamp,line in zip(second_stamps,second_xyz_notscaled_full.transpose().A)]))
+        # file.close()
 
-    if args.plot:
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
@@ -230,7 +249,25 @@ if __name__=="__main__":
         ax.set_xlabel('x [m]')
         ax.set_ylabel('y [m]')
         plt.axis('equal')
-        plt.savefig(args.plot,format="pdf")
+        file_path = Path(args.save_path, "trajectory.pdf")
+        plt.savefig(file_path,format="pdf")
 
 
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        plot_error(ax, second_match_timestamps, trans_errorGT, '-', "blue", 'trans_errorGT')
+        ax.set_xlabel('timestamp [s]')
+        ax.set_ylabel('error [m]')
+        ax.legend()
+        file_path = Path(args.save_path, "errorGT.pdf")
+        plt.savefig(file_path,format="pdf")
+
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        plot_error(ax, second_match_timestamps, trans_error, '-', "blue", 'trans_error')
+        ax.set_xlabel('timestamp [s]')
+        ax.set_ylabel('error [m]')
+        ax.legend()
+        file_path = Path(args.save_path, "error.pdf")
+        plt.savefig(file_path,format="pdf")
         

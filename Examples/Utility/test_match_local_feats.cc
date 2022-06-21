@@ -108,15 +108,17 @@ int SearchByBoWV2(float mfNNratio, int threshold,
 
 int main(int argc, char* argv[])
 {
-    const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
-    const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
+    // const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
+    // const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
+    const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
+    const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     settings = new Settings(strSettingsPath, 0);
     HFNetTFModel *pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
 
     std::default_random_engine generator;
-    std::uniform_int_distribution<unsigned int> distribution(1000, files.size() - 1000);
+    std::uniform_int_distribution<unsigned int> distribution(50, files.size() - 50);
 
     HFextractor extractorHF(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),settings->scaleFactor(),settings->nLevels(),pModel);
 
@@ -163,13 +165,12 @@ int main(int argc, char* argv[])
 
         cout << "-------------------------------------------------------" << endl;
         { // good threshold 0.4~0.55
-            std::vector<cv::DMatch> matchesHF, thresholdMatchesHF,inlierMatchesHF, wrongMatchesHF;
+            std::vector<cv::DMatch> matchesHF, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF;
             auto t1 = chrono::steady_clock::now();
             cv::BFMatcher cvMatcherHF(cv::NORM_L2, true);
             cvMatcherHF.match(descriptorsHF1, descriptorsHF2, matchesHF);
             auto t2 = chrono::steady_clock::now();
             auto timeCost = chrono::duration_cast<chrono::milliseconds>(t2 - t1).count();
-            thresholdMatchesHF.clear();
             for (auto& match : matchesHF)
             {
                 if (match.distance > threshold * 0.1) continue;
@@ -192,7 +193,7 @@ int main(int argc, char* argv[])
             cout << "match correct percentage: " << (float)inlierMatchesHF.size() / thresholdMatchesHF.size() << endl;
         }
         { // good threshold 5 ~ 7
-            std::vector<cv::DMatch> matchesHF, thresholdMatchesHF,inlierMatchesHF, wrongMatchesHF;
+            std::vector<cv::DMatch> matchesHF, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF;
             auto t1 = chrono::steady_clock::now();
             cv::BFMatcher cvMatcherHF(cv::NORM_L1, true);
             cvMatcherHF.match(descriptorsHF1, descriptorsHF2, matchesHF);
@@ -214,7 +215,7 @@ int main(int argc, char* argv[])
             cout << "match correct percentage: " << (float)inlierMatchesHF.size() / thresholdMatchesHF.size() << endl;
         }
         { // The speed is faster than BFMather, but rhe correct percentage is lower
-            std::vector<cv::DMatch> matchesHF, thresholdMatchesHF,inlierMatchesHF, wrongMatchesHF;
+            std::vector<cv::DMatch> matchesHF, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF;
             auto t1 = chrono::steady_clock::now();
             SearchByBoWV2(1, 15, descriptorsHF1, descriptorsHF2, matchesHF);
             auto t2 = chrono::steady_clock::now();
