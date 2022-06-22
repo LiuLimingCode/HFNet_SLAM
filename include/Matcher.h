@@ -37,14 +37,14 @@ namespace ORB_SLAM3
     {
     public:
 
-        Matcher(float nnratio=0.6);
+        Matcher();
 
         // Computes the distance between two descriptors
         static float DescriptorDistance(const cv::Mat &a, const cv::Mat &b);
 
         // Search matches between Frame keypoints and projected MapPoints. Returns number of matches
         // Used to track the local map (Tracking)
-        int SearchByProjection(Frame &F, const std::vector<MapPoint*> &vpMapPoints, const float th=3, const bool bFarPoints = false, const float thFarPoints = 50.0f);
+        int SearchByProjection(Frame &F, const std::vector<MapPoint*> &vpMapPoints, float fNNratio, const float th=3, const bool bFarPoints = false, const float thFarPoints = 50.0f);
 
         // Project MapPoints tracked in last frame into the current frame and search matches.
         // Used to track from previous frame (Tracking)
@@ -69,7 +69,7 @@ namespace ORB_SLAM3
         int SearchByBoW(KeyFrame *pKF1, KeyFrame* pKF2, std::vector<MapPoint*> &vpMatches12);
 
         // Matching for the Map Initialization (only used in the monocular case)
-        int SearchForInitialization(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched, std::vector<int> &vnMatches12, int windowSize=10);
+        int SearchForInitialization(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched, std::vector<int> &vnMatches12, float fNNratio, int windowSize=10);
 
         // Matching to triangulate new MapPoints. Check Epipolar Constraint.
         int SearchForTriangulation(KeyFrame *pKF1, KeyFrame* pKF2,
@@ -97,8 +97,6 @@ namespace ORB_SLAM3
         float RadiusByViewingCos(const float &viewCos);
 
         void ComputeThreeMaxima(std::vector<int>* histo, const int L, int &ind1, int &ind2, int &ind3);
-
-        float mfNNratio;
     };
 
 }// namespace ORB_SLAM

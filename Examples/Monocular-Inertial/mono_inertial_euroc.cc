@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     cout << "num_seq = " << num_seq << endl;
     string strPathSetting = argv[1];
     string strPathSaving = string(argv[2]);
-    cout << "settings path: " << strPathSaving << endl;
+    cout << "settings path: " << strPathSetting << endl;
     cout << "result save path: " << strPathSaving << endl;
 
     // Load all sequences:

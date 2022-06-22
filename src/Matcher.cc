@@ -33,11 +33,11 @@ namespace ORB_SLAM3
     const float Matcher::TH_HIGH = 0.8;
     const float Matcher::TH_LOW = 0.5;
 
-    Matcher::Matcher(float nnratio): mfNNratio(nnratio)
+    Matcher::Matcher()
     {
     }
 
-    int Matcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoints, const float th, const bool bFarPoints, const float thFarPoints)
+    int Matcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoints, float fNNratio, const float th, const bool bFarPoints, const float thFarPoints)
     {
         int nmatches=0, left = 0, right = 0;
 
@@ -119,10 +119,10 @@ namespace ORB_SLAM3
                     // Apply ratio to second match (only if best and second are in the same scale level)
                     if(bestDist<=TH_HIGH)
                     {
-                        if(bestLevel==bestLevel2 && bestDist>mfNNratio*bestDist2)
+                        if(bestLevel==bestLevel2 && bestDist>fNNratio*bestDist2)
                             continue;
 
-                        if(bestLevel!=bestLevel2 || bestDist<=mfNNratio*bestDist2){
+                        if(bestLevel!=bestLevel2 || bestDist<=fNNratio*bestDist2){
                             F.mvpMapPoints[bestIdx]=pMP;
 
                             if(F.Nleft != -1 && F.mvLeftToRightMatch[bestIdx] != -1){ //Also match with the stereo observation at right camera
@@ -189,7 +189,7 @@ namespace ORB_SLAM3
                     // Apply ratio to second match (only if best and second are in the same scale level)
                     if(bestDist<=TH_HIGH)
                     {
-                        if(bestLevel==bestLevel2 && bestDist>mfNNratio*bestDist2)
+                        if(bestLevel==bestLevel2 && bestDist>fNNratio*bestDist2)
                             continue;
 
                         if(F.Nleft != -1 && F.mvRightToLeftMatch[bestIdx] != -1){ //Also match with the stereo observation at right camera
@@ -483,7 +483,7 @@ namespace ORB_SLAM3
         return nmatches;
     }
 
-    int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &vbPrevMatched, vector<int> &vnMatches12, int windowSize)
+    int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &vbPrevMatched, vector<int> &vnMatches12, float fNNratio, int windowSize)
     {
         int nmatches=0;
         vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
@@ -534,7 +534,7 @@ namespace ORB_SLAM3
 
             if(bestDist<=TH_LOW)
             {
-                if(bestDist<(float)bestDist2*mfNNratio)
+                if(bestDist<(float)bestDist2*fNNratio)
                 {
                     if(vnMatches21[bestIdx2]>=0)
                     {
@@ -616,17 +616,6 @@ namespace ORB_SLAM3
                 // correctMatches.emplace_back(m);
             }
         }
-
-
-        // { // For Debug
-        //     static unsigned int times = 0;
-        //     cv::Mat outImg, outImg1, outImg2;
-        //     cv::drawMatches(pKF1->imgLeft, vRealKeyPoints1, pKF2->imgLeft, vRealKeyPoints2, matches, outImg1);
-        //     cv::drawMatches(pKF1->imgLeft, vRealKeyPoints1, pKF2->imgLeft, vRealKeyPoints2, correctMatches, outImg2);
-        //     cv::vconcat(outImg1, outImg2, outImg);
-        //     cv::imwrite("output/SearchByBoW/"+std::to_string(times)+".png", outImg);
-        //     times++;
-        // }
 
         return nmatches;
     }
@@ -766,8 +755,6 @@ namespace ORB_SLAM3
         const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
         const cv::Mat &Descriptors2 = pKF2->mDescriptors;
 
-        // cout << "\t" << "SearchForTriangulation: " << Descriptors1.rows << " : " << Descriptors2.rows << endl;
-
         //Compute epipole in second image
         Sophus::SE3f T1w = pKF1->GetPose();
         Sophus::SE3f T2w = pKF2->GetPose();
@@ -825,41 +812,46 @@ namespace ORB_SLAM3
         }
         cv::Mat realDescriptors2 = cv::Mat(vRealIndex2.size(), Descriptors2.cols, Descriptors2.type());
         for (size_t index = 0; index < vRealIndex2.size(); ++index) Descriptors2.row(vRealIndex2[index]).copyTo(realDescriptors2.row(index));
-        auto tv2 = chrono::steady_clock::now();
-        double tv = chrono::duration_cast<chrono::duration<double,std::milli> >(tv2 - tv1).count();
-        // cout << "\t" << "voncat costs: " <<  tv << endl;
 
-        auto tc1 = chrono::steady_clock::now();
         assert(realDescriptors1.isContinuous() && realDescriptors2.isContinuous());
         Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> des1(realDescriptors1.ptr<float>(), realDescriptors1.rows, realDescriptors1.cols);
         Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> des2(realDescriptors2.ptr<float>(), realDescriptors2.rows, realDescriptors2.cols);
 
         Eigen::MatrixXf distance = 2 * (Eigen::MatrixXf::Ones(des1.rows(), des2.rows()) - des1 * des2.transpose()); // Approximate to norm(des1 - des2)^2
 
-        auto tc2 = chrono::steady_clock::now();
-        auto tc = chrono::duration_cast<chrono::duration<double,std::milli> >(tc2 - tc1).count();
-        // cout << "\t" << "calculation costs: " <<  tc << endl;
-
-        auto ts1 = chrono::steady_clock::now();
         for (int realIdx1 = 0; realIdx1 < distance.rows(); ++realIdx1)
         {
-            float bestDist1 = std::numeric_limits<float>::max();
-            int bestIdx2 = -1;
+            float bestDist1 = TH_HIGH * TH_HIGH;
+            int bestRealIdx2 = -1;
             for (int realIdx2 = 0; realIdx2 < distance.cols(); ++realIdx2)
             {
-                float dist =distance(realIdx1, realIdx2);
+                float dist = distance(realIdx1, realIdx2);
 
-                if(dist<bestDist1)
+                if(dist < bestDist1)
                 {
-                    bestDist1=dist;
-                    bestIdx2=realIdx2;
+                    bestDist1 = dist;
+                    bestRealIdx2 = realIdx2;
                 }
             }
             
-            if(bestDist1 < TH_HIGH * TH_HIGH)
+            if(bestRealIdx2 != -1)
             {
+                // cross check
+                int bestCrossRealIdx1 = -1;
+                float bestCrossDist = TH_HIGH * TH_HIGH;
+                for(int crossRealIdx1 = 0; crossRealIdx1 < distance.rows(); crossRealIdx1++)
+                {
+                    float dist = distance(crossRealIdx1, bestRealIdx2);
+                    if (dist < bestCrossDist)
+                    {
+                        bestCrossDist = dist;
+                        bestCrossRealIdx1 = crossRealIdx1;
+                    }
+                }
+                if (bestCrossRealIdx1 != realIdx1) continue;
+
                 int idx1 = vRealIndex1[realIdx1];
-                int idx2 = vRealIndex2[bestIdx2];
+                int idx2 = vRealIndex2[bestRealIdx2];
 
                 const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1]; // pKF1->mvKeysUn[idx1]
                 const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2]; // pKF2->mvKeysUn[idx2]
@@ -879,9 +871,6 @@ namespace ORB_SLAM3
                 }
             }
         }
-        auto ts2 = chrono::steady_clock::now();
-        auto ts = chrono::duration_cast<chrono::duration<double,std::milli> >(ts2 - ts1).count();
-        // cout << "\t" << "search costs: " <<  ts << endl;
 
         vMatchedPairs.clear();
         vMatchedPairs.reserve(nmatches);
@@ -897,6 +886,7 @@ namespace ORB_SLAM3
     }
 
 /*
+    [[deprecated]]
     int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2,
                                            vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo, const bool bCoarse)
     {   

@@ -39,7 +39,17 @@ void KeyFrameDatabase::erase(KeyFrame* pKF)
 {
     unique_lock<mutex> lock(mMutex);
 
-    assert(mvDatabase.count(pKF));
+    if (!mvDatabase.count(pKF))
+    {
+        cout << "Error in KeyFrameDatabase::erase()" << endl;
+        cout << "Erase Id: " << pKF->mnId << endl;
+        for (auto pKFi : mvDatabase)
+        {
+            cout << "Dataset Id: " << pKFi->mnId << endl;
+        }
+        return;
+    }
+    
     mvDatabase.erase(pKF);
 }
 

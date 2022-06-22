@@ -83,11 +83,13 @@ void ShowImageWithText(const string &title, const cv::Mat &image, const string &
     cv::imshow(title, plot);
 }
 
+const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_04_difficult/mav0/cam0/data/");
+const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
+const int nKeyFrame = 200;
+const int dbStart = 420;
+
 int main(int argc, char** argv)
 {
-    const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_04_difficult/mav0/cam0/data/");
-    const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
-
     settings = new Settings(strSettingsPath, 0);
     HFNetTFModel *pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
     HFextractor *pExtractor = new HFextractor(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),settings->scaleFactor(),settings->nLevels(),pModel);
@@ -99,8 +101,6 @@ int main(int argc, char** argv)
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     cout << "Got [" << files.size() << "] images in dataset" << endl;
 
-    const int nKeyFrame = 200;
-    const int dbStart = 420;
     const int dbEnd = files.size();
     const float step = (dbEnd - dbStart) / (float)nKeyFrame;
     if (dbEnd <= dbStart + nKeyFrame) exit(-1);

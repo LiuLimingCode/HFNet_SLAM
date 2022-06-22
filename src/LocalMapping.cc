@@ -396,7 +396,7 @@ void LocalMapping::MapPointCulling()
 
 //     virtual void operator ()(const cv::Range& range) const CV_OVERRIDE
 //     {
-//         Matcher matcher(0.6);
+//         Matcher matcher;
 //         Eigen::Vector3f Ow1 = mpCurrentKeyFrame->GetCameraCenter();
 //         for (int i = range.start; i < range.end; ++i)
 //         {
@@ -459,9 +459,7 @@ void LocalMapping::CreateNewMapPoints()
         }
     }
 
-    float th = 0.6f;
-
-    Matcher matcher(th);
+    Matcher matcher;
 
     Sophus::SE3<float> sophTcw1 = mpCurrentKeyFrame->GetPose();
     Eigen::Matrix<float,3,4> eigTcw1 = sophTcw1.matrix3x4();
