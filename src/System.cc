@@ -109,7 +109,7 @@ System::System(const string &strSettingsFile, const eSensor sensor,
 
     if (settings_->extractorType() == kExtractorHFNetTF)
     {
-        mpModel = new HFNetTFModel(settings_->strResamplerPath(), settings_->strModelPath());
+        mpModel = new HFNetTFModel(settings_->strResamplerPath(), settings_->strModelPath(), settings_->newImSize());
         if (mpModel->IsValid())
         {
             cout << "Successfully loaded HFNetTF model" << endl;

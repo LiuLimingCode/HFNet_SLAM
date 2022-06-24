@@ -14,6 +14,26 @@ namespace ORB_SLAM3
 
 #ifdef USE_TENSORFLOW
 
+HFNetTFModel::HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir, const cv::Size warmUpImageSize)
+{
+    bool bLoadedLib = LoadResamplerOp(strResamplerDir);
+    bool bLoadedModel = LoadHFNetTFModel(strModelDir);
+
+    mbVaild = bLoadedLib & bLoadedModel;
+
+    // Warming up, the tensorflow model cost huge time at the first detection.
+    // Therefore, give a fake image to waming up
+    // The size of fake image should be the same as the real image.
+    if (mbVaild && warmUpImageSize.width > 0 && warmUpImageSize.height > 0)
+    {
+        Mat fakeImg(warmUpImageSize, CV_8UC1);
+        cv::randu(fakeImg, Scalar(0), Scalar(255));
+        std::vector<cv::KeyPoint> vKeyPoint;
+        cv::Mat localDescriptors, globalDescriptors;
+        Detect(fakeImg, vKeyPoint, localDescriptors, globalDescriptors, 1000, 0, 4);
+    }
+}
+
 bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                           int nKeypointsNum, float threshold, int nRadius) 
 {
@@ -50,7 +70,7 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
         vKeypoints.emplace_back(kp);
     }
     localDescriptors = cv::Mat::zeros(vKeypoints.size(), 256, CV_32F);
-    for (int index = 0; index < vKeypoints.size(); ++index)
+    for (size_t index = 0; index < vKeypoints.size(); ++index)
     {
         for (int temp = 0; temp < 256; ++temp)
         {

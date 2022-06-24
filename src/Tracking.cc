@@ -100,6 +100,7 @@ Tracking::Tracking(System *pSys, BaseModel *pModel, FrameDrawer *pFrameDrawer, M
     vnTrackReferenceKeyFrame_searchBoW.clear();
     vnTrackReferenceKeyFrame_goodMatches.clear();
     vnTrackLocalMap_mvpLocalKeyFrames.clear();
+    vnTrackLocalMap_earliestKeyFrames.clear();
     vnTrackLocalMap_mvpLocalMapPoints.clear();
     vnTrackLocalMap_nToMatch.clear();
     vnTrackLocalMap_searchProjection.clear();
@@ -245,6 +246,7 @@ void Tracking::TrackStats2File()
       << "TrackReferenceKeyFrame_searchBoW,"
       << "TrackReferenceKeyFrame_goodMatches,"
       << "TrackLocalMap_mvpLocalKeyFrames,"
+      << "TrackLocalMap_earliestKeyFrames,"
       << "TrackLocalMap_mvpLocalMapPoints,"
       << "TrackLocalMap_nToMatch,"
       << "TrackLocalMap_searchProjection,"
@@ -254,8 +256,8 @@ void Tracking::TrackStats2File()
     {
         f << vnKeyPointExtraction[index] << "," << vnTrackWithMotionModel_smallThProjection[index] << "," << vnTrackWithMotionModel_bigThProjection[index] << ","
           << vnTrackWithMotionModel_goodMatches[index] << "," << vnTrackReferenceKeyFrame_searchBoW[index] << "," << vnTrackReferenceKeyFrame_goodMatches[index] << ","
-          << vnTrackLocalMap_mvpLocalKeyFrames[index] << "," << vnTrackLocalMap_mvpLocalMapPoints[index] << "," << vnTrackLocalMap_nToMatch[index] << ","
-          << vnTrackLocalMap_searchProjection[index] << "," << vnTrackLocalMap_goodMatches[index] << endl;
+          << vnTrackLocalMap_mvpLocalKeyFrames[index] << "," << vnTrackLocalMap_earliestKeyFrames[index] << "," << vnTrackLocalMap_mvpLocalMapPoints[index] << ","
+          << vnTrackLocalMap_nToMatch[index] << "," << vnTrackLocalMap_searchProjection[index] << "," << vnTrackLocalMap_goodMatches[index] << endl;
     }
 
     f.close();
@@ -817,6 +819,7 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
     if (vnTrackReferenceKeyFrame_searchBoW.size() < num) vnTrackReferenceKeyFrame_searchBoW.push_back(-1);
     if (vnTrackReferenceKeyFrame_goodMatches.size() < num) vnTrackReferenceKeyFrame_goodMatches.push_back(-1);
     if (vnTrackLocalMap_mvpLocalKeyFrames.size() < num) vnTrackLocalMap_mvpLocalKeyFrames.push_back(-1);
+    if (vnTrackLocalMap_earliestKeyFrames.size() < num) vnTrackLocalMap_earliestKeyFrames.push_back(-1);
     if (vnTrackLocalMap_mvpLocalMapPoints.size() < num) vnTrackLocalMap_mvpLocalMapPoints.push_back(-1);
     if (vnTrackLocalMap_nToMatch.size() < num) vnTrackLocalMap_nToMatch.push_back(-1);
     if (vnTrackLocalMap_searchProjection.size() < num) vnTrackLocalMap_searchProjection.push_back(-1);
@@ -2650,8 +2653,6 @@ void Tracking::SearchLocalPoints()
     }
 
 #ifdef REGISTER_TIMES
-    vnTrackLocalMap_mvpLocalKeyFrames.push_back(mvpLocalKeyFrames.size());
-    vnTrackLocalMap_mvpLocalMapPoints.push_back(mvpLocalMapPoints.size());
     vnTrackLocalMap_nToMatch.push_back(nToMatch);
     vnTrackLocalMap_searchProjection.push_back(matches);
 #endif
@@ -2672,10 +2673,11 @@ void Tracking::UpdateLocalPoints()
     mvpLocalMapPoints.clear();
 
     int count_pts = 0;
-
+    unsigned long earliest_id = ULONG_MAX;
     for(vector<KeyFrame*>::const_reverse_iterator itKF=mvpLocalKeyFrames.rbegin(), itEndKF=mvpLocalKeyFrames.rend(); itKF!=itEndKF; ++itKF)
     {
         KeyFrame* pKF = *itKF;
+        earliest_id = std::min(earliest_id, pKF->mnFrameId);
         const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
 
         for(vector<MapPoint*>::const_iterator itMP=vpMPs.begin(), itEndMP=vpMPs.end(); itMP!=itEndMP; itMP++)
@@ -2694,6 +2696,12 @@ void Tracking::UpdateLocalPoints()
             }
         }
     }
+
+#ifdef REGISTER_TIMES
+    vnTrackLocalMap_mvpLocalKeyFrames.push_back(mvpLocalKeyFrames.size());
+    vnTrackLocalMap_earliestKeyFrames.push_back(earliest_id);
+    vnTrackLocalMap_mvpLocalMapPoints.push_back(mvpLocalMapPoints.size());
+#endif
 }
 
 

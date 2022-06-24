@@ -194,6 +194,7 @@ public:
     vector<int> vnTrackReferenceKeyFrame_searchBoW;
     vector<int> vnTrackReferenceKeyFrame_goodMatches;
     vector<int> vnTrackLocalMap_mvpLocalKeyFrames;
+    vector<int> vnTrackLocalMap_earliestKeyFrames;
     vector<int> vnTrackLocalMap_mvpLocalMapPoints;
     vector<int> vnTrackLocalMap_nToMatch;
     vector<int> vnTrackLocalMap_searchProjection;

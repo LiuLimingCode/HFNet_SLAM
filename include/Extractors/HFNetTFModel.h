@@ -23,13 +23,7 @@ namespace ORB_SLAM3
 class HFNetTFModel : public BaseModel
 {
 public:
-    HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir)
-    {
-        bool bLoadedLib = LoadResamplerOp(strResamplerDir);
-        bool bLoadedModel = LoadHFNetTFModel(strModelDir);
-
-        mbVaild = bLoadedLib & bLoadedModel;
-    }
+    HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir, const cv::Size warmUpImageSize = cv::Size(-1, -1));
 
     bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                 int nKeypointsNum, float threshold, int nRadius) override;
@@ -58,6 +52,8 @@ public:
     {
         std::cerr << "You must set USE_TENSORFLOW in CMakeLists.txt to enable tensorflow function." << std::endl;
     }
+
+    bool IsValid(void) override { return false; }
 };
 
 #endif // USE_TENSORFLOW

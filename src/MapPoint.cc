@@ -513,40 +513,36 @@ float MapPoint::GetMaxDistanceInvariance()
 
 int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
 {
-    // For HFNet
-    return 0;
-    // float ratio;
-    // {
-    //     unique_lock<mutex> lock(mMutexPos);
-    //     ratio = mfMaxDistance/currentDist;
-    // }
+    float ratio;
+    {
+        unique_lock<mutex> lock(mMutexPos);
+        ratio = mfMaxDistance/currentDist;
+    }
 
-    // int nScale = ceil(log(ratio)/pKF->mfLogScaleFactor);
-    // if(nScale<0)
-    //     nScale = 0;
-    // else if(nScale>=pKF->mnScaleLevels)
-    //     nScale = pKF->mnScaleLevels-1;
+    int nScale = ceil(log(ratio)/pKF->mfLogScaleFactor);
+    if(nScale<0)
+        nScale = 0;
+    else if(nScale>=pKF->mnScaleLevels)
+        nScale = pKF->mnScaleLevels-1;
 
-    // return nScale;
+    return nScale;
 }
 
 int MapPoint::PredictScale(const float &currentDist, Frame* pF)
 {
-    // For HFNet
-    return 0;
-    // float ratio;
-    // {
-    //     unique_lock<mutex> lock(mMutexPos);
-    //     ratio = mfMaxDistance/currentDist;
-    // }
+    float ratio;
+    {
+        unique_lock<mutex> lock(mMutexPos);
+        ratio = mfMaxDistance/currentDist;
+    }
 
-    // int nScale = ceil(log(ratio)/pF->mfLogScaleFactor);
-    // if(nScale<0)
-    //     nScale = 0;
-    // else if(nScale>=pF->mnScaleLevels)
-    //     nScale = pF->mnScaleLevels-1;
+    int nScale = ceil(log(ratio)/pF->mfLogScaleFactor);
+    if(nScale<0)
+        nScale = 0;
+    else if(nScale>=pF->mnScaleLevels)
+        nScale = pF->mnScaleLevels-1;
 
-    // return nScale;
+    return nScale;
 }
 
 void MapPoint::PrintObservations()

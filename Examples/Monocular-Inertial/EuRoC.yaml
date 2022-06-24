@@ -76,14 +76,14 @@ Extractor.nFeatures: 1000 # 1000
 Extractor.scaleFactor: 1.2
 
 # Extractor: Number of levels in the scale pyramid	
-Extractor.nLevels: 8
+Extractor.nLevels: 1
 
 
 # HFNET Extractor
 Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet/"
 Extractor.HFNetTF.resamplerPath: "/home/llm/src/tensorflow-1.15.5/bazel-bin/tensorflow/contrib/resampler/python/ops/_resampler_ops.so"
 Extractor.HFNetTF.nNMSRadius: 4
-Extractor.HFNetTF.threshold: 0.0
+Extractor.HFNetTF.threshold: 0.01
 # Because Euroc has good texture, it can detect more keypoints. Use these parameters if we want to decrease the number.
 # Extractor.HFNetTF.nNMSRadius: 4
 # Extractor.HFNetTF.threshold: 0.01

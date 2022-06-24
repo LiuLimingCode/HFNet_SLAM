@@ -72,10 +72,10 @@ Extractor.type: "HFNetTF" # [HFNetTF HFNetVINO]
 Extractor.nFeatures: 1500 # Tested with 1250s
 
 # Extractor: Scale factor between levels in the scale pyramid 	
-Extractor.scaleFactor: 1.2
+Extractor.scaleFactor: 1.0
 
 # Extractor: Number of levels in the scale pyramid	
-Extractor.nLevels: 8
+Extractor.nLevels: 1
 
 
 # HFNET Extractor
