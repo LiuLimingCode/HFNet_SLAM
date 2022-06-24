@@ -431,19 +431,24 @@ void GetHFNet(HFNetTFModel *model, cv::Mat image, vector<KeyPoint> &vKeypoints, 
     }
 }
 
+// const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
+// const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
+// const int dbStart = 420;
+// const int dbEnd = 50;
+
+const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
+const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
+const int dbStart = 50;
+const int dbEnd = 50;
+
 int main(int argc, char* argv[])
 {
-    // const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
-    // const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
-    const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
-    const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
-
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     settings = new Settings(strSettingsPath, 0);
     HFNetTFModel *pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
 
     std::default_random_engine generator;
-    std::uniform_int_distribution<unsigned int> distribution(0, files.size() - 1);
+    std::uniform_int_distribution<unsigned int> distribution(dbStart, files.size() - dbEnd);
 
     cv::Mat image;
     vector<KeyPoint> keypoints;

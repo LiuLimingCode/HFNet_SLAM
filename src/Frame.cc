@@ -115,7 +115,7 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     mvLevelSigma2 = mpExtractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpExtractorLeft->GetInverseScaleSigmaSquares();
 
-    // ORB extraction
+    // KeyPoints Extraction
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartExtORB = std::chrono::steady_clock::now();
 #endif
@@ -215,7 +215,7 @@ Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeSt
     mvLevelSigma2 = mpExtractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpExtractorLeft->GetInverseScaleSigmaSquares();
 
-    // ORB extraction
+    // KeyPoints Extraction
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartExtORB = std::chrono::steady_clock::now();
 #endif
@@ -293,7 +293,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, BaseExtractor* extr
      mpCamera2(nullptr), mbHasPose(false), mbHasVelocity(false)
 {
     // For Debug
-    imgLeft = imGray.clone();;
+    // imgLeft = imGray.clone();
 
     // Frame ID
     mnId=nNextId++;
@@ -307,7 +307,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, BaseExtractor* extr
     mvLevelSigma2 = mpExtractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpExtractorLeft->GetInverseScaleSigmaSquares();
 
-    // ORB extraction
+    // KeyPoints Extraction
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartExtORB = std::chrono::steady_clock::now();
 #endif
@@ -1044,7 +1044,7 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     mvLevelSigma2 = mpExtractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpExtractorLeft->GetInverseScaleSigmaSquares();
 
-    // ORB extraction
+    // KeyPoints Extraction
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_StartExtORB = std::chrono::steady_clock::now();
 #endif

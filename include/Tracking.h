@@ -179,13 +179,25 @@ public:
 
     vector<double> vdRectStereo_ms;
     vector<double> vdResizeImage_ms;
-    vector<double> vdORBExtract_ms;
+    vector<double> vdKeyPointsExtract_ms;
     vector<double> vdStereoMatch_ms;
     vector<double> vdIMUInteg_ms;
     vector<double> vdPosePred_ms;
     vector<double> vdLMTrack_ms;
     vector<double> vdNewKF_ms;
     vector<double> vdTrackTotal_ms;
+
+    vector<int> vnKeyPointExtraction;
+    vector<int> vnTrackWithMotionModel_smallThProjection;
+    vector<int> vnTrackWithMotionModel_bigThProjection;
+    vector<int> vnTrackWithMotionModel_goodMatches;
+    vector<int> vnTrackReferenceKeyFrame_searchBoW;
+    vector<int> vnTrackReferenceKeyFrame_goodMatches;
+    vector<int> vnTrackLocalMap_mvpLocalKeyFrames;
+    vector<int> vnTrackLocalMap_mvpLocalMapPoints;
+    vector<int> vnTrackLocalMap_nToMatch;
+    vector<int> vnTrackLocalMap_searchProjection;
+    vector<int> vnTrackLocalMap_goodMatches;
 #endif
 
 protected:

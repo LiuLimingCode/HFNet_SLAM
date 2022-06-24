@@ -81,7 +81,9 @@ Extractor.nLevels: 8
 # HFNET Extractor
 Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet/"
 Extractor.HFNetTF.resamplerPath: "/home/llm/src/tensorflow-1.15.5/bazel-bin/tensorflow/contrib/resampler/python/ops/_resampler_ops.so"
-Extractor.HFNetTF.nNMSRadius: 3
+Extractor.HFNetTF.nNMSRadius: 4
 Extractor.HFNetTF.threshold: 0.0
 # Extractor.ORB.iniThFAST: 20
 # Extractor.ORB.minThFAST: 7
+
+loopClosing: 0

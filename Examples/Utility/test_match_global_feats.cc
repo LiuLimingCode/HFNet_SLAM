@@ -83,10 +83,17 @@ void ShowImageWithText(const string &title, const cv::Mat &image, const string &
     cv::imshow(title, plot);
 }
 
-const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_04_difficult/mav0/cam0/data/");
-const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
+// const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
+// const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
+// const int dbStart = 420;
+// const int dbEnd = 50;
+
+const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
+const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
+const int dbStart = 50;
+const int dbEnd = 50;
+
 const int nKeyFrame = 200;
-const int dbStart = 420;
 
 int main(int argc, char** argv)
 {
@@ -101,18 +108,18 @@ int main(int argc, char** argv)
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     cout << "Got [" << files.size() << "] images in dataset" << endl;
 
-    const int dbEnd = files.size();
-    const float step = (dbEnd - dbStart) / (float)nKeyFrame;
-    if (dbEnd <= dbStart + nKeyFrame) exit(-1);
-    cout << "Dataset range: [" << dbStart << " ~ " << dbEnd << "]" << ", nKeyFrame: " << nKeyFrame << endl;
-
+    int end = files.size() - dbEnd;
     std::default_random_engine generator;
-    std::uniform_int_distribution<unsigned int> distribution(dbStart, dbEnd);
+    std::uniform_int_distribution<unsigned int> distribution(dbStart, end);
+
+    const float step = (end - dbStart) / (float)nKeyFrame;
+    if (end <= dbStart + nKeyFrame) exit(-1);
+    cout << "Dataset range: [" << dbStart << " ~ " << end << "]" << ", nKeyFrame: " << nKeyFrame << endl;
 
     KeyFrameDB vKeyFrameDB;
     vector<cv::Mat> vImageDatabase;
     float cur = dbStart;
-    while (cur < dbEnd)
+    while (cur < end)
     {
         int select = cur;
         cv::Mat imageGray = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);

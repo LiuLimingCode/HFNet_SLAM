@@ -106,19 +106,24 @@ int SearchByBoWV2(float mfNNratio, int threshold,
     return vMatches.size();
 }
 
+// const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
+// const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
+// const int dbStart = 420;
+// const int dbEnd = 50;
+
+const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
+const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
+const int dbStart = 50;
+const int dbEnd = 50;
+
 int main(int argc, char* argv[])
 {
-    // const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
-    // const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
-    const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
-    const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
-
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     settings = new Settings(strSettingsPath, 0);
     HFNetTFModel *pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
 
     std::default_random_engine generator;
-    std::uniform_int_distribution<unsigned int> distribution(50, files.size() - 50);
+    std::uniform_int_distribution<unsigned int> distribution(dbStart, files.size() - dbEnd);
 
     HFextractor extractorHF(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),settings->scaleFactor(),settings->nLevels(),pModel);
 

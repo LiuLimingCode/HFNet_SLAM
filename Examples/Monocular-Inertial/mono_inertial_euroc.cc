@@ -242,6 +242,7 @@ int main(int argc, char *argv[])
     res = system(("mv LocalMapTimeStats.txt " + strPathSaving + "LocalMapTimeStats.txt").c_str());
     res = system(("mv SessionInfo.txt " + strPathSaving + "SessionInfo.txt").c_str());
     res = system(("mv TrackingTimeStats.txt " + strPathSaving + "TrackingTimeStats.txt").c_str());
+    res = system(("mv TrackInfo.csv " + strPathSaving + "TrackInfo.csv").c_str());
 #endif
 
     sort(vTimesTrack.begin(),vTimesTrack.end());

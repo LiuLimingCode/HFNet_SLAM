@@ -41,12 +41,12 @@ void KeyFrameDatabase::erase(KeyFrame* pKF)
 
     if (!mvDatabase.count(pKF))
     {
-        cout << "Error in KeyFrameDatabase::erase()" << endl;
-        cout << "Erase Id: " << pKF->mnId << endl;
-        for (auto pKFi : mvDatabase)
-        {
-            cout << "Dataset Id: " << pKFi->mnId << endl;
-        }
+        // cout << "Error in KeyFrameDatabase::erase()" << endl;
+        // cout << "Erase Id: " << pKF->mnId << endl;
+        // for (auto pKFi : mvDatabase)
+        // {
+        //     cout << "Dataset Id: " << pKFi->mnId << endl;
+        // }
         return;
     }
     

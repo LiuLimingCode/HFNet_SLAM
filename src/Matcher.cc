@@ -31,7 +31,7 @@ namespace ORB_SLAM3
 {
 
     const float Matcher::TH_HIGH = 0.8;
-    const float Matcher::TH_LOW = 0.5;
+    const float Matcher::TH_LOW = 0.6;
 
     Matcher::Matcher()
     {

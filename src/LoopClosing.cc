@@ -224,6 +224,9 @@ void LoopClosing::Run()
 
                     Verbose::PrintMess("*Loop detected", Verbose::VERBOSITY_QUIET);
 
+                    cout << "mpCurrentKF->mTimeStamp: " << mpCurrentKF->mTimeStamp << endl;
+                    cout << "mpLoopMatchedKF->mTimeStamp: " << mpLoopMatchedKF->mTimeStamp << endl;
+
                     mg2oLoopScw = mg2oLoopSlw; //*mvg2oSim3LoopTcw[nCurrentIndex];
                     if(mpCurrentKF->GetMap()->IsInertial())
                     {
@@ -484,7 +487,7 @@ bool LoopClosing::NewDetectCommonRegions()
 #ifdef REGISTER_TIMES
         std::chrono::steady_clock::time_point time_StartQuery = std::chrono::steady_clock::now();
 #endif
-        mpKeyFrameDB->DetectNBestCandidates(mpCurrentKF, vpLoopBowCand, vpMergeBowCand,3);
+        mpKeyFrameDB->DetectNBestCandidates(mpCurrentKF, vpLoopBowCand, vpMergeBowCand,6);
 #ifdef REGISTER_TIMES
         std::chrono::steady_clock::time_point time_EndQuery = std::chrono::steady_clock::now();
 
