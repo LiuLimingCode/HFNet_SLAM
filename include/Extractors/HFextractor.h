@@ -18,7 +18,7 @@ public:
     enum {HARRIS_SCORE=0, FAST_SCORE=1 };
 
     HFextractor(int nfeatures, int nNMSRadius, float threshold,
-                float scaleFactor, int nlevels, BaseModel* model);
+                float scaleFactor, int nlevels, BaseModel* model, bool bUseOctTree = false);
 
     ~HFextractor(){}
 

@@ -20,11 +20,12 @@ const int HALF_PATCH_SIZE = 15;
 const int EDGE_THRESHOLD = 19;
 
 HFextractor::HFextractor(int _nfeatures, int _nNMSRadius, float _threshold,
-                        float _scaleFactor, int _nlevels, BaseModel* _model):
+                        float _scaleFactor, int _nlevels, BaseModel* _model, bool _bUseOctTree):
         nfeatures(_nfeatures), nNMSRadius(_nNMSRadius), threshold(_threshold), model(_model)
 {
     scaleFactor = _scaleFactor;
     nlevels = _nlevels;
+    bUseOctTree = _bUseOctTree;
     mvScaleFactor.resize(nlevels);
     mvLevelSigma2.resize(nlevels);
     mvScaleFactor[0]=1.0f;
@@ -79,7 +80,6 @@ HFextractor::HFextractor(int _nfeatures, int _nNMSRadius, float _threshold,
 }
 
 
-
 int HFextractor::operator() (const cv::Mat &_image, std::vector<cv::KeyPoint>& _keypoints,
                              cv::Mat &_localDescriptors, cv::Mat &_globalDescriptors) {
     if(_image.empty())
@@ -87,8 +87,27 @@ int HFextractor::operator() (const cv::Mat &_image, std::vector<cv::KeyPoint>& _
 
     assert(_image.type() == CV_8UC1 );
 
-    model->Detect(_image, _keypoints, _localDescriptors, _globalDescriptors, nfeatures, threshold, nNMSRadius);
+    if (bUseOctTree)
+    {
+        std::vector<cv::KeyPoint> vKeypoints;
+        cv::Mat lDescriptor;
+        model->Detect(_image, vKeypoints, lDescriptor, _globalDescriptors, nfeatures * 10, threshold, nNMSRadius);
+        auto remainIdxs = DistributeOctTree(vKeypoints, 0, _image.cols, 0, _image.rows, nfeatures);
+        _keypoints.clear();
+        _keypoints.reserve(remainIdxs.size());
+        _localDescriptors = cv::Mat(remainIdxs.size(), 256, CV_32F);
+        for (size_t index = 0; index < remainIdxs.size(); ++index)
+        {
+            _keypoints.emplace_back(vKeypoints[remainIdxs[index]]);
+            lDescriptor.row(remainIdxs[index]).copyTo(_localDescriptors.row(index));
+        }
+    }
+    else
+    {
+        model->Detect(_image, _keypoints, _localDescriptors, _globalDescriptors, nfeatures, threshold, nNMSRadius);
+    }
     return _keypoints.size();
 }
+
 
 } //namespace ORB_SLAM3

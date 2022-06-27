@@ -50,11 +50,15 @@ protected:
 
     double scaleFactor;
     int nlevels;
+    bool bUseOctTree;
 
     std::vector<float> mvScaleFactor;
     std::vector<float> mvInvScaleFactor;    
     std::vector<float> mvLevelSigma2;
     std::vector<float> mvInvLevelSigma2;
+
+    std::vector<int> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int minX,
+                                       const int maxX, const int minY, const int maxY, const int N);
 };
 
 } //namespace ORB_SLAM

@@ -129,6 +129,16 @@ public:
     vector<int> vnLBA_MPs;
     int nLBA_exec;
     int nLBA_abort;
+
+    vector<int> vnMapPointCulling_badNum;
+    vector<int> vnMapPointCulling_goodNum;
+    vector<int> vnMapPointMatches_initKP;
+    vector<int> vnMapPointMatches_initMatches;
+    vector<int> vnMapPointMatches_search;
+    vector<int> vnMapPointMatches_newPoints;
+    vector<int> vnMapPointMatches_finalMatches;
+    vector<int> vnSearchInNeighbors_Fuse1;
+    vector<int> vnSearchInNeighbors_Fuse2;
 #endif
 protected:
 

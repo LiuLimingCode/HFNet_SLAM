@@ -113,6 +113,11 @@ void LocalMapping::Run()
 
             double timeMPCreation = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(time_EndMPCreation - time_EndMPCulling).count();
             vdMPCreation_ms.push_back(timeMPCreation);
+
+            const vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
+            int countMatches = 0;
+            for (auto match : vpMapPointMatches) if (match) countMatches++;
+            vnMapPointMatches_finalMatches.push_back(countMatches);
 #endif
 
             bool b_doneLBA = false;
@@ -303,6 +308,19 @@ void LocalMapping::ProcessNewKeyFrame()
         mlNewKeyFrames.pop_front();
     }
 
+#ifdef REGISTER_TIMES
+    const unsigned long id = mpCurrentKeyFrame->mnFrameId;
+    while (vnMapPointCulling_badNum.size() < id) vnMapPointCulling_badNum.push_back(-1);
+    while (vnMapPointCulling_goodNum.size() < id) vnMapPointCulling_goodNum.push_back(-1);
+    while (vnMapPointMatches_initKP.size() < id) vnMapPointMatches_initKP.push_back(-1);
+    while (vnMapPointMatches_initMatches.size() < id) vnMapPointMatches_initMatches.push_back(-1);
+    while (vnMapPointMatches_finalMatches.size() < id) vnMapPointMatches_finalMatches.push_back(-1);
+    while (vnMapPointMatches_search.size() < id) vnMapPointMatches_search.push_back(-1);
+    while (vnMapPointMatches_newPoints.size() < id) vnMapPointMatches_newPoints.push_back(-1);
+    while (vnSearchInNeighbors_Fuse1.size() < id) vnSearchInNeighbors_Fuse1.push_back(-1);
+    while (vnSearchInNeighbors_Fuse2.size() < id) vnSearchInNeighbors_Fuse2.push_back(-1);
+#endif
+
     // TODO
     // mpCurrentKeyFrame->ComputeBoW();
 
@@ -357,31 +375,44 @@ void LocalMapping::MapPointCulling()
     const int cnThObs = nThObs;
 
     int borrar = mlpRecentAddedMapPoints.size();
-
+    int countBad = 0, countGood = 0;
     while(lit!=mlpRecentAddedMapPoints.end())
     {
         MapPoint* pMP = *lit;
 
         if(pMP->isBad())
+        {
             lit = mlpRecentAddedMapPoints.erase(lit);
+            countBad++;
+        }
         else if(pMP->GetFoundRatio()<0.25f)
         {
             pMP->SetBadFlag();
             lit = mlpRecentAddedMapPoints.erase(lit);
+            countBad++;
         }
         else if(((int)nCurrentKFid-(int)pMP->mnFirstKFid)>=2 && pMP->Observations()<=cnThObs)
         {
             pMP->SetBadFlag();
             lit = mlpRecentAddedMapPoints.erase(lit);
+            countBad++;
         }
         else if(((int)nCurrentKFid-(int)pMP->mnFirstKFid)>=3)
+        {
             lit = mlpRecentAddedMapPoints.erase(lit);
+            countGood++;
+        }
         else
         {
             lit++;
             borrar--;
         }
     }
+
+#ifdef REGISTER_TIMES
+    vnMapPointCulling_badNum.push_back(countBad);
+    vnMapPointCulling_goodNum.push_back(countGood);
+#endif
 }
 
 // class CreateNewMapPointsParallel : public cv::ParallelLoopBody
@@ -459,6 +490,14 @@ void LocalMapping::CreateNewMapPoints()
         }
     }
 
+#ifdef REGISTER_TIMES
+    const vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
+    int countInitMatches = 0;
+    for (auto match : vpMapPointMatches) if (match) countInitMatches++;
+    vnMapPointMatches_initKP.push_back(mpCurrentKeyFrame->mvKeys.size());
+    vnMapPointMatches_initMatches.push_back(countInitMatches);
+#endif
+
     Matcher matcher;
 
     Sophus::SE3<float> sophTcw1 = mpCurrentKeyFrame->GetPose();
@@ -480,6 +519,9 @@ void LocalMapping::CreateNewMapPoints()
     int countStereoGoodProj = 0;
     int countStereoAttempt = 0;
     int totalStereoPts = 0;
+
+    int countSearch = 0;
+    int countNewPoint = 0;
     // Search matches with epipolar restriction and triangulate
     for(size_t i=0; i<vpNeighKFs.size(); i++)
     {
@@ -530,6 +572,7 @@ void LocalMapping::CreateNewMapPoints()
 
         // Triangulate each match
         const int nmatches = vMatchedIndices.size();
+        countSearch += nmatches;
         for(int ikp=0; ikp<nmatches; ikp++)
         {
             const int &idx1 = vMatchedIndices[ikp].first;
@@ -757,8 +800,14 @@ void LocalMapping::CreateNewMapPoints()
 
             mpAtlas->AddMapPoint(pMP);
             mlpRecentAddedMapPoints.push_back(pMP);
+            countNewPoint++;
         }
     }    
+
+#ifdef REGISTER_TIMES
+    vnMapPointMatches_search.push_back(countSearch);
+    vnMapPointMatches_newPoints.push_back(countNewPoint);
+#endif
 }
 
 void LocalMapping::SearchInNeighbors()
@@ -812,6 +861,8 @@ void LocalMapping::SearchInNeighbors()
         }
     }
 
+    int countFuse1 = 0, countFuse2 = 0;
+
     // Search matches by projection from current KF in target KFs
     Matcher matcher;
     vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
@@ -819,7 +870,7 @@ void LocalMapping::SearchInNeighbors()
     {
         KeyFrame* pKFi = *vit;
 
-        matcher.Fuse(pKFi,vpMapPointMatches);
+        countFuse1 += matcher.Fuse(pKFi,vpMapPointMatches);
         if(pKFi->NLeft != -1) matcher.Fuse(pKFi,vpMapPointMatches,true);
     }
 
@@ -849,7 +900,7 @@ void LocalMapping::SearchInNeighbors()
         }
     }
 
-    matcher.Fuse(mpCurrentKeyFrame,vpFuseCandidates);
+    countFuse2 = matcher.Fuse(mpCurrentKeyFrame,vpFuseCandidates);
     if(mpCurrentKeyFrame->NLeft != -1) matcher.Fuse(mpCurrentKeyFrame,vpFuseCandidates,true);
 
 
@@ -870,6 +921,11 @@ void LocalMapping::SearchInNeighbors()
 
     // Update connections in covisibility graph
     mpCurrentKeyFrame->UpdateConnections();
+
+#ifdef REGISTER_TIMES
+    vnSearchInNeighbors_Fuse1.push_back(countFuse1);
+    vnSearchInNeighbors_Fuse2.push_back(countFuse2);
+#endif
 }
 
 void LocalMapping::RequestStop()

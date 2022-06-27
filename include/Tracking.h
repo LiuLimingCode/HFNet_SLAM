@@ -175,6 +175,7 @@ public:
 #ifdef REGISTER_TIMES
     void LocalMapStats2File();
     void TrackStats2File();
+    void MatchState2File();
     void PrintTimeStats();
 
     vector<double> vdRectStereo_ms;
@@ -314,7 +315,7 @@ protected:
     int mMaxFrames;
 
     int mnFirstImuFrameId;
-    int mnFramesToResetIMU;
+    int mnFramesToResetIMU = 0;
 
     // Threshold close/far points
     // Points seen as close by the stereo/RGBD sensor are considered reliable

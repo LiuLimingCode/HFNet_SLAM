@@ -499,16 +499,15 @@ void MapPoint::SetNormalVector(const Eigen::Vector3f& normal)
     mNormalVector = normal;
 }
 
+// TODO: For Debug
 float MapPoint::GetMinDistanceInvariance()
 {
-    unique_lock<mutex> lock(mMutexPos);
-    return 0.8f * mfMinDistance;
+    return 0;
 }
 
 float MapPoint::GetMaxDistanceInvariance()
 {
-    unique_lock<mutex> lock(mMutexPos);
-    return 1.2f * mfMaxDistance;
+    return std::numeric_limits<float>::max();
 }
 
 int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
@@ -525,7 +524,7 @@ int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
     else if(nScale>=pKF->mnScaleLevels)
         nScale = pKF->mnScaleLevels-1;
 
-    return nScale;
+    return 0;
 }
 
 int MapPoint::PredictScale(const float &currentDist, Frame* pF)
@@ -542,7 +541,7 @@ int MapPoint::PredictScale(const float &currentDist, Frame* pF)
     else if(nScale>=pF->mnScaleLevels)
         nScale = pF->mnScaleLevels-1;
 
-    return nScale;
+    return 0;
 }
 
 void MapPoint::PrintObservations()

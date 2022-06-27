@@ -69,7 +69,7 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
         kp.response = vResScores(index);
         vKeypoints.emplace_back(kp);
     }
-    localDescriptors = cv::Mat::zeros(vKeypoints.size(), 256, CV_32F);
+    localDescriptors = cv::Mat(vKeypoints.size(), 256, CV_32F);
     for (size_t index = 0; index < vKeypoints.size(); ++index)
     {
         for (int temp = 0; temp < 256; ++temp)
@@ -77,7 +77,7 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
             localDescriptors.ptr<float>(index)[temp] = vResLocalDes(256 * index + temp); 
         }
     }
-    globalDescriptors = cv::Mat::zeros(4096, 1, CV_32F);
+    globalDescriptors = cv::Mat(4096, 1, CV_32F);
     for (int temp = 0; temp < 4096; ++temp)
     {
         globalDescriptors.ptr<float>(0)[temp] = vResGlobalDes(temp);

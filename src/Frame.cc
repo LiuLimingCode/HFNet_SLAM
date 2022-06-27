@@ -510,8 +510,8 @@ Eigen::Vector3f Frame::GetRelativePoseTlr_translation() {
     return mTlr.translation();
 }
 
-
-bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
+// TODO: 改回去
+int Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 {
     if(Nleft == -1){
         pMP->mbTrackInView = false;
@@ -529,14 +529,14 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
         const float &PcZ = Pc(2);
         const float invz = 1.0f/PcZ;
         if(PcZ<0.0f)
-            return false;
+            return 1;
 
         const Eigen::Vector2f uv = mpCamera->project(Pc);
 
         if(uv(0)<mnMinX || uv(0)>mnMaxX)
-            return false;
+            return 2;
         if(uv(1)<mnMinY || uv(1)>mnMaxY)
-            return false;
+            return 2;
 
         pMP->mTrackProjX = uv(0);
         pMP->mTrackProjY = uv(1);
@@ -548,7 +548,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
         const float dist = PO.norm();
 
         if(dist<minDistance || dist>maxDistance)
-            return false;
+            return 3;
 
         // Check viewing angle
         Eigen::Vector3f Pn = pMP->GetNormal();
@@ -556,7 +556,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
         const float viewCos = PO.dot(Pn)/dist;
 
         if(viewCos<viewingCosLimit)
-            return false;
+            return 4;
 
         // Predict scale in the image
         const int nPredictedLevel = pMP->PredictScale(dist,this);
@@ -572,7 +572,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
         pMP->mnTrackScaleLevel= nPredictedLevel;
         pMP->mTrackViewCos = viewCos;
 
-        return true;
+        return 0;
     }
     else{
         pMP->mbTrackInView = false;
@@ -583,7 +583,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
         pMP->mbTrackInView = isInFrustumChecks(pMP,viewingCosLimit);
         pMP->mbTrackInViewR = isInFrustumChecks(pMP,viewingCosLimit,true);
 
-        return pMP->mbTrackInView || pMP->mbTrackInViewR;
+        return !(pMP->mbTrackInView || pMP->mbTrackInViewR);
     }
 }
 

@@ -236,8 +236,14 @@ void Tracking::TrackStats2File()
     }
 
     f.close();
+}
 
-    f.open("TrackInfo.csv");
+void Tracking::MatchState2File()
+{
+    ofstream f;
+
+    // frame
+    f.open("MatchFrame.csv");
     f << fixed;
     f << "KeyPointExtraction,"
       << "TrackWithMotionModel_smallThProjection,"
@@ -261,12 +267,37 @@ void Tracking::TrackStats2File()
     }
 
     f.close();
+
+    // keyframe
+    f.open("MatchKeyFrame.csv");
+    f << fixed;
+    f << "MapPointCulling_badNum,"
+      << "MapPointCulling_goodNum,"
+      << "MapPointMatches_initKP,"
+      << "MapPointMatches_initMatches,"
+      << "MapPointMatches_search,"
+      << "MapPointMatches_newPoints,"
+      << "MapPointMatches_finalMatches,"
+      << "SearchInNeighbors_Fuse1,"
+      << "SearchInNeighbors_Fuse2" << endl;
+
+    for (size_t index = 0; index < vnKeyPointExtraction.size(); ++index)
+    {
+        f << mpLocalMapper->vnMapPointCulling_badNum[index] << "," << mpLocalMapper->vnMapPointCulling_goodNum[index] << ","
+          << mpLocalMapper->vnMapPointMatches_initKP[index] << "," << mpLocalMapper->vnMapPointMatches_initMatches[index] << ","
+          << mpLocalMapper->vnMapPointMatches_search[index] << "," << mpLocalMapper->vnMapPointMatches_newPoints[index] << ","
+          << mpLocalMapper->vnMapPointMatches_finalMatches[index] << ","
+          << mpLocalMapper->vnSearchInNeighbors_Fuse1[index] << "," << mpLocalMapper->vnSearchInNeighbors_Fuse2[index] << endl;
+    }
+
+    f.close();
 }
 
 void Tracking::PrintTimeStats()
 {
     // Save data in files
     TrackStats2File();
+    MatchState2File();
     LocalMapStats2File();
 
 
@@ -598,13 +629,13 @@ void Tracking::newParameterLoader(Settings *settings) {
 
     if (mExtractorType == ExtractorType::kExtractorHFNetTF)
     {
-        mpExtractorLeft = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,mpModel);
+        mpExtractorLeft = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,mpModel,true);
 
         if(mSensor==System::STEREO || mSensor==System::IMU_STEREO)
-            mpExtractorRight = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,mpModel);
+            mpExtractorRight = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,mpModel,true);
 
         if(mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR)
-            mpIniExtractor = new HFextractor(5*nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,mpModel);
+            mpIniExtractor = new HFextractor(5*nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,mpModel,true);
     }
 
     //IMU parameters
@@ -2602,27 +2633,34 @@ void Tracking::SearchLocalPoints()
 
     int nToMatch=0;
 
+    int failed_1 = 0, failed_2[5] = {0}; 
     // Project points in frame and check its visibility
     for(vector<MapPoint*>::iterator vit=mvpLocalMapPoints.begin(), vend=mvpLocalMapPoints.end(); vit!=vend; vit++)
     {
         MapPoint* pMP = *vit;
 
         if(pMP->mnLastFrameSeen == mCurrentFrame.mnId)
+        {
+            failed_1++;
             continue;
+        }
         if(pMP->isBad())
             continue;
         // Project (this fills MapPoint variables for matching)
-        if(mCurrentFrame.isInFrustum(pMP,0.5))
+        int res = mCurrentFrame.isInFrustum(pMP,0.5);
+        if(res == 0)
         {
             pMP->IncreaseVisible();
             nToMatch++;
         }
+        else failed_2[res]++;
         if(pMP->mbTrackInView)
         {
             mCurrentFrame.mmProjectPoints[pMP->mnId] = cv::Point2f(pMP->mTrackProjX, pMP->mTrackProjY);
         }
     }
-
+    // cout << "LocalMapPoints: " << mvpLocalMapPoints.size() << ", nToMatch: " << nToMatch << endl;
+    // cout << "failed_1: " << failed_1 << ", failed_2: " << failed_2[1] << "|" << failed_2[2] << "|" << failed_2[3] << "|" << failed_2[4] << endl;
     int matches;
     if(nToMatch>0)
     {
