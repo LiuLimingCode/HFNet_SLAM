@@ -23,10 +23,18 @@ namespace ORB_SLAM3
 class HFNetTFModel : public BaseModel
 {
 public:
-    HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir, const cv::Size warmUpImageSize = cv::Size(-1, -1));
+    HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir);
+    virtual ~HFNetTFModel(void) = default;
+
+    HFNetTFModel* clone(void);
+
+    void WarmUp(const cv::Size warmUpSize, bool detectLocally);
 
     bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                 int nKeypointsNum, float threshold, int nRadius) override;
+
+    bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors,
+                         int nKeypointsNum, float threshold, int nRadius) override;
 
     bool IsValid(void) override { return mbVaild; }
 
@@ -40,7 +48,9 @@ private:
 
     void Mat2Tensor(const cv::Mat &image, tensorflow::Tensor *tensor);
 
+    std::string mStrModelPath;
     bool mbVaild;
+    static bool mbLoadedResampler;
 };
 
 #else // USE_TENSORFLOW
@@ -51,6 +61,7 @@ public:
     HFNetTFModel()
     {
         std::cerr << "You must set USE_TENSORFLOW in CMakeLists.txt to enable tensorflow function." << std::endl;
+        exit(-1);
     }
 
     bool IsValid(void) override { return false; }

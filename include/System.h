@@ -203,9 +203,6 @@ private:
     // Input sensor
     eSensor mSensor;
 
-    // Model
-    BaseModel* mpModel;
-
     // KeyFrame database for place recognition (relocalization and loop detection).
     KeyFrameDatabase* mpKeyFrameDatabase;
 

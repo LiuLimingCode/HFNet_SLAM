@@ -76,7 +76,7 @@ Extractor.nFeatures: 1000 # 1000
 Extractor.scaleFactor: 1.2
 
 # Extractor: Number of levels in the scale pyramid	
-Extractor.nLevels: 1
+Extractor.nLevels: 8
 
 
 # HFNET Extractor

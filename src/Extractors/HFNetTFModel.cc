@@ -14,23 +14,37 @@ namespace ORB_SLAM3
 
 #ifdef USE_TENSORFLOW
 
-HFNetTFModel::HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir, const cv::Size warmUpImageSize)
+bool HFNetTFModel::mbLoadedResampler = false;
+
+HFNetTFModel::HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir)
 {
     bool bLoadedLib = LoadResamplerOp(strResamplerDir);
     bool bLoadedModel = LoadHFNetTFModel(strModelDir);
 
     mbVaild = bLoadedLib & bLoadedModel;
+}
 
+HFNetTFModel* HFNetTFModel::clone(void)
+{
+    if (!mbVaild) return nullptr;
+    HFNetTFModel *newModel = new HFNetTFModel(string(), mStrModelPath);
+    return newModel;
+}
+
+void HFNetTFModel::WarmUp(const cv::Size warmUpSize, bool detectLocally)
+{
     // Warming up, the tensorflow model cost huge time at the first detection.
     // Therefore, give a fake image to waming up
     // The size of fake image should be the same as the real image.
-    if (mbVaild && warmUpImageSize.width > 0 && warmUpImageSize.height > 0)
+
+    if (mbVaild && warmUpSize.width > 0 && warmUpSize.height > 0)
     {
-        Mat fakeImg(warmUpImageSize, CV_8UC1);
+        Mat fakeImg(warmUpSize, CV_8UC1);
         cv::randu(fakeImg, Scalar(0), Scalar(255));
         std::vector<cv::KeyPoint> vKeyPoint;
         cv::Mat localDescriptors, globalDescriptors;
-        Detect(fakeImg, vKeyPoint, localDescriptors, globalDescriptors, 1000, 0, 4);
+        if (!detectLocally) Detect(fakeImg, vKeyPoint, localDescriptors, globalDescriptors, 1000, 0, 4);
+        else DetectOnlyLocal(fakeImg, vKeyPoint, localDescriptors, 1000, 0, 4);
     }
 }
 
@@ -39,15 +53,20 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
 {
     Tensor tKeypointsNum(DT_INT32, TensorShape());
     Tensor tRadius(DT_INT32, TensorShape());
+    Tensor tThreshold(DT_FLOAT, TensorShape());
     tKeypointsNum.scalar<int>()() = nKeypointsNum;
     tRadius.scalar<int>()() = nRadius;
+    tThreshold.scalar<float>()() = threshold;
 
     Tensor tImage(DT_FLOAT, TensorShape({1, image.rows, image.cols, 1}));
     Mat2Tensor(image, &tImage);
     
     vector<Tensor> outputs;
-    Status status = mSession->Run({{"image:0", tImage},{"pred/simple_nms/radius", tRadius},{"pred/top_k_keypoints/k", tKeypointsNum}},
-                                 {"keypoints", "local_descriptors", "scores", "global_descriptor"}, {}, &outputs);
+    Status status = mSession->Run({{"image:0", tImage},
+                                           {"pred/simple_nms/radius", tRadius},
+                                           {"pred/top_k_keypoints/k", tKeypointsNum},
+                                           {"pred/keypoint_extraction/GreaterEqual/y", tThreshold}},
+                                          {"keypoints", "local_descriptors", "scores", "global_descriptor"}, {}, &outputs);
     if (!status.ok()) return false;
 
     int nResNumber = outputs[0].shape().dim_size(1);
@@ -59,19 +78,15 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
 
     vKeypoints.clear();
     vKeypoints.reserve(nResNumber);
+    localDescriptors = cv::Mat(nResNumber, 256, CV_32F);
     KeyPoint kp;
     kp.angle = 0;
     kp.octave = 0;
     for(int index = 0; index < nResNumber; index++)
     {
-        if (vResScores(index) < threshold) continue;
         kp.pt = Point2f(vResKeypoints(2 * index), vResKeypoints(2 * index + 1));
         kp.response = vResScores(index);
         vKeypoints.emplace_back(kp);
-    }
-    localDescriptors = cv::Mat(vKeypoints.size(), 256, CV_32F);
-    for (size_t index = 0; index < vKeypoints.size(); ++index)
-    {
         for (int temp = 0; temp < 256; ++temp)
         {
             localDescriptors.ptr<float>(index)[temp] = vResLocalDes(256 * index + temp); 
@@ -85,8 +100,55 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
     return true;
 }
 
+bool HFNetTFModel::DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors,
+                                   int nKeypointsNum, float threshold, int nRadius) 
+{
+    Tensor tKeypointsNum(DT_INT32, TensorShape());
+    Tensor tRadius(DT_INT32, TensorShape());
+    Tensor tThreshold(DT_FLOAT, TensorShape());
+    tKeypointsNum.scalar<int>()() = nKeypointsNum;
+    tRadius.scalar<int>()() = nRadius;
+    tThreshold.scalar<float>()() = threshold;
+
+    Tensor tImage(DT_FLOAT, TensorShape({1, image.rows, image.cols, 1}));
+    Mat2Tensor(image, &tImage);
+    
+    vector<Tensor> outputs;
+    Status status = mSession->Run({{"image:0", tImage},
+                                           {"pred/simple_nms/radius", tRadius},
+                                           {"pred/top_k_keypoints/k", tKeypointsNum},
+                                           {"pred/keypoint_extraction/GreaterEqual/y", tThreshold}},
+                                          {"keypoints", "local_descriptors", "scores"}, {}, &outputs);
+    if (!status.ok()) return false;
+
+    int nResNumber = outputs[0].shape().dim_size(1);
+
+    auto vResKeypoints = outputs[0].tensor<int32, 3>();
+    auto vResLocalDes = outputs[1].tensor<float, 3>();
+    auto vResScores = outputs[2].tensor<float, 2>();
+
+    vKeypoints.clear();
+    vKeypoints.reserve(nResNumber);
+    localDescriptors = cv::Mat(nResNumber, 256, CV_32F);
+    KeyPoint kp;
+    kp.angle = 0;
+    kp.octave = 0;
+    for(int index = 0; index < nResNumber; index++)
+    {
+        kp.pt = Point2f(vResKeypoints(2 * index), vResKeypoints(2 * index + 1));
+        kp.response = vResScores(index);
+        vKeypoints.emplace_back(kp);
+        for (int temp = 0; temp < 256; ++temp)
+        {
+            localDescriptors.ptr<float>(index)[temp] = vResLocalDes(256 * index + temp); 
+        }
+    }
+    return true;
+}
+
 bool HFNetTFModel::LoadResamplerOp(const std::string &strResamplerDir)
 {
+    if (mbLoadedResampler) return true;
     TF_Status *status = TF_NewStatus();
     TF_LoadLibrary(strResamplerDir.c_str(), status);
     if (TF_GetCode(status) != TF_OK) {
@@ -95,16 +157,18 @@ bool HFNetTFModel::LoadResamplerOp(const std::string &strResamplerDir)
         return false;
     }
     std::cout << "Sucessfully loaded resampler.so" << std::endl;
+    mbLoadedResampler = true;
     return true;
 }
 
 bool HFNetTFModel::LoadHFNetTFModel(const std::string &strModelDir)
 {
+    mStrModelPath = strModelDir;
     tensorflow::Status status;
     tensorflow::SessionOptions sessionOptions;
     tensorflow::RunOptions runOptions;
     tensorflow::SavedModelBundle bundle;
-    
+
     status = LoadSavedModel(sessionOptions, runOptions, strModelDir, {tensorflow::kSavedModelTagServe}, &bundle);
     if(!status.ok()){
         std::cerr << "Failed to load HFNet model at path: " << strModelDir <<std::endl;

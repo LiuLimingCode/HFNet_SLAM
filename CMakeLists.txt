@@ -64,6 +64,7 @@ src/Tracking.cc
 src/LocalMapping.cc
 src/LoopClosing.cc
 src/Extractors/BaseExtractor.cc
+src/Extractors/BaseModel.cc
 src/Extractors/HFextractor.cc
 src/Extractors/HFNetTFModel.cc
 src/Matcher.cc

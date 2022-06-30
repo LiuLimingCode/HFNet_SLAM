@@ -99,7 +99,7 @@ int main(int argc, char** argv)
 {
     settings = new Settings(strSettingsPath, 0);
     HFNetTFModel *pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
-    HFextractor *pExtractor = new HFextractor(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),settings->scaleFactor(),settings->nLevels(),pModel);
+    HFextractor *pExtractor = new HFextractor(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),1.0,1,{pModel});
     GeometricCamera* pCamera = settings->camera1();
     cv::Mat distCoef = settings->camera1DistortionCoef();
     const float bf = 0;
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
     {
         int select = cur;
         cv::Mat imageGray = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        Frame F = Frame(imageGray,select,pExtractor,pModel,pCamera,distCoef,bf,thDepth);
+        Frame F = Frame(imageGray,select,pExtractor,pCamera,distCoef,bf,thDepth);
         F.imgLeft = imageGray;
         TestKeyFrame *pKF = new TestKeyFrame(F);
         vKeyFrameDB.insert(pKF);
@@ -152,7 +152,7 @@ int main(int argc, char** argv)
         else select = distribution(generator), plot = 0;
 
         cv::Mat imageGray = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        Frame *pKF = new Frame(imageGray,select,pExtractor,pModel,pCamera,distCoef,bf,thDepth);
+        Frame *pKF = new Frame(imageGray,select,pExtractor,pCamera,distCoef,bf,thDepth);
 
         auto t1 = chrono::steady_clock::now();
         auto res = GetNCandidateLoopFrameEigen(pKF, vKeyFrameDB, vKeyFrameDB.size());

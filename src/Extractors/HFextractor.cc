@@ -20,8 +20,8 @@ const int HALF_PATCH_SIZE = 15;
 const int EDGE_THRESHOLD = 19;
 
 HFextractor::HFextractor(int _nfeatures, int _nNMSRadius, float _threshold,
-                        float _scaleFactor, int _nlevels, BaseModel* _model, bool _bUseOctTree):
-        nfeatures(_nfeatures), nNMSRadius(_nNMSRadius), threshold(_threshold), model(_model)
+                        float _scaleFactor, int _nlevels, const std::vector<BaseModel*>& _vpModels, bool _bUseOctTree):
+        nfeatures(_nfeatures), nNMSRadius(_nNMSRadius), threshold(_threshold), mvpModels(_vpModels)
 {
     scaleFactor = _scaleFactor;
     nlevels = _nlevels;
@@ -79,35 +79,65 @@ HFextractor::HFextractor(int _nfeatures, int _nNMSRadius, float _threshold,
     }
 }
 
+void HFextractor::ComputePyramid(cv::Mat image)
+{
+    mvImagePyramid[0] = image;
+    for (int level = 0; level < nlevels; ++level)
+    {
+        float scale = mvInvScaleFactor[level];
+        Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
+
+        // Compute the resized image
+        if( level != 0 )
+        {
+            resize(mvImagePyramid[level-1], mvImagePyramid[level], sz, 0, 0, INTER_LINEAR);
+        }
+    }
+}
+
 
 int HFextractor::operator() (const cv::Mat &_image, std::vector<cv::KeyPoint>& _keypoints,
-                             cv::Mat &_localDescriptors, cv::Mat &_globalDescriptors) {
-    if(_image.empty())
-        return -1;
-
+                             cv::Mat &_localDescriptors, cv::Mat &_globalDescriptors)
+{
+    if(_image.empty()) return -1;
     assert(_image.type() == CV_8UC1 );
-
-    if (bUseOctTree)
+    _keypoints.clear();
+    
+    if (nlevels == 1)
     {
-        std::vector<cv::KeyPoint> vKeypoints;
-        cv::Mat lDescriptor;
-        model->Detect(_image, vKeypoints, lDescriptor, _globalDescriptors, nfeatures * 10, threshold, nNMSRadius);
-        auto remainIdxs = DistributeOctTree(vKeypoints, 0, _image.cols, 0, _image.rows, nfeatures);
-        _keypoints.clear();
-        _keypoints.reserve(remainIdxs.size());
-        _localDescriptors = cv::Mat(remainIdxs.size(), 256, CV_32F);
-        for (size_t index = 0; index < remainIdxs.size(); ++index)
-        {
-            _keypoints.emplace_back(vKeypoints[remainIdxs[index]]);
-            lDescriptor.row(remainIdxs[index]).copyTo(_localDescriptors.row(index));
-        }
+        mvpModels[0]->Detect(_image, _keypoints, _localDescriptors, _globalDescriptors, nfeatures, threshold, nNMSRadius);
     }
     else
     {
-        model->Detect(_image, _keypoints, _localDescriptors, _globalDescriptors, nfeatures, threshold, nNMSRadius);
+        ComputePyramid(_image);
+        int nKeypoints = 0;
+        vector<vector<cv::KeyPoint>> allKeypoints(nlevels);
+        vector<cv::Mat> allDescriptors(nlevels);
+        for (int level = 0; level < nlevels; ++level)
+        {
+            if (level == 0)
+            {
+                mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], _globalDescriptors, mnFeaturesPerLevel[level], threshold, nNMSRadius);
+            }
+            else
+            {
+                mvpModels[level]->DetectOnlyLocal(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
+            }
+            nKeypoints += allKeypoints[level].size();
+        }
+        _keypoints.reserve(nKeypoints);
+        for (int level = 0; level < nlevels; ++level)
+        {
+            for (auto keypoint : allKeypoints[level])
+            {
+                keypoint.octave = level;
+                keypoint.pt *= mvScaleFactor[level];
+                _keypoints.emplace_back(keypoint);
+            }
+        }
+        cv::vconcat(allDescriptors.data(), allDescriptors.size(), _localDescriptors);
     }
     return _keypoints.size();
 }
-
 
 } //namespace ORB_SLAM3

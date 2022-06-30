@@ -107,18 +107,7 @@ System::System(const string &strSettingsFile, const eSensor sensor,
 
     bool loadedAtlas = false;
 
-    if (settings_->extractorType() == kExtractorHFNetTF)
-    {
-        mpModel = new HFNetTFModel(settings_->strResamplerPath(), settings_->strModelPath(), settings_->newImSize());
-        if (mpModel->IsValid())
-        {
-            cout << "Successfully loaded HFNetTF model" << endl;
-        }
-        else
-        {
-            exit(-1);
-        }
-    }
+    InitModelsVec(settings_);
 
     //Create KeyFrame Database
     // TODO: The initialization of KeyFrameDatabase
@@ -138,7 +127,7 @@ System::System(const string &strSettingsFile, const eSensor sensor,
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
-    mpTracker = new Tracking(this, mpModel, mpFrameDrawer, mpMapDrawer,
+    mpTracker = new Tracking(this, mpFrameDrawer, mpMapDrawer,
                              mpAtlas, mpKeyFrameDatabase, strSettingsFile, mSensor, settings_);
 
     //Initialize the Local Mapping thread and launch

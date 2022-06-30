@@ -18,7 +18,7 @@ public:
     enum {HARRIS_SCORE=0, FAST_SCORE=1 };
 
     HFextractor(int nfeatures, int nNMSRadius, float threshold,
-                float scaleFactor, int nlevels, BaseModel* model, bool bUseOctTree = false);
+                float scaleFactor, int nlevels, const std::vector<BaseModel*>& vpModels, bool bUseOctTree = false);
 
     ~HFextractor(){}
 
@@ -31,11 +31,13 @@ protected:
     int nfeatures;
     int nNMSRadius;
     float threshold;
-    BaseModel* model;
+    std::vector<BaseModel*> mvpModels;
 
     std::vector<int> mnFeaturesPerLevel;
 
     std::vector<int> umax;
+
+    void ComputePyramid(cv::Mat image);
 };
 
 } //namespace ORB_SLAM

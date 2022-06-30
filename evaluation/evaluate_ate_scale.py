@@ -87,6 +87,13 @@ def align(model,data):
     transGT = data.mean(1) - s*rot * model.mean(1)
     trans = data.mean(1) - rot * model.mean(1)
 
+    # s = 1.0
+    # rot = numpy.diag([1,1,1])
+    # transGT = data.mean(1) - s*rot * model.mean(1)
+    # trans = data.mean(1) - rot * model.mean(1)
+    # transGT = numpy.zeros_like(transGT,numpy.int)
+    # trans = numpy.zeros_like(trans,numpy.int)
+
     model_alignedGT = s*rot * model + transGT
     model_aligned = rot * model + trans
 
