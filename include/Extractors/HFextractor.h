@@ -5,7 +5,7 @@
 #include <list>
 #include <opencv2/opencv.hpp>
 #include "Extractors/BaseExtractor.h"
-#include "Extractors/HFNetTFModel.h"
+#include "Extractors/HFNetTFModelV2.h"
 #include "Extractors/HFNetVINOModel.h"
 
 namespace ORB_SLAM3
@@ -18,7 +18,7 @@ public:
     enum {HARRIS_SCORE=0, FAST_SCORE=1 };
 
     HFextractor(int nfeatures, int nNMSRadius, float threshold,
-                float scaleFactor, int nlevels, const std::vector<BaseModel*>& vpModels, bool bUseOctTree = false);
+                float scaleFactor, int nlevels, const std::vector<BaseModel*>& vpModels);
 
     ~HFextractor(){}
 
@@ -26,7 +26,7 @@ public:
     int operator()(const cv::Mat &_image, std::vector<cv::KeyPoint>& _keypoints,
                    cv::Mat &_localDescriptors, cv::Mat &_globalDescriptors) override;
 
-protected:
+public:
 
     int nfeatures;
     int nNMSRadius;

@@ -1,5 +1,5 @@
-#ifndef HFNETTFMODEL_H
-#define HFNETTFMODEL_H
+#ifndef HFNETTFMODELV2_H
+#define HFNETTFMODELV2_H
 
 #include <string>
 #include <memory>
@@ -19,13 +19,14 @@ namespace ORB_SLAM3
 
 #ifdef USE_TENSORFLOW
 
-class [[deprecated]] HFNetTFModel : public BaseModel
+
+class HFNetTFModelV2 : public BaseModel
 {
 public:
-    HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir);
-    virtual ~HFNetTFModel(void) = default;
+    HFNetTFModelV2(const std::string &strModelDir);
+    virtual ~HFNetTFModelV2(void) = default;
 
-    HFNetTFModel* clone(void);
+    HFNetTFModelV2* clone(void);
 
     void WarmUp(const cv::Size warmUpSize, bool onlyDetectLocalFeatures);
 
@@ -43,33 +44,32 @@ public:
     std::shared_ptr<tensorflow::Session> mSession;
     tensorflow::GraphDef mGraph;
 
-private:
-    bool LoadResamplerOp(const std::string &strResamplerDir);
-
+public:
     bool LoadHFNetTFModel(const std::string &strModelDir);
 
-    void Mat2Tensor(const cv::Mat &image, tensorflow::Tensor *tensor);
+    bool Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vNetResults, bool onlyDetectLocalFeatures);
 
-    bool Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vNetResults, bool onlyDetectLocalFeatures,
-             int nKeypointsNum, float threshold, int nRadius);
-
-    void GetLocalFeaturesFromTensor(const tensorflow::Tensor &tKeyPoints, const tensorflow::Tensor &tScoreDense, const tensorflow::Tensor &tDescriptorsMap,
-                                    std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors);
+    void GetLocalFeaturesFromTensor(const tensorflow::Tensor &tScoreDense, const tensorflow::Tensor &tDescriptorsMap,
+                                    std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, 
+                                    int nKeypointsNum, float threshold, int nRadius);
 
     void GetGlobalDescriptorFromTensor(const tensorflow::Tensor &tDescriptors, cv::Mat &globalDescriptors);
 
+    void Mat2Tensor(const cv::Mat &image, tensorflow::Tensor *tensor);
+
+    void ResamplerTF(const tensorflow::Tensor &data, const tensorflow::Tensor &warp, cv::Mat &output);
+
     std::string mStrModelPath;
     bool mbVaild;
-    static bool mbLoadedResampler;
     std::vector<tensorflow::Tensor> mvNetResults;
 };
 
 #else // USE_TENSORFLOW
 
-class [[deprecated]] HFNetTFModel : public BaseModel
+class HFNetTFModelV2 : public BaseModel
 {
 public:
-    HFNetTFModel()
+    HFNetTFModelV2()
     {
         std::cerr << "You must set USE_TENSORFLOW in CMakeLists.txt to enable tensorflow function." << std::endl;
         exit(-1);
@@ -82,4 +82,4 @@ public:
 
 } // namespace ORB_SLAM
 
-#endif // HFNETTFMODEL_H
+#endif // HFNETTFMODELV2_H

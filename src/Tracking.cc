@@ -630,13 +630,13 @@ void Tracking::newParameterLoader(Settings *settings) {
     auto vpModels = GetModelVec();
     if (mExtractorType == ExtractorType::kExtractorHFNetTF)
     {
-        mpExtractorLeft = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels,true);
+        mpExtractorLeft = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels);
 
         if(mSensor==System::STEREO || mSensor==System::IMU_STEREO)
-            mpExtractorRight = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels,true);
+            mpExtractorRight = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels);
 
         if(mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR)
-            mpIniExtractor = new HFextractor(5*nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels,true);
+            mpIniExtractor = new HFextractor(5*nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels);
     }
 
     //IMU parameters
