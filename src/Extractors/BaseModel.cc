@@ -30,13 +30,13 @@ std::vector<BaseModel*> InitModelsVec(Settings* settings)
             gvpModels.emplace_back(pModel);
 
             float scale = 1.0;
-            // for (int level = 1; level < nLevels; ++level)
-            // {
-            //     scale /= scaleFactor;
-            //     pModel = pModel->clone();
-            //     pModel->WarmUp(cv::Size(cvRound(ImSize.width * scale), cvRound(ImSize.height * scale)), true);
-            //     gvpModels.emplace_back(pModel);
-            // }
+            for (int level = 1; level < nLevels; ++level)
+            {
+                scale /= scaleFactor;
+                pModel = pModel->clone();
+                pModel->WarmUp(cv::Size(cvRound(ImSize.width * scale), cvRound(ImSize.height * scale)), true);
+                gvpModels.emplace_back(pModel);
+            }
         }
         else
         {

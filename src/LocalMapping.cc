@@ -100,6 +100,12 @@ void LocalMapping::Run()
             // Triangulate new MapPoints
             CreateNewMapPoints();
 
+#ifdef REGISTER_TIMES
+            std::chrono::steady_clock::time_point time_EndCreateNewMapPoints = std::chrono::steady_clock::now();
+            double timeCreateNewMapPoints = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(time_EndCreateNewMapPoints - time_EndMPCulling).count();
+            vfCreateNewMapPoints_totalCostsTime.push_back(timeCreateNewMapPoints);
+#endif
+
             mbAbortBA = false;
 
             if(!CheckNewKeyFrames())
@@ -113,6 +119,9 @@ void LocalMapping::Run()
 
             double timeMPCreation = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(time_EndMPCreation - time_EndMPCulling).count();
             vdMPCreation_ms.push_back(timeMPCreation);
+
+            double timeSearchInNeighbors = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(time_EndMPCreation - time_EndCreateNewMapPoints).count();
+            vfSearchInNeighbors_totalCostsTime.push_back(timeSearchInNeighbors);
 
             const vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
             int countMatches = 0;
@@ -312,13 +321,28 @@ void LocalMapping::ProcessNewKeyFrame()
     const unsigned long id = mpCurrentKeyFrame->mnFrameId;
     while (vnMapPointCulling_badNum.size() < id) vnMapPointCulling_badNum.push_back(-1);
     while (vnMapPointCulling_goodNum.size() < id) vnMapPointCulling_goodNum.push_back(-1);
-    while (vnMapPointMatches_initKP.size() < id) vnMapPointMatches_initKP.push_back(-1);
-    while (vnMapPointMatches_initMatches.size() < id) vnMapPointMatches_initMatches.push_back(-1);
+    while (vnCreateNewMapPoints_initKP.size() < id) vnCreateNewMapPoints_initKP.push_back(-1);
+    while (vnCreateNewMapPoints_numToMatches.size() < id) vnCreateNewMapPoints_numToMatches.push_back(-1);
+    while (vnCreateNewMapPoints_numCandidates.size() < id) vnCreateNewMapPoints_numCandidates.push_back(-1);
+    while (vnCreateNewMapPoints_goodSearch.size() < id) vnCreateNewMapPoints_goodSearch.push_back(-1);
+    while (vnCreateNewMapPoints_newMPs.size() < id) vnCreateNewMapPoints_newMPs.push_back(-1);
+    while (vfCreateNewMapPoints_searchCostsPrepare.size() < id) vfCreateNewMapPoints_searchCostsPrepare.push_back(-1);
+    while (vfCreateNewMapPoints_searchCostsCalculation.size() < id) vfCreateNewMapPoints_searchCostsCalculation.push_back(-1);
+    while (vfCreateNewMapPoints_searchCostsSelection.size() < id) vfCreateNewMapPoints_searchCostsSelection.push_back(-1);
+    while (vfCreateNewMapPoints_searchCostsTime.size() < id) vfCreateNewMapPoints_searchCostsTime.push_back(-1);
+    while (vfCreateNewMapPoints_totalCostsTime.size() < id) vfCreateNewMapPoints_totalCostsTime.push_back(-1);
     while (vnMapPointMatches_finalMatches.size() < id) vnMapPointMatches_finalMatches.push_back(-1);
-    while (vnMapPointMatches_search.size() < id) vnMapPointMatches_search.push_back(-1);
-    while (vnMapPointMatches_newPoints.size() < id) vnMapPointMatches_newPoints.push_back(-1);
+
     while (vnSearchInNeighbors_Fuse1.size() < id) vnSearchInNeighbors_Fuse1.push_back(-1);
     while (vnSearchInNeighbors_Fuse2.size() < id) vnSearchInNeighbors_Fuse2.push_back(-1);
+    while (vfSearchInNeighbors_totalCostsTime.size() < id) vfSearchInNeighbors_totalCostsTime.push_back(-1);
+
+    while (vvfCreateNewMapPoints_searchCostsPrepare_detail.size() < id) vvfCreateNewMapPoints_searchCostsPrepare_detail.push_back(vector<float>());
+    while (vvfCreateNewMapPoints_searchCostsCalculation_detail.size() < id) vvfCreateNewMapPoints_searchCostsCalculation_detail.push_back(vector<float>());
+    while (vvfCreateNewMapPoints_searchCostsSelection_detail.size() < id) vvfCreateNewMapPoints_searchCostsSelection_detail.push_back(vector<float>());
+    while (vvfCreateNewMapPoints_searchCandidate1_detail.size() < id) vvfCreateNewMapPoints_searchCandidate1_detail.push_back(vector<int>());
+    while (vvfCreateNewMapPoints_searchCandidate2_detail.size() < id) vvfCreateNewMapPoints_searchCandidate2_detail.push_back(vector<int>());
+    while (vvfCreateNewMapPoints_goodSearch_detail.size() < id) vvfCreateNewMapPoints_goodSearch_detail.push_back(vector<int>());
 #endif
 
     // TODO
@@ -492,10 +516,30 @@ void LocalMapping::CreateNewMapPoints()
 
 #ifdef REGISTER_TIMES
     const vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
-    int countInitMatches = 0;
-    for (auto match : vpMapPointMatches) if (match) countInitMatches++;
-    vnMapPointMatches_initKP.push_back(mpCurrentKeyFrame->mvKeys.size());
-    vnMapPointMatches_initMatches.push_back(countInitMatches);
+    int countToMatches = 0;
+    for (auto match : vpMapPointMatches) if (!match) countToMatches++;
+    vnCreateNewMapPoints_initKP.push_back(mpCurrentKeyFrame->mvKeys.size());
+    vnCreateNewMapPoints_numToMatches.push_back(countToMatches);
+
+    int countCandidate = 0;
+    for (auto& pKF : vpNeighKFs)
+    {
+        const vector<MapPoint*> matches = pKF->GetMapPointMatches();
+        for (auto& match : matches)
+            if (!match) countCandidate++;
+    }
+    vnCreateNewMapPoints_numCandidates.push_back(countCandidate);
+    vfCreateNewMapPoints_searchCostsPrepare.push_back(0);
+    vfCreateNewMapPoints_searchCostsCalculation.push_back(0);
+    vfCreateNewMapPoints_searchCostsSelection.push_back(0);
+    vfCreateNewMapPoints_searchCostsTime.push_back(0);
+
+    vvfCreateNewMapPoints_searchCostsPrepare_detail.push_back(vector<float>());
+    vvfCreateNewMapPoints_searchCostsCalculation_detail.push_back(vector<float>());
+    vvfCreateNewMapPoints_searchCostsSelection_detail.push_back(vector<float>());
+    vvfCreateNewMapPoints_searchCandidate1_detail.push_back(vector<int>());
+    vvfCreateNewMapPoints_searchCandidate2_detail.push_back(vector<int>());
+    vvfCreateNewMapPoints_goodSearch_detail.push_back(vector<int>());
 #endif
 
     Matcher matcher;
@@ -555,7 +599,27 @@ void LocalMapping::CreateNewMapPoints()
         vector<pair<size_t,size_t> > vMatchedIndices;
         bool bCoarse = mbInertial && mpTracker->mState==Tracking::RECENTLY_LOST && mpCurrentKeyFrame->GetMap()->GetIniertialBA2();
 
-        matcher.SearchForTriangulation(mpCurrentKeyFrame,pKF2,vMatchedIndices,false,bCoarse);
+#ifdef REGISTER_TIMES
+        auto tSearchStart = chrono::steady_clock::now();
+#endif
+        vector<float> vfDebugInfo;
+        matcher.SearchForTriangulation(mpCurrentKeyFrame,pKF2,vMatchedIndices,false,bCoarse,&vfDebugInfo);
+
+#ifdef REGISTER_TIMES
+        auto tSearchEnd = chrono::steady_clock::now();
+        float costTime = chrono::duration<float, std::milli>(tSearchEnd - tSearchStart).count();
+        vfCreateNewMapPoints_searchCostsPrepare.back() += vfDebugInfo[0];
+        vfCreateNewMapPoints_searchCostsCalculation.back() += vfDebugInfo[1];
+        vfCreateNewMapPoints_searchCostsSelection.back() += vfDebugInfo[2];
+        vfCreateNewMapPoints_searchCostsTime.back() += costTime;
+
+        vvfCreateNewMapPoints_searchCostsPrepare_detail.back().push_back(vfDebugInfo[0]);
+        vvfCreateNewMapPoints_searchCostsCalculation_detail.back().push_back(vfDebugInfo[1]);
+        vvfCreateNewMapPoints_searchCostsSelection_detail.back().push_back(vfDebugInfo[2]);
+        vvfCreateNewMapPoints_searchCandidate1_detail.back().push_back(vfDebugInfo[3]);
+        vvfCreateNewMapPoints_searchCandidate2_detail.back().push_back(vfDebugInfo[4]);
+        vvfCreateNewMapPoints_goodSearch_detail.back().push_back(vfDebugInfo[5]);
+#endif
 
         Sophus::SE3<float> sophTcw2 = pKF2->GetPose();
         Eigen::Matrix<float,3,4> eigTcw2 = sophTcw2.matrix3x4();
@@ -805,8 +869,8 @@ void LocalMapping::CreateNewMapPoints()
     }    
 
 #ifdef REGISTER_TIMES
-    vnMapPointMatches_search.push_back(countSearch);
-    vnMapPointMatches_newPoints.push_back(countNewPoint);
+    vnCreateNewMapPoints_goodSearch.push_back(countSearch);
+    vnCreateNewMapPoints_newMPs.push_back(countNewPoint);
 #endif
 }
 

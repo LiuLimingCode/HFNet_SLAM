@@ -273,21 +273,69 @@ void Tracking::MatchState2File()
     f << fixed;
     f << "MapPointCulling_badNum,"
       << "MapPointCulling_goodNum,"
-      << "MapPointMatches_initKP,"
-      << "MapPointMatches_initMatches,"
-      << "MapPointMatches_search,"
-      << "MapPointMatches_newPoints,"
-      << "MapPointMatches_finalMatches,"
+
+      << "CreateNewMapPoints_initKP,"
+      << "CreateNewMapPoints_numToMatches,"
+      << "CreateNewMapPoints_numCandidates,"
+      << "CreateNewMapPoints_goodSearch,"
+      << "CreateNewMapPoints_newMPs,"
+      << "CreateNewMapPoints_searchCostsPrepare,"
+      << "CreateNewMapPoints_searchCostsCalculation,"
+      << "CreateNewMapPoints_searchCostsSelection,"
+      << "CreateNewMapPoints_searchCostsTime,"
+      << "CreateNewMapPoints_totalCostsTime,"
+
       << "SearchInNeighbors_Fuse1,"
-      << "SearchInNeighbors_Fuse2" << endl;
+      << "SearchInNeighbors_Fuse2,"
+      << "SearchInNeighbors_totalCostsTime,"
+      
+      << "MapPointMatches_finalMatches" << endl;
 
     for (size_t index = 0; index < vnKeyPointExtraction.size(); ++index)
     {
         f << mpLocalMapper->vnMapPointCulling_badNum[index] << "," << mpLocalMapper->vnMapPointCulling_goodNum[index] << ","
-          << mpLocalMapper->vnMapPointMatches_initKP[index] << "," << mpLocalMapper->vnMapPointMatches_initMatches[index] << ","
-          << mpLocalMapper->vnMapPointMatches_search[index] << "," << mpLocalMapper->vnMapPointMatches_newPoints[index] << ","
-          << mpLocalMapper->vnMapPointMatches_finalMatches[index] << ","
-          << mpLocalMapper->vnSearchInNeighbors_Fuse1[index] << "," << mpLocalMapper->vnSearchInNeighbors_Fuse2[index] << endl;
+
+          << mpLocalMapper->vnCreateNewMapPoints_initKP[index] << "," << mpLocalMapper->vnCreateNewMapPoints_numToMatches[index] << ","
+          << mpLocalMapper->vnCreateNewMapPoints_numCandidates[index] << "," << mpLocalMapper->vnCreateNewMapPoints_goodSearch[index] << "," 
+          << mpLocalMapper->vnCreateNewMapPoints_newMPs[index] << ","  << mpLocalMapper->vfCreateNewMapPoints_searchCostsPrepare[index] << "," 
+          << mpLocalMapper->vfCreateNewMapPoints_searchCostsCalculation[index] << "," << mpLocalMapper->vfCreateNewMapPoints_searchCostsSelection[index] << "," 
+          << mpLocalMapper->vfCreateNewMapPoints_searchCostsTime[index] << "," << mpLocalMapper->vfCreateNewMapPoints_totalCostsTime[index] << ","
+
+          << mpLocalMapper->vnSearchInNeighbors_Fuse1[index] << "," << mpLocalMapper->vnSearchInNeighbors_Fuse2[index] << ","
+          << mpLocalMapper->vfSearchInNeighbors_totalCostsTime[index] << "," 
+
+          << mpLocalMapper->vnMapPointMatches_finalMatches[index] << endl;
+    }
+
+    f.close();
+
+    f.open("MPCreation.csv");
+    f << fixed;
+    for (int index = 0; index < 30; ++index)
+    {
+        f << "searchCostsPrepare," 
+          << "searchCostsCalculation,"
+          << "searchCostsSelection,"
+          << "searchCandidate1,"
+          << "searchCandidate2,"
+          << "goodSearch," << ",";
+    }
+    f << endl;
+
+    for (size_t alpha = 0; alpha < mpLocalMapper->vvfCreateNewMapPoints_searchCostsPrepare_detail.size(); ++alpha)
+    {
+        for (size_t beta = 0; beta < mpLocalMapper->vvfCreateNewMapPoints_goodSearch_detail[alpha].size(); ++beta)
+        {
+            f << mpLocalMapper->vvfCreateNewMapPoints_searchCostsPrepare_detail[alpha][beta] << ","
+              << mpLocalMapper->vvfCreateNewMapPoints_searchCostsCalculation_detail[alpha][beta] << ","
+              << mpLocalMapper->vvfCreateNewMapPoints_searchCostsSelection_detail[alpha][beta] << ","
+              << mpLocalMapper->vvfCreateNewMapPoints_searchCandidate1_detail[alpha][beta] << ","
+              << mpLocalMapper->vvfCreateNewMapPoints_searchCandidate2_detail[alpha][beta] << ","
+              << mpLocalMapper->vvfCreateNewMapPoints_goodSearch_detail[alpha][beta] << "," << ",";
+        }
+        if (mpLocalMapper->vvfCreateNewMapPoints_goodSearch_detail[alpha].empty())
+            f << "-1,-1,-1,-1,-1,-1,";
+        f << endl;
     }
 
     f.close();
@@ -299,7 +347,6 @@ void Tracking::PrintTimeStats()
     TrackStats2File();
     MatchState2File();
     LocalMapStats2File();
-
 
     ofstream f;
     f.open("ExecMean.txt");

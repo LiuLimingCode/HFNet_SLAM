@@ -43,6 +43,11 @@ System::System(const string &strSettingsFile, const eSensor sensor,
     mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false), mbResetActiveMap(false),
     mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false), mbShutDown(false)
 {
+    // By default, the Eigen will use the maximum number of threads in OpenMP.
+    // However, this will somehow slow down the calculation of dense matrix multiplication.
+    // Therefore, use only half of the thresds.
+    Eigen::setNbThreads(std::max(Eigen::nbThreads() / 2, 1));
+
     // Output welcome message
     cout << endl <<
     "ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza." << endl <<

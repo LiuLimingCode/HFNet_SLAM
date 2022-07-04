@@ -103,92 +103,92 @@ void HFextractor::ComputePyramid(cv::Mat image)
 // }
 
 // scheme 2: 
-int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
-                             cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
-{
-    if(image.empty() || image.type() != CV_8UC1) return -1;
-
-    ComputePyramid(image);
-
-    vector<vector<cv::KeyPoint>> allKeypoints(nlevels);
-    vector<cv::Mat> allDescriptors(nlevels);
-
-    for (int level = 0; level < nlevels; ++level)
-    {
-        if (level == 0)
-        {
-            mvpModels[0]->Detect(image, allKeypoints[0], allDescriptors[0], globalDescriptors, mnFeaturesPerLevel[0], threshold, nNMSRadius);
-        }
-        else
-        {
-            float scale = mvInvScaleFactor[level];
-            Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
-            mvpModels[0]->PredictScaledResults(allKeypoints[level], allDescriptors[level], sz, mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
-        }
-        // ShowKeypoints(std::to_string(level), mvImagePyramid[level], allKeypoints[level]);
-    }
-
-    // cv::Mat outImage;
-    // cv::BFMatcher matcher(cv::NORM_L2, true);
-    // vector<cv::DMatch> matches;
-    // matcher.match(allDescriptors[0], allDescriptors[7], matches);
-    // cv::drawMatches(mvImagePyramid[0], allKeypoints[0], mvImagePyramid[7], allKeypoints[7], matches, outImage, cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255));
-    // cv::imshow("match",outImage);
-
-    vKeyPoints.clear();
-    vKeyPoints.reserve(nfeatures);
-    for (int level = 0; level < nlevels; ++level)
-    {
-        for (auto keypoint : allKeypoints[level])
-        {
-            keypoint.octave = level;
-            keypoint.pt *= mvScaleFactor[level];
-            vKeyPoints.emplace_back(keypoint);
-        }
-    }
-    cv::vconcat(allDescriptors.data(), allDescriptors.size(), localDescriptors);
-    return vKeyPoints.size();
-}
-
-
-
-// int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeypoints,
+// int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
 //                              cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
 // {
-//     if(image.empty()) return -1;
-//     assert(image.type() == CV_8UC1 );
+//     if(image.empty() || image.type() != CV_8UC1) return -1;
 
 //     ComputePyramid(image);
-//     int nKeypoints = 0;
+
 //     vector<vector<cv::KeyPoint>> allKeypoints(nlevels);
 //     vector<cv::Mat> allDescriptors(nlevels);
+
 //     for (int level = 0; level < nlevels; ++level)
 //     {
 //         if (level == 0)
 //         {
-//             mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], globalDescriptors, mnFeaturesPerLevel[level], threshold, nNMSRadius);
+//             mvpModels[0]->Detect(image, allKeypoints[0], allDescriptors[0], globalDescriptors, mnFeaturesPerLevel[0], threshold, nNMSRadius);
 //         }
 //         else
 //         {
-//             mvpModels[level]->DetectOnlyLocal(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
+//             float scale = mvInvScaleFactor[level];
+//             Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
+//             mvpModels[0]->PredictScaledResults(allKeypoints[level], allDescriptors[level], sz, mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
 //         }
-//         nKeypoints += allKeypoints[level].size();
-//         // ShowKeypoints("t" + std::to_string(level), mvImagePyramid[level], allKeypoints[level]);
+//         // ShowKeypoints(std::to_string(level), mvImagePyramid[level], allKeypoints[level]);
 //     }
-//     vKeypoints.clear();
-//     vKeypoints.reserve(nKeypoints);
+
+//     // cv::Mat outImage;
+//     // cv::BFMatcher matcher(cv::NORM_L2, true);
+//     // vector<cv::DMatch> matches;
+//     // matcher.match(allDescriptors[0], allDescriptors[7], matches);
+//     // cv::drawMatches(mvImagePyramid[0], allKeypoints[0], mvImagePyramid[7], allKeypoints[7], matches, outImage, cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255));
+//     // cv::imshow("match",outImage);
+
+//     vKeyPoints.clear();
+//     vKeyPoints.reserve(nfeatures);
 //     for (int level = 0; level < nlevels; ++level)
 //     {
 //         for (auto keypoint : allKeypoints[level])
 //         {
 //             keypoint.octave = level;
 //             keypoint.pt *= mvScaleFactor[level];
-//             vKeypoints.emplace_back(keypoint);
+//             vKeyPoints.emplace_back(keypoint);
 //         }
 //     }
 //     cv::vconcat(allDescriptors.data(), allDescriptors.size(), localDescriptors);
-
-//     return vKeypoints.size();
+//     return vKeyPoints.size();
 // }
+
+
+
+int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeypoints,
+                             cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
+{
+    if(image.empty()) return -1;
+    assert(image.type() == CV_8UC1 );
+
+    ComputePyramid(image);
+    int nKeypoints = 0;
+    vector<vector<cv::KeyPoint>> allKeypoints(nlevels);
+    vector<cv::Mat> allDescriptors(nlevels);
+    for (int level = 0; level < nlevels; ++level)
+    {
+        if (level == 0)
+        {
+            mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], globalDescriptors, mnFeaturesPerLevel[level], threshold, nNMSRadius);
+        }
+        else
+        {
+            mvpModels[level]->DetectOnlyLocal(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
+        }
+        nKeypoints += allKeypoints[level].size();
+        // ShowKeypoints("t" + std::to_string(level), mvImagePyramid[level], allKeypoints[level]);
+    }
+    vKeypoints.clear();
+    vKeypoints.reserve(nKeypoints);
+    for (int level = 0; level < nlevels; ++level)
+    {
+        for (auto keypoint : allKeypoints[level])
+        {
+            keypoint.octave = level;
+            keypoint.pt *= mvScaleFactor[level];
+            vKeypoints.emplace_back(keypoint);
+        }
+    }
+    cv::vconcat(allDescriptors.data(), allDescriptors.size(), localDescriptors);
+
+    return vKeypoints.size();
+}
 
 } //namespace ORB_SLAM3

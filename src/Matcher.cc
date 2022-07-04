@@ -621,15 +621,13 @@ namespace ORB_SLAM3
     }
 /*
     int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2,
-                                           vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo, const bool bCoarse) const
+                                           vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo, const bool bCoarse, std::vector<float> *vfDebugInfo) const
     {
         const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
         const cv::Mat &Descriptors1 = pKF1->mDescriptors;
 
         const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
         const cv::Mat &Descriptors2 = pKF2->mDescriptors;
-
-        // cout << "\t" << "SearchForTriangulation: " << Descriptors1.rows << " : " << Descriptors2.rows << endl;
 
         //Compute epipole in second image
         Sophus::SE3f T1w = pKF1->GetPose();
@@ -668,7 +666,9 @@ namespace ORB_SLAM3
 
         cv::BFMatcher matcher(cv::NORM_L2, true);
 
+#ifdef REGISTER_TIMES
         auto tv1 = chrono::steady_clock::now();
+#endif
         vector<size_t> vRealIndex1;
         vRealIndex1.reserve(vpMapPoints1.size());
         for (int realIdx1 = 0; realIdx1 < Descriptors1.rows; ++realIdx1)
@@ -693,18 +693,23 @@ namespace ORB_SLAM3
         cv::Mat realDescriptors2 = cv::Mat(vRealIndex2.size(), Descriptors2.cols, Descriptors2.type());
         for (size_t index = 0; index < vRealIndex2.size(); ++index) Descriptors2.row(vRealIndex2[index]).copyTo(realDescriptors2.row(index));
 
+#ifdef REGISTER_TIMES
         auto tv2 = chrono::steady_clock::now();
-        double tv = chrono::duration_cast<chrono::duration<double,std::milli> >(tv2 - tv1).count();
-        // cout << "\t" << "voncat costs: " <<  tv << endl;
+        if (vfDebugInfo) vfDebugInfo->push_back(chrono::duration<float, std::milli>(tv2 - tv1).count());
 
         auto tc1 = chrono::steady_clock::now();
+#endif
+
         vector<cv::DMatch> matches;
         matcher.match(realDescriptors1, realDescriptors2, matches);
+
+#ifdef REGISTER_TIMES
         auto tc2 = chrono::steady_clock::now();
-        auto tc = chrono::duration_cast<chrono::duration<double,std::milli> >(tc2 - tc1).count();
-        // cout << "\t" << "calculation costs: " <<  tc << endl;
+        if (vfDebugInfo) vfDebugInfo->push_back(chrono::duration<float, std::milli>(tc2 - tc1).count());
 
         auto ts1 = chrono::steady_clock::now();
+#endif
+
         for (auto &m : matches)
         {
             if (m.distance > TH_HIGH) continue;
@@ -728,9 +733,18 @@ namespace ORB_SLAM3
                 nmatches++;
             }
         }
+
+#ifdef REGISTER_TIMES
         auto ts2 = chrono::steady_clock::now();
-        auto ts = chrono::duration_cast<chrono::duration<double,std::milli> >(ts2 - ts1).count();
-        // cout << "\t" << "search costs: " <<  ts << endl;
+        if (vfDebugInfo) vfDebugInfo->push_back(chrono::duration<float, std::milli>(ts2 - ts1).count());
+
+        if (vfDebugInfo)
+        {
+            vfDebugInfo->push_back(realDescriptors1.rows);
+            vfDebugInfo->push_back(realDescriptors2.rows);
+            vfDebugInfo->push_back(nmatches);
+        }
+#endif
 
         vMatchedPairs.clear();
         vMatchedPairs.reserve(nmatches);
@@ -747,7 +761,7 @@ namespace ORB_SLAM3
 */
 
     int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2,
-                                           vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo, const bool bCoarse) const
+                                           vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo, const bool bCoarse, std::vector<float> *vfDebugInfo) const
     {
         const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
         const cv::Mat &Descriptors1 = pKF1->mDescriptors;
@@ -788,7 +802,9 @@ namespace ORB_SLAM3
         vector<bool> vbMatched2(pKF2->N,false);
         vector<int> vMatches12(pKF1->N,-1);
 
+#ifdef REGISTER_TIMES
         auto tv1 = chrono::steady_clock::now();
+#endif
         vector<size_t> vRealIndex1;
         vRealIndex1.reserve(vpMapPoints1.size());
         for (int realIdx1 = 0; realIdx1 < Descriptors1.rows; ++realIdx1)
@@ -800,6 +816,8 @@ namespace ORB_SLAM3
         }
         cv::Mat realDescriptors1 = cv::Mat(vRealIndex1.size(), Descriptors1.cols, Descriptors1.type());
         for (size_t index = 0; index < vRealIndex1.size(); ++index) Descriptors1.row(vRealIndex1[index]).copyTo(realDescriptors1.row(index));
+        // Eigen::MatrixXf realDescriptors1(vRealIndex1.size(), Descriptors1.cols);
+        // for (size_t index = 0; index < vRealIndex1.size(); ++index) realDescriptors1.row(index) = Eigen::Map<Eigen::Matrix<float, 1, 256> const>(Descriptors1.row(vRealIndex1[index]).ptr<float>());
 
         vector<size_t> vRealIndex2;
         vRealIndex2.reserve(vpMapPoints2.size());
@@ -812,22 +830,42 @@ namespace ORB_SLAM3
         }
         cv::Mat realDescriptors2 = cv::Mat(vRealIndex2.size(), Descriptors2.cols, Descriptors2.type());
         for (size_t index = 0; index < vRealIndex2.size(); ++index) Descriptors2.row(vRealIndex2[index]).copyTo(realDescriptors2.row(index));
+        // Eigen::MatrixXf realDescriptors2(vRealIndex2.size(), Descriptors2.cols);
+        // for (size_t index = 0; index < vRealIndex2.size(); ++index) realDescriptors2.row(index) = Eigen::Map<Eigen::Matrix<float, 1, 256> const>(Descriptors2.row(vRealIndex2[index]).ptr<float>());
 
-        assert(realDescriptors1.isContinuous() && realDescriptors2.isContinuous());
+#ifdef REGISTER_TIMES
+        auto tv2 = chrono::steady_clock::now();
+        if (vfDebugInfo) vfDebugInfo->push_back(chrono::duration<float, std::milli>(tv2 - tv1).count());
+
+        auto tc1 = chrono::steady_clock::now();
+#endif
+
+        if(!(realDescriptors1.isContinuous() && realDescriptors2.isContinuous()))
+            cerr << "Error on isContinuous()" << endl, exit(-1);
         Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> des1(realDescriptors1.ptr<float>(), realDescriptors1.rows, realDescriptors1.cols);
         Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> des2(realDescriptors2.ptr<float>(), realDescriptors2.rows, realDescriptors2.cols);
 
-        Eigen::MatrixXf distance = 2 * (Eigen::MatrixXf::Ones(des1.rows(), des2.rows()) - des1 * des2.transpose()); // Approximate to norm(des1 - des2)^2
+        Eigen::MatrixXf distance(realDescriptors1.rows, realDescriptors2.rows);
+        distance.noalias() = des1 * des2.transpose(); // Approximate to norm(des1 - des2)^2
+        
+        const float threshold = -0.5 * TH_HIGH * TH_HIGH + 1;
+
+#ifdef REGISTER_TIMES
+        auto tc2 = chrono::steady_clock::now();
+        if (vfDebugInfo) vfDebugInfo->push_back(chrono::duration<float, std::milli>(tc2 - tc1).count());
+
+        auto ts1 = chrono::steady_clock::now();
+#endif
 
         for (int realIdx1 = 0; realIdx1 < distance.rows(); ++realIdx1)
         {
-            float bestDist1 = TH_HIGH * TH_HIGH;
+            float bestDist1 = threshold; // the distance must be larger than this threshold
             int bestRealIdx2 = -1;
             for (int realIdx2 = 0; realIdx2 < distance.cols(); ++realIdx2)
             {
                 float dist = distance(realIdx1, realIdx2);
 
-                if(dist < bestDist1)
+                if(dist > bestDist1)
                 {
                     bestDist1 = dist;
                     bestRealIdx2 = realIdx2;
@@ -838,11 +876,11 @@ namespace ORB_SLAM3
             {
                 // cross check
                 int bestCrossRealIdx1 = -1;
-                float bestCrossDist = TH_HIGH * TH_HIGH;
+                float bestCrossDist = threshold;
                 for(int crossRealIdx1 = 0; crossRealIdx1 < distance.rows(); crossRealIdx1++)
                 {
                     float dist = distance(crossRealIdx1, bestRealIdx2);
-                    if (dist < bestCrossDist)
+                    if (dist > bestCrossDist)
                     {
                         bestCrossDist = dist;
                         bestCrossRealIdx1 = crossRealIdx1;
@@ -871,6 +909,18 @@ namespace ORB_SLAM3
                 }
             }
         }
+
+#ifdef REGISTER_TIMES
+        auto ts2 = chrono::steady_clock::now();
+        if (vfDebugInfo) vfDebugInfo->push_back(chrono::duration<float, std::milli>(ts2 - ts1).count());
+
+        if (vfDebugInfo)
+        {
+            vfDebugInfo->push_back(realDescriptors1.rows);
+            vfDebugInfo->push_back(realDescriptors2.rows);
+            vfDebugInfo->push_back(nmatches);
+        }
+#endif
 
         vMatchedPairs.clear();
         vMatchedPairs.reserve(nmatches);

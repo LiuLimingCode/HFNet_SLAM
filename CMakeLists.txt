@@ -147,9 +147,9 @@ endif()
 #Utility examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Utility)
 
-# add_executable(test_eigen_cv
-#         Examples/Utility/test_eigen_cv.cc)
-# target_link_libraries(test_eigen_cv ${PROJECT_NAME})
+add_executable(test_eigen_cv
+        Examples/Utility/test_eigen_cv.cc)
+target_link_libraries(test_eigen_cv ${PROJECT_NAME})
 
 # add_executable(test_hfnet_tf
 #         Examples/Utility/test_hfnet_tf.cc)

@@ -132,13 +132,29 @@ public:
 
     vector<int> vnMapPointCulling_badNum;
     vector<int> vnMapPointCulling_goodNum;
-    vector<int> vnMapPointMatches_initKP;
-    vector<int> vnMapPointMatches_initMatches;
-    vector<int> vnMapPointMatches_search;
-    vector<int> vnMapPointMatches_newPoints;
+
+    vector<int> vnCreateNewMapPoints_initKP;
+    vector<int> vnCreateNewMapPoints_numToMatches;
+    vector<int> vnCreateNewMapPoints_numCandidates;
+    vector<int> vnCreateNewMapPoints_goodSearch;
+    vector<int> vnCreateNewMapPoints_newMPs;
+    vector<float> vfCreateNewMapPoints_searchCostsPrepare;
+    vector<float> vfCreateNewMapPoints_searchCostsCalculation;
+    vector<float> vfCreateNewMapPoints_searchCostsSelection;
+    vector<float> vfCreateNewMapPoints_searchCostsTime;
+    vector<float> vfCreateNewMapPoints_totalCostsTime;
     vector<int> vnMapPointMatches_finalMatches;
+
     vector<int> vnSearchInNeighbors_Fuse1;
     vector<int> vnSearchInNeighbors_Fuse2;
+    vector<float> vfSearchInNeighbors_totalCostsTime;
+
+    vector<vector<float>> vvfCreateNewMapPoints_searchCostsPrepare_detail;
+    vector<vector<float>> vvfCreateNewMapPoints_searchCostsCalculation_detail;
+    vector<vector<float>> vvfCreateNewMapPoints_searchCostsSelection_detail;
+    vector<vector<int>> vvfCreateNewMapPoints_searchCandidate1_detail;
+    vector<vector<int>> vvfCreateNewMapPoints_searchCandidate2_detail;
+    vector<vector<int>> vvfCreateNewMapPoints_goodSearch_detail;
 #endif
 protected:
 
