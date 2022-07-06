@@ -1,15 +1,4 @@
-/**
- * Result
- * 1. We do not need OctTree, because we have NMS
- * 2. Set NMS radius to zero is catastrophic, one is much better
- * 3. It is reasonable to set threshold to zero
- */
 #include "Extractors/HFNetTFModelV2.h"
-
-#include "tensorflow/cc/ops/standard_ops.h"
-#include "tensorflow/cc/ops/image_ops.h"
-#include "tensorflow/cc/ops/array_ops.h"
-#include "tensorflow/cc/client/client_session.h"
 
 using namespace cv;
 using namespace std;
@@ -225,4 +214,4 @@ void HFNetTFModelV2::ResamplerTF(const tensorflow::Tensor &data, const tensorflo
 
 #endif
 
-}
+} // namespace ORB_SLAM3

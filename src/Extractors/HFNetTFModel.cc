@@ -1,9 +1,3 @@
-/**
- * Result
- * 1. We do not need OctTree, because we have NMS
- * 2. Set NMS radius to zero is catastrophic, one is much better
- * 3. It is reasonable to set threshold to zero
- */
 #include "Extractors/HFNetTFModel.h"
 using namespace cv;
 using namespace std;
@@ -49,7 +43,7 @@ void HFNetTFModel::WarmUp(const cv::Size warmUpSize, bool onlyDetectLocalFeature
 bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                           int nKeypointsNum, float threshold, int nRadius) 
 {
-    Run(image, mvNetResults, false, nKeypointsNum, nRadius, threshold);
+    Run(image, mvNetResults, false, nKeypointsNum, threshold, nRadius);
     GetGlobalDescriptorFromTensor(mvNetResults[3], globalDescriptors);
     GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], mvNetResults[2], vKeypoints, localDescriptors);
     return true;
@@ -58,7 +52,7 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyp
 bool HFNetTFModel::DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors,
                                    int nKeypointsNum, float threshold, int nRadius) 
 {
-    Run(image, mvNetResults, true, nKeypointsNum, nRadius, threshold);
+    Run(image, mvNetResults, true, nKeypointsNum, threshold, nRadius);
     GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], mvNetResults[2], vKeypoints, localDescriptors);
     return true;
 }
@@ -82,8 +76,8 @@ bool HFNetTFModel::Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vN
     Tensor tImage(DT_FLOAT, TensorShape({1, image.rows, image.cols, 1}));
     Mat2Tensor(image, &tImage);
     
-    std::vector<string> outputTensorName = {"keypoints", "local_descriptors", "scores"};
-    if (!onlyDetectLocalFeatures) outputTensorName.emplace_back("global_descriptor");
+    std::vector<string> outputTensorName = {"keypoints:0", "local_descriptors:0", "scores:0"};
+    if (!onlyDetectLocalFeatures) outputTensorName.emplace_back("global_descriptor:0");
     Status status = mSession->Run({{"image:0", tImage},
                                    {"pred/simple_nms/radius", tRadius},
                                    {"pred/top_k_keypoints/k", tKeypointsNum},

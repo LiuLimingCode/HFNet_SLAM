@@ -4,18 +4,18 @@
 #include <vector>
 #include <list>
 #include <opencv2/opencv.hpp>
-#include "Extractors/BaseExtractor.h"
-#include "Extractors/HFNetTFModelV2.h"
-#include "Extractors/HFNetVINOModel.h"
+#include "Extractors/BaseModel.h"
 
 namespace ORB_SLAM3
 {
 
-class HFextractor : public BaseExtractor
+class BaseModel;
+
+class HFextractor
 {
 public:
-    
-    enum {HARRIS_SCORE=0, FAST_SCORE=1 };
+
+    HFextractor(int nfeatures, int nNMSRadius, float threshold, BaseModel* pModels);
 
     HFextractor(int nfeatures, int nNMSRadius, float threshold,
                 float scaleFactor, int nlevels, const std::vector<BaseModel*>& vpModels);
@@ -24,9 +24,42 @@ public:
 
     // Compute the features and descriptors on an image.
     int operator()(const cv::Mat &_image, std::vector<cv::KeyPoint>& _keypoints,
-                   cv::Mat &_localDescriptors, cv::Mat &_globalDescriptors) override;
+                   cv::Mat &_localDescriptors, cv::Mat &_globalDescriptors);
+
+    int inline GetLevels(void) {
+        return nlevels;}
+
+    float inline GetScaleFactor(void) {
+        return scaleFactor;}
+
+    std::vector<float> inline GetScaleFactors(void) {
+        return mvScaleFactor;
+    }
+
+    std::vector<float> inline GetInverseScaleFactors(void) {
+        return mvInvScaleFactor;
+    }
+
+    std::vector<float> inline GetScaleSigmaSquares(void) {
+        return mvLevelSigma2;
+    }
+
+    std::vector<float> inline GetInverseScaleSigmaSquares(void) {
+        return mvInvLevelSigma2;
+    }
+
+    std::vector<cv::Mat> mvImagePyramid;
 
 public:
+
+    double scaleFactor;
+    int nlevels;
+    bool bUseOctTree;
+
+    std::vector<float> mvScaleFactor;
+    std::vector<float> mvInvScaleFactor;    
+    std::vector<float> mvLevelSigma2;
+    std::vector<float> mvInvLevelSigma2;
 
     int nfeatures;
     int nNMSRadius;
@@ -37,7 +70,7 @@ public:
 
     std::vector<int> umax;
 
-    void ComputePyramid(cv::Mat image);
+    void ComputePyramid(const cv::Mat &image);
 };
 
 } //namespace ORB_SLAM

@@ -1,3 +1,4 @@
+#include "Settings.h"
 #include "Extractors/BaseModel.h"
 #include "Extractors/HFNetTFModelV2.h"
 
@@ -20,7 +21,7 @@ std::vector<BaseModel*> InitModelsVec(Settings* settings)
     cv::Size ImSize = settings->newImSize();
     float scaleFactor = settings->scaleFactor();
     gvpModels.reserve(nLevels);
-    if (settings->extractorType() == kExtractorHFNetTF)
+    if (settings->modelType() == kHFNetTFModel)
     {
         HFNetTFModelV2* pModel = new HFNetTFModelV2(settings->strModelPath());
         pModel->WarmUp(ImSize, false);
@@ -66,7 +67,7 @@ BaseModel* InitModel(Settings *settings)
 {
     cv::Size ImSize = settings->newImSize();
     BaseModel* pModel;
-    if (settings->extractorType() == kExtractorHFNetTF)
+    if (settings->modelType() == kHFNetTFModel)
     {
         // pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
         pModel = new HFNetTFModelV2(settings->strModelPath());

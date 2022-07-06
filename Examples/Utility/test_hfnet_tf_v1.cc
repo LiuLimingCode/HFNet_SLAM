@@ -7,46 +7,6 @@ outputs[0].shape(): [1,1000,2]
 outputs[1].shape(): [1,1000,256]
 outputs[2].shape(): [1,1000]
 outputs[3].shape(): [1,4096]
-
- * Test with "Extractor.HFNetTF.nNMSRadius: 10, Extractor.HFNetTF.threshold: 0.01" :
-Only detect the local keypoints: 
-cost time: 32141 milliseconds
-average detect time: 15.8096
-
-Detect the full features: 
-cost time: 38501 milliseconds
-average detect time: 18.938
-
-Detect the full features with HFextractor: 
-cost time: 38848 milliseconds
-average detect time: 19.1087
-
- * Test with "Extractor.HFNetTF.nNMSRadius: 4, Extractor.HFNetTF.threshold: 0.01" :
-Only detect the local keypoints: 
-cost time: 19478 milliseconds
-average detect time: 9.58091
-
-Detect the full features: 
-cost time: 25045 milliseconds
-average detect time: 12.3192
-
-Detect the full features with HFextractor: 
-cost time: 25528 milliseconds
-average detect time: 12.5568
-
- * Test with "Extractor.HFNetTF.nNMSRadius: 0, Extractor.HFNetTF.threshold: 0.01" :
-Only detect the local keypoints: 
-cost time: 17293 milliseconds
-average detect time: 8.50615
-
-Detect the full features: 
-cost time: 22868 milliseconds
-average detect time: 11.2484
-
-Detect the full features with HFextractor: 
-cost time: 23553 milliseconds
-average detect time: 11.5853
-
  *
  */
 #include <chrono>
@@ -66,6 +26,8 @@ using namespace tensorflow;
 
 Settings *settings;
 HFNetTFModel *pModel;
+TicToc timerDetect;
+TicToc timerRun;
 
 void Mat2Tensor(const cv::Mat &image, tensorflow::Tensor *tensor)
 {
@@ -88,11 +50,13 @@ bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints
     Mat2Tensor(image, &tImage);
     
     vector<Tensor> outputs;
+    timerRun.Tic();
     Status status = pModel->mSession->Run({{"image:0", tImage},
                                            {"pred/simple_nms/radius", tRadius},
                                            {"pred/top_k_keypoints/k", tKeypointsNum},
                                            {"pred/keypoint_extraction/GreaterEqual/y", tThreshold}},
                                           {"keypoints", "local_descriptors", "scores"}, {}, &outputs);
+    timerRun.Toc();
     if (!status.ok()) return false;
 
     int nResNumber = outputs[0].shape().dim_size(1);
@@ -134,11 +98,13 @@ bool DetectFull(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv:
     Mat2Tensor(image, &tImage);
     
     vector<Tensor> outputs;
+    timerRun.Tic();
     Status status = pModel->mSession->Run({{"image:0", tImage},
                                            {"pred/simple_nms/radius", tRadius},
                                            {"pred/top_k_keypoints/k", tKeypointsNum},
                                            {"pred/keypoint_extraction/GreaterEqual/y", tThreshold}},
                                           {"keypoints", "local_descriptors", "scores", "global_descriptor"}, {}, &outputs);
+    timerRun.Toc();
     if (!status.ok()) return false;
 
     int nResNumber = outputs[0].shape().dim_size(1);
@@ -178,46 +144,22 @@ bool DetectFull(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv:
     return true;
 }
 
-bool DetectOnlyGlobal(const cv::Mat &image, cv::Mat &globalDescriptors,
-                      int nKeypointsNum = 1000, int nRadius = 4)
-{
-    Tensor tKeypointsNum(DT_INT32, TensorShape());
-    Tensor tRadius(DT_INT32, TensorShape());
-    tKeypointsNum.scalar<int>()() = nKeypointsNum;
-    tRadius.scalar<int>()() = nRadius;
-
-    Tensor tImage(DT_FLOAT, TensorShape({1, image.rows, image.cols, 1}));
-    Mat2Tensor(image, &tImage);
-    
-    vector<Tensor> outputs;
-    Status status = pModel->mSession->Run({{"image:0", tImage},{"pred/simple_nms/radius", tRadius},{"pred/top_k_keypoints/k", tKeypointsNum}},
-                                          {"global_descriptor"}, {}, &outputs);
-    if (!status.ok()) return false;
-
-    auto vResGlobalDes = outputs[0].tensor<float, 2>();
-
-    globalDescriptors = cv::Mat::zeros(4096, 1, CV_32F);
-    for (int temp = 0; temp < 4096; ++temp)
-    {
-        globalDescriptors.ptr<float>(0)[temp] = vResGlobalDes(temp);
-    }
-    return true;
-}
-
-const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_04_difficult/mav0/cam0/data/");
-const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
-const int dbStart = 420;
-const int dbEnd = 50;
-
-// const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
-// const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
-// const int dbStart = 50;
+// const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_04_difficult/mav0/cam0/data/");
+// const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
+// const int dbStart = 420;
 // const int dbEnd = 50;
+
+const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
+const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
+const int dbStart = 50;
+const int dbEnd = 50;
 
 int main(int argc, char* argv[])
 {
     settings = new Settings(strSettingsPath, 0);
-    pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
+    const string strResamplerPath = "/home/llm/src/tensorflow-1.15.5/bazel-bin/tensorflow/contrib/resampler/python/ops/_resampler_ops.so";
+    const string strModelPath = "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf/";
+    pModel = new HFNetTFModel(strResamplerPath, strModelPath);
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     
@@ -249,6 +191,8 @@ int main(int argc, char* argv[])
         cout << "nNMSRadius: " << nNMSRadius << endl;
 
         image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
+        if (settings->needToResize())
+            cv::resize(image, image, settings->newImSize());
         
         DetectFull(image, vKeypoints, localDescriptors, globalDescriptors, 1000, nNMSRadius, threshold);
         cout << "Get features number: " << vKeypoints.size() << endl;
@@ -262,65 +206,70 @@ int main(int argc, char* argv[])
     // detect full dataset
     {
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
+        if (settings->needToResize())
+            cv::resize(image, image, settings->newImSize());
         DetectOnlyLocal(image, vKeypoints, localDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
-        auto t1 = chrono::steady_clock::now();
+        
+        timerDetect.clearBuff();
+        timerRun.clearBuff();
         for (const string& file : files)
         {
             image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
+            if (settings->needToResize())
+                cv::resize(image, image, settings->newImSize());
+            timerDetect.Tic();
             DetectOnlyLocal(image, vKeypoints, localDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
+            timerDetect.Toc();
         }
-        auto t2 = chrono::steady_clock::now();
-        auto t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
         cout << "Only detect the local keypoints: " << endl
-             << "cost time: " << t << " milliseconds" << endl
-             << "average detect time: " << (double)t / files.size() << endl << endl;
+             << "run cost time: " << timerRun.aveCost() << " milliseconds" << endl
+             << "detect cost time: " << timerDetect.aveCost() << " milliseconds" << endl;
     }
     {
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
+        if (settings->needToResize())
+            cv::resize(image, image, settings->newImSize());
         DetectFull(image, vKeypoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
-        auto t1 = chrono::steady_clock::now();
+        
+        timerDetect.clearBuff();
+        timerRun.clearBuff();
         for (const string& file : files)
         {
             image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
+            if (settings->needToResize())
+                cv::resize(image, image, settings->newImSize());
+            timerDetect.Tic();
             DetectFull(image, vKeypoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
+            timerDetect.Toc();
         }
-        auto t2 = chrono::steady_clock::now();
-        auto t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
         cout << "Detect the full features: " << endl
-             << "cost time: " << t << " milliseconds" << endl
-             << "average detect time: " << (double)t / files.size() << endl << endl;
+             << "run cost time: " << timerRun.aveCost() << " milliseconds" << endl
+             << "detect cost time: " << timerDetect.aveCost() << " milliseconds" << endl;
     }
     {
         HFextractor extractor = HFextractor(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),1.0,1,{pModel});
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
+        if (settings->needToResize())
+            cv::resize(image, image, settings->newImSize());
         extractor(image, vKeypoints, localDescriptors, globalDescriptors);
-        auto t1 = chrono::steady_clock::now();
+
+        timerDetect.clearBuff();
+        timerRun.clearBuff();
+        vKeypoints.clear();
         for (const string& file : files)
         {
             image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
+            if (settings->needToResize())
+                cv::resize(image, image, settings->newImSize());
+            timerDetect.Tic();
             extractor(image, vKeypoints, localDescriptors, globalDescriptors);
+            timerDetect.Toc();
         }
-        auto t2 = chrono::steady_clock::now();
-        auto t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
         cout << "Detect the full features with HFextractor: " << endl
-             << "cost time: " << t << " milliseconds" << endl
-             << "average detect time: " << (double)t / files.size() << endl << endl;
+             << "detect cost time: " << timerDetect.aveCost() << " milliseconds" << endl;
     }
 
-
-    // cout << "detect: {\"global_descriptor\"}" << endl;
-    // t1 = chrono::steady_clock::now();
-    // for (const string& file : files)
-    // {
-    //     image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
-    //     DetectOnlyGlobal(image, globalDescriptors);
-    // }
-    // t2 = chrono::steady_clock::now();
-    // t = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    // std::cout << "cost time: " << t << " milliseconds" << endl;
-    // std::cout << "average detect time: " << (double)t / files.size() << endl;
-
-    system("pause");
+    getchar();
 
     return 0;
 }

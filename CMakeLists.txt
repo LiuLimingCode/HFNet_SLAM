@@ -26,8 +26,10 @@ endif()
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 
+set(OpenVINO_DIR "/home/llm/src/openvino-2022.1/install/runtime/cmake")
+find_package(OpenVINO REQUIRED)
 
-if(${USE_TENSORFLOW})
+if(${USE_TENSORFLOW}) # TensorFlow is optional
     ADD_DEFINITIONS(-DUSE_TENSORFLOW)
     set(Tensorflow_Root "/home/llm/src/tensorflow-1.15.5")
     set(Tensorflow_INCLUDE_DIRS
@@ -94,7 +96,6 @@ include/System.h
 include/Tracking.h
 include/LocalMapping.h
 include/LoopClosing.h
-include/Extractors/BaseExtractor.h
 include/Extractors/HFextractor.h
 include/Extractors/BaseModel.h
 include/Extractors/HFNetTFModel.h
@@ -134,6 +135,7 @@ ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lboost_serialization
 -lcrypto
+openvino::runtime
 )
 
 if(${USE_TENSORFLOW})
@@ -151,17 +153,17 @@ add_executable(test_eigen_cv
         Examples/Utility/test_eigen_cv.cc)
 target_link_libraries(test_eigen_cv ${PROJECT_NAME})
 
-# add_executable(test_hfnet_tf
-#         Examples/Utility/test_hfnet_tf.cc)
-# target_link_libraries(test_hfnet_tf ${PROJECT_NAME})
+add_executable(test_hfnet_tf_v1
+        Examples/Utility/test_hfnet_tf_v1.cc)
+target_link_libraries(test_hfnet_tf_v1 ${PROJECT_NAME})
 
-# add_executable(test_extractors
-#         Examples/Utility/test_extractors.cc)
-# target_link_libraries(test_extractors ${PROJECT_NAME})
+add_executable(test_hfnet_tf_v2
+        Examples/Utility/test_hfnet_tf_v2.cc)
+target_link_libraries(test_hfnet_tf_v2 ${PROJECT_NAME})
 
-# add_executable(test_match_global_feats
-#         Examples/Utility/test_match_global_feats.cc)
-# target_link_libraries(test_match_global_feats ${PROJECT_NAME})
+add_executable(test_match_global_feats
+        Examples/Utility/test_match_global_feats.cc)
+target_link_libraries(test_match_global_feats ${PROJECT_NAME})
 
 # add_executable(test_match_local_feats
 #         Examples/Utility/test_match_local_feats.cc)

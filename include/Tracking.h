@@ -268,9 +268,9 @@ protected:
     LoopClosing* mpLoopClosing;
 
     //Extractor
-    ExtractorType mExtractorType;
-    BaseExtractor* mpExtractorLeft, *mpExtractorRight;
-    BaseExtractor* mpIniExtractor;
+    ModelType mModelType;
+    HFextractor* mpExtractorLeft, *mpExtractorRight;
+    HFextractor* mpIniExtractor;
 
     //BoW
     KeyFrameDatabase* mpKeyFrameDB;

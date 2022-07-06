@@ -18,6 +18,7 @@ Query cost time: 259
 #include "Frame.h"
 #include "Settings.h"
 #include "Extractors/HFextractor.h"
+#include "Extractors/HFNetTFModelV2.h"
 #include "Examples/Utility/utility_common.h"
 #include "CameraModels/Pinhole.h"
 
@@ -98,8 +99,8 @@ const int nKeyFrame = 200;
 int main(int argc, char** argv)
 {
     settings = new Settings(strSettingsPath, 0);
-    HFNetTFModel *pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
-    HFextractor *pExtractor = new HFextractor(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),1.0,1,{pModel});
+    HFNetTFModelV2 *pModel = new HFNetTFModelV2(settings->strModelPath());
+    HFextractor *pExtractor = new HFextractor(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),pModel);
     GeometricCamera* pCamera = settings->camera1();
     cv::Mat distCoef = settings->camera1DistortionCoef();
     const float bf = 0;

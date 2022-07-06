@@ -667,7 +667,7 @@ void Tracking::newParameterLoader(Settings *settings) {
     mbRGB = settings->rgb();
 
     //Extractor parameters
-    mExtractorType = settings->extractorType();
+    mModelType = settings->modelType();
     int nFeatures = settings->nFeatures();
     int nLevels = settings->nLevels();
     int nNMSRadius = settings->nNMSRadius();
@@ -675,7 +675,7 @@ void Tracking::newParameterLoader(Settings *settings) {
     float fScaleFactor = settings->scaleFactor();
 
     auto vpModels = GetModelVec();
-    if (mExtractorType == ExtractorType::kExtractorHFNetTF)
+    if (mModelType == ModelType::kHFNetTFModel)
     {
         mpExtractorLeft = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels);
 

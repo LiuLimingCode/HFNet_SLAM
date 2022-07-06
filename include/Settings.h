@@ -24,7 +24,7 @@
 //#define REGISTER_TIMES
 
 #include "CameraModels/GeometricCamera.h"
-#include "Extractors/BaseExtractor.h"
+#include "Extractors/HFextractor.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -34,6 +34,7 @@
 namespace ORB_SLAM3 {
 
     class System;
+    enum ModelType;
 
     //TODO: change to double instead of float
 
@@ -95,7 +96,7 @@ namespace ORB_SLAM3 {
 
         float depthMapFactor() {return depthMapFactor_;}
 
-        ExtractorType extractorType() {return extractorType_;}
+        ModelType modelType() {return modelType_;}
         int nFeatures() {return nFeatures_;}
         int nLevels() {return nLevels_;}
         float scaleFactor() {return scaleFactor_;}
@@ -205,7 +206,7 @@ namespace ORB_SLAM3 {
         /*
          * Extractor stuff
          */
-        ExtractorType extractorType_;
+        ModelType modelType_;
         int nFeatures_;
         float scaleFactor_;
         int nLevels_;

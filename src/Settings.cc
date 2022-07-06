@@ -445,7 +445,7 @@ namespace ORB_SLAM3 {
 
         string type = readParameter<string>(fSettings, "Extractor.type",found);
         if (type == "HFNetTF") {
-            extractorType_ = kExtractorHFNetTF;
+            modelType_ = kHFNetTFModel;
         }
         else {
             cerr << "Wrong extractor type in setting file!" << endl;
@@ -454,7 +454,7 @@ namespace ORB_SLAM3 {
         nFeatures_ = readParameter<int>(fSettings,"Extractor.nFeatures",found);
         scaleFactor_ = readParameter<float>(fSettings,"Extractor.scaleFactor",found);
         nLevels_ = readParameter<int>(fSettings,"Extractor.nLevels",found);
-        if (extractorType_ == kExtractorHFNetTF) {
+        if (modelType_ == kHFNetTFModel) {
             nNMSRadius_ = readParameter<int>(fSettings, "Extractor.HFNetTF.nNMSRadius",found);
             threshold_ = readParameter<float>(fSettings, "Extractor.HFNetTF.threshold",found);
             strModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.modelPath",found);
@@ -642,7 +642,7 @@ namespace ORB_SLAM3 {
         output << "\t-Features per image: " << settings.nFeatures_ << endl;
         output << "\t-ORB scale factor: " << settings.scaleFactor_ << endl;
         output << "\t-ORB number of scales: " << settings.nLevels_ << endl;
-        if (settings.extractorType_ == kExtractorHFNetTF)
+        if (settings.modelType_ == kHFNetTFModel)
         {
             output << "\t-Detector threshold: " << settings.threshold_ << endl;
             output << "\t-NMS radius: " << settings.nNMSRadius_ << endl;

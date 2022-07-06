@@ -44,7 +44,7 @@ public:
     std::shared_ptr<tensorflow::Session> mSession;
     tensorflow::GraphDef mGraph;
 
-public:
+protected:
     bool LoadHFNetTFModel(const std::string &strModelDir);
 
     bool Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vNetResults, bool onlyDetectLocalFeatures);

@@ -4,10 +4,34 @@
 #include <chrono>
 #include <fstream>
 #include <dirent.h>
+#include <algorithm>
 #include <opencv2/opencv.hpp>
 
 using namespace cv;
 using namespace std;
+
+struct TicToc
+{
+    TicToc() {};
+    void clearBuff() { timeBuff.clear(); }
+    void Tic() { t1 = chrono::steady_clock::now(); }
+    float Toc()
+    {
+        t2 = chrono::steady_clock::now();
+        float time = chrono::duration<float, std::milli>(t2 - t1).count();
+        timeBuff.emplace_back(time);
+        return time;
+    }
+    float aveCost(void)
+    { 
+        if (timeBuff.empty()) return 0;
+        return std::accumulate(timeBuff.begin(), timeBuff.end(), 0.f) / (float)timeBuff.size();
+    }
+
+    std::vector<float> timeBuff;
+    chrono::steady_clock::time_point t1;
+    chrono::steady_clock::time_point t2;
+};
 
 int FilenameFilter(const struct dirent *cur)
 {

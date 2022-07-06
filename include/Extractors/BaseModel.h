@@ -1,10 +1,17 @@
 #ifndef BASEMODEL_H
 #define BASEMODEL_H
 
-#include "Settings.h"
+#include <list>
+#include <vector>
+#include <opencv2/opencv.hpp>
 
 namespace ORB_SLAM3
 {
+
+enum ModelType {
+    kHFNetTFModel,
+    kHFNetVINOModel,
+};
 
 class ExtractorNode
 {
@@ -36,6 +43,9 @@ public:
     virtual bool IsValid(void) = 0;
 };
 
+
+class Settings;
+
 std::vector<BaseModel*> InitModelsVec(Settings* settings);
 
 std::vector<BaseModel*> GetModelVec(void);
@@ -51,6 +61,6 @@ void Resampler(const float* data, const float* warp, float* output,
                 const int batch_size, const int data_height, 
                 const int data_width, const int data_channels, const int num_sampling_points);
 
-}
+} // namespace ORB_SLAM3
 
 #endif
