@@ -32,28 +32,28 @@ void HFNetTFModelV2::WarmUp(const cv::Size warmUpSize, bool onlyDetectLocalFeatu
         Mat fakeImg(warmUpSize, CV_8UC1);
         cv::randu(fakeImg, Scalar(0), Scalar(255));
         vector<tensorflow::Tensor> vNetResults;
-        Run(fakeImg, vNetResults, onlyDetectLocalFeatures);
+        Run(fakeImg, vNetResults, onlyDetectLocalFeatures, 4);
     }
 }
 
-bool HFNetTFModelV2::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
+bool HFNetTFModelV2::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                             int nKeypointsNum, float threshold, int nRadius)
 {
-    Run(image, mvNetResults, false);
+    Run(image, mvNetResults, false, nRadius);
     GetGlobalDescriptorFromTensor(mvNetResults[2], globalDescriptors);
-    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeypoints, localDescriptors, nKeypointsNum, threshold, nRadius);
+    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
     return true;
 }
 
-bool HFNetTFModelV2::DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors,
+bool HFNetTFModelV2::DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                                      int nKeypointsNum, float threshold, int nRadius)
 {
-    Run(image, mvNetResults, true);
-    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeypoints, localDescriptors, nKeypointsNum, threshold, nRadius);
+    Run(image, mvNetResults, true, nRadius);
+    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
     return true;
 }
 
-void HFNetTFModelV2::PredictScaledResults(std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors,
+void HFNetTFModelV2::PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                                           cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius)
 {
     tensorflow::Tensor &tScoreDense = mvNetResults[0];
@@ -62,37 +62,29 @@ void HFNetTFModelV2::PredictScaledResults(std::vector<cv::KeyPoint> &vKeypoints,
     cv::Mat dst(tScaledScoreDense.dim_size(1), tScaledScoreDense.dim_size(2), CV_32F, tScaledScoreDense.flat<float>().data());
     cv::resize(src, dst, cv::Size(scaleSize.height, scaleSize.width), 0, 0, INTER_LINEAR);
 
-    GetLocalFeaturesFromTensor(tScaledScoreDense, mvNetResults[1], vKeypoints, localDescriptors, nKeypointsNum, threshold, nRadius);
+    GetLocalFeaturesFromTensor(tScaledScoreDense, mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
 }
 
-bool HFNetTFModelV2::Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vNetResults, bool onlyDetectLocalFeatures) 
+bool HFNetTFModelV2::Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vNetResults, bool onlyDetectLocalFeatures,
+                         int nRadius) 
 {
+    Tensor tRadius(DT_INT32, TensorShape());
+    tRadius.scalar<int>()() = nRadius;
+
     Tensor tImage(DT_FLOAT, TensorShape({1, image.rows, image.cols, 1}));
     Mat2Tensor(image, &tImage);
 
-    std::vector<string> outputTensorName = {"scores_dense:0", "local_descriptor_map:0"};
+    std::vector<string> outputTensorName = {"scores_dense_nms:0", "local_descriptor_map:0"};
     if (!onlyDetectLocalFeatures) outputTensorName.emplace_back("global_descriptor:0");
-    Status status = mSession->Run({{"image:0", tImage}}, outputTensorName, {}, &vNetResults);
-
-    // auto t1 = chrono::steady_clock::now();
-    // Scope root = Scope::NewRootScope();
-    // auto tAxis = tensorflow::ops::Const(root, -1);
-    // tensorflow::ops::ExpandDims expendOps(root, vNetResults[0], tAxis);
-    // auto session = new tensorflow::ClientSession(root);
-    // vector<tensorflow::Tensor> outputs;
-    // session->Run({expendOps}, &outputs);
-    // delete session;
-    // vNetResults[0] = outputs[0];
-    // auto t2 = chrono::steady_clock::now();
-    // auto t = chrono::duration_cast<chrono::microseconds>(t2 - t1).count();
-    // cout << "cost time: " << t << endl;
-    // cout << vNetResults[0].shape() << endl;
+    Status status = mSession->Run({{"image:0", tImage},
+                                   {"pred/simple_nms/radius", tRadius}},
+                                  outputTensorName, {}, &vNetResults);
 
     return status.ok();
 }
 
 void HFNetTFModelV2::GetLocalFeaturesFromTensor(const tensorflow::Tensor &tScoreDense, const tensorflow::Tensor &tDescriptorsMap,
-                                                std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, 
+                                                std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, 
                                                 int nKeypointsNum, float threshold, int nRadius)
 {
     auto vResScoresDense = tScoreDense.tensor<float, 3>(); // shape: [1 image.height image.width]
@@ -105,8 +97,8 @@ void HFNetTFModelV2::GetLocalFeaturesFromTensor(const tensorflow::Tensor &tScore
     cv::KeyPoint keypoint;
     keypoint.angle = 0;
     keypoint.octave = 0;
-    std::vector<cv::KeyPoint> vKeyPointsGood;
-    vKeyPointsGood.reserve(10 * nKeypointsNum);
+    vKeyPoints.clear();
+    vKeyPoints.reserve(2 * nKeypointsNum);
     for (int col = 0; col < width; ++col)
     {
         for (int row = 0; row < height; ++row)
@@ -117,26 +109,29 @@ void HFNetTFModelV2::GetLocalFeaturesFromTensor(const tensorflow::Tensor &tScore
                 keypoint.pt.x = col;
                 keypoint.pt.y = row;
                 keypoint.response = score;
-                vKeyPointsGood.emplace_back(keypoint);
+                vKeyPoints.emplace_back(keypoint);
             }
         }
     }
 
-    vKeyPointsGood = NMS(vKeyPointsGood, width, height, 4);
+    // vKeyPoints = NMS(vKeyPoints, width, height, nRadius);
 
-    if (vKeyPointsGood.size() > nKeypointsNum)
+    if (vKeyPoints.size() > nKeypointsNum)
     {
-        vKeypoints = DistributeOctTree(vKeyPointsGood, 0, width, 0, height, nKeypointsNum);
+        // vKeyPoints = DistributeOctTree(vKeyPoints, 0, width, 0, height, nKeypointsNum);
+        std::partial_sort(vKeyPoints.begin(), vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end(), [](const cv::KeyPoint& p1, const cv::KeyPoint& p2) {
+            return p1.response > p2.response;
+        });
+        vKeyPoints.resize(nKeypointsNum);
     }
-    else vKeypoints = vKeyPointsGood;
 
-    localDescriptors = cv::Mat(vKeypoints.size(), 256, CV_32F);
-    Tensor tWarp(DT_FLOAT, TensorShape({(int)vKeypoints.size(), 2}));
+    localDescriptors = cv::Mat(vKeyPoints.size(), 256, CV_32F);
+    Tensor tWarp(DT_FLOAT, TensorShape({(int)vKeyPoints.size(), 2}));
     auto pWarp = tWarp.tensor<float, 2>();
-    for (size_t temp = 0; temp < vKeypoints.size(); ++temp)
+    for (size_t temp = 0; temp < vKeyPoints.size(); ++temp)
     {
-        pWarp(temp * 2 + 0) = scaleWidth * vKeypoints[temp].pt.x;
-        pWarp(temp * 2 + 1) = scaleHeight * vKeypoints[temp].pt.y;
+        pWarp(temp * 2 + 0) = scaleWidth * vKeyPoints[temp].pt.x;
+        pWarp(temp * 2 + 1) = scaleHeight * vKeyPoints[temp].pt.y;
     }
 
     ResamplerTF(tDescriptorsMap, tWarp, localDescriptors);

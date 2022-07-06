@@ -214,7 +214,7 @@ void HFextractor::ComputePyramid(const cv::Mat &image)
 
 
 
-int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeypoints,
+int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
                              cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
 {
     if(image.empty()) return -1;
@@ -237,20 +237,20 @@ int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vK
         nKeypoints += allKeypoints[level].size();
         // ShowKeypoints("t" + std::to_string(level), mvImagePyramid[level], allKeypoints[level]);
     }
-    vKeypoints.clear();
-    vKeypoints.reserve(nKeypoints);
+    vKeyPoints.clear();
+    vKeyPoints.reserve(nKeypoints);
     for (int level = 0; level < nlevels; ++level)
     {
         for (auto keypoint : allKeypoints[level])
         {
             keypoint.octave = level;
             keypoint.pt *= mvScaleFactor[level];
-            vKeypoints.emplace_back(keypoint);
+            vKeyPoints.emplace_back(keypoint);
         }
     }
     cv::vconcat(allDescriptors.data(), allDescriptors.size(), localDescriptors);
 
-    return vKeypoints.size();
+    return vKeyPoints.size();
 }
 
 } //namespace ORB_SLAM3

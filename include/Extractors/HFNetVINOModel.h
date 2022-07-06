@@ -22,13 +22,13 @@ public:
 
     void WarmUp(const cv::Size warmUpSize, bool onlyDetectLocalFeatures);
 
-    bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
+    bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                 int nKeypointsNum, float threshold, int nRadius) override;
 
-    bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors,
+    bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                          int nKeypointsNum, float threshold, int nRadius) override;
 
-    void PredictScaledResults(std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors,
+    void PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                               cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius) override;
 
     bool IsValid(void) override { return mbVaild; }
@@ -42,7 +42,7 @@ protected:
     bool Run(const cv::Mat &image, std::vector<ov::Tensor> &vNetResults, bool onlyDetectLocalFeatures);
 
     void GetLocalFeaturesFromTensor(const ov::Tensor &tScoreDense, const ov::Tensor &tDescriptorsMap,
-                                    std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, 
+                                    std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, 
                                     int nKeypointsNum, float threshold, int nRadius);
 
     void GetGlobalDescriptorFromTensor(const ov::Tensor &tDescriptors, cv::Mat &globalDescriptors);

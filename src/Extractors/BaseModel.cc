@@ -1,5 +1,6 @@
 #include "Settings.h"
 #include "Extractors/BaseModel.h"
+#include "Extractors/HFNetTFModel.h"
 #include "Extractors/HFNetTFModelV2.h"
 
 using namespace std;
@@ -23,6 +24,7 @@ std::vector<BaseModel*> InitModelsVec(Settings* settings)
     gvpModels.reserve(nLevels);
     if (settings->modelType() == kHFNetTFModel)
     {
+        // HFNetTFModel* pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
         HFNetTFModelV2* pModel = new HFNetTFModelV2(settings->strModelPath());
         pModel->WarmUp(ImSize, false);
         if (pModel->IsValid())

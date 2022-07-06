@@ -31,13 +31,13 @@ class BaseModel
 public:
     virtual ~BaseModel(void) = default;
     
-    virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
+    virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                         int nKeypointsNum, float threshold, int nRadius) = 0;
 
-    virtual bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors,
+    virtual bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                                  int nKeypointsNum, float threshold, int nRadius) = 0;
 
-    virtual void PredictScaledResults(std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors,
+    virtual void PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                                       cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius) = 0;
 
     virtual bool IsValid(void) = 0;

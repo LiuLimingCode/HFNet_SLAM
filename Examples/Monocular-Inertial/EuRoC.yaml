@@ -80,7 +80,7 @@ Extractor.nLevels: 8
 
 
 # HFNET Extractor
-Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS2/"
+Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS1/"
 Extractor.HFNetTF.resamplerPath: "/home/llm/src/tensorflow-1.15.5/bazel-bin/tensorflow/contrib/resampler/python/ops/_resampler_ops.so"
 Extractor.HFNetTF.nNMSRadius: 4
 Extractor.HFNetTF.threshold: 0.01

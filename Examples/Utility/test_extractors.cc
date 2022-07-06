@@ -248,7 +248,7 @@ vector<cv::KeyPoint> DistributeOctTree(const vector<cv::KeyPoint>& vToDistribute
 }
 
 // Using FAST algorithm. The function is original from ORB-SLAM3
-void GetFAST(cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = false)
+void GetFAST(cv::Mat image, vector<KeyPoint> &vKeyPoints, bool bUseOctTree = false)
 {
     const float W = 35;
     const int minBorderX = EDGE_THRESHOLD-3;
@@ -309,37 +309,37 @@ void GetFAST(cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree = fal
         }
     }
 
-    vKeypoints.reserve(settings->nFeatures());
+    vKeyPoints.reserve(settings->nFeatures());
 
     if (bUseOctTree)
     {
-        vKeypoints = DistributeOctTree(vToDistributeKeys, minBorderX, maxBorderX,
+        vKeyPoints = DistributeOctTree(vToDistributeKeys, minBorderX, maxBorderX,
                                         minBorderY, maxBorderY, settings->nFeatures());
     }
     else
     {
-        vKeypoints = vToDistributeKeys;
+        vKeyPoints = vToDistributeKeys;
     }
 
     // Add border to coordinates and scale information
-    const int nkps = vKeypoints.size();
+    const int nkps = vKeyPoints.size();
     for(int i=0; i<nkps ; i++)
     {
-        vKeypoints[i].pt.x+=minBorderX;
-        vKeypoints[i].pt.y+=minBorderY;
-        vKeypoints[i].octave=0;
-        vKeypoints[i].size = 31;
+        vKeyPoints[i].pt.x+=minBorderX;
+        vKeyPoints[i].pt.y+=minBorderY;
+        vKeyPoints[i].octave=0;
+        vKeyPoints[i].size = 31;
     }
 }
 
 // Using HFNet
-void GetHFNet(HFNetTFModel *model, cv::Mat image, vector<KeyPoint> &vKeypoints, bool bUseOctTree, int nKeypointsNum, float threshold, int nRadius)
+void GetHFNet(HFNetTFModel *model, cv::Mat image, vector<KeyPoint> &vKeyPoints, bool bUseOctTree, int nKeypointsNum, float threshold, int nRadius)
 {
     cv::Mat descriptors, globalDescriptors;
-    model->Detect(image, vKeypoints, descriptors, globalDescriptors, nKeypointsNum, threshold, nRadius);
+    model->Detect(image, vKeyPoints, descriptors, globalDescriptors, nKeypointsNum, threshold, nRadius);
     if (bUseOctTree)
     {
-        vKeypoints = DistributeOctTree(vKeypoints, 0, image.cols,
+        vKeyPoints = DistributeOctTree(vKeyPoints, 0, image.cols,
                                        0, image.rows, settings->nFeatures());
     }
 }

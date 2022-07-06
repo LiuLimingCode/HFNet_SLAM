@@ -36,7 +36,7 @@ void Mat2Tensor(const cv::Mat &image, tensorflow::Tensor *tensor)
     image.convertTo(imagepixel, CV_32F);
 }
 
-bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors,
+bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                      int nKeypointsNum, int nRadius, float threshold)
 {
     Tensor tKeypointsNum(DT_INT32, TensorShape());
@@ -65,8 +65,8 @@ bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints
     auto vResLocalDes = outputs[1].tensor<float, 3>();
     auto vResScores = outputs[2].tensor<float, 2>();
 
-    vKeypoints.clear();
-    vKeypoints.reserve(nResNumber);
+    vKeyPoints.clear();
+    vKeyPoints.reserve(nResNumber);
     localDescriptors = cv::Mat(nResNumber, 256, CV_32F);
     KeyPoint kp;
     kp.angle = 0;
@@ -75,7 +75,7 @@ bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints
     {
         kp.pt = Point2f(vResKeypoints(2 * index), vResKeypoints(2 * index + 1));
         kp.response = vResScores(index);
-        vKeypoints.emplace_back(kp);
+        vKeyPoints.emplace_back(kp);
         for (int temp = 0; temp < 256; ++temp)
         {
             localDescriptors.ptr<float>(index)[temp] = vResLocalDes(256 * index + temp); 
@@ -84,7 +84,7 @@ bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints
     return true;
 }
 
-bool DetectFull(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
+bool DetectFull(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                 int nKeypointsNum, int nRadius, float threshold)
 {
     Tensor tKeypointsNum(DT_INT32, TensorShape());
@@ -120,8 +120,8 @@ bool DetectFull(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv:
     // cout << "outputs[2].shape(): " << outputs[2].shape() << endl;
     // cout << "outputs[3].shape(): " << outputs[3].shape() << endl;
 
-    vKeypoints.clear();
-    vKeypoints.reserve(nResNumber);
+    vKeyPoints.clear();
+    vKeyPoints.reserve(nResNumber);
     localDescriptors = cv::Mat(nResNumber, 256, CV_32F);
     KeyPoint kp;
     kp.angle = 0;
@@ -130,7 +130,7 @@ bool DetectFull(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeypoints, cv:
     {
         kp.pt = Point2f(vResKeypoints(2 * index), vResKeypoints(2 * index + 1));
         kp.response = vResScores(index);
-        vKeypoints.emplace_back(kp);
+        vKeyPoints.emplace_back(kp);
         for (int temp = 0; temp < 256; ++temp)
         {
             localDescriptors.ptr<float>(index)[temp] = vResLocalDes(256 * index + temp); 
@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
     std::uniform_int_distribution<unsigned int> distribution(dbStart, files.size() - dbEnd);
 
     cv::Mat image;
-    vector<KeyPoint> vKeypoints;
+    vector<KeyPoint> vKeyPoints;
     cv::Mat localDescriptors, globalDescriptors;
     
     // randomly detect an image and show the results
@@ -194,10 +194,10 @@ int main(int argc, char* argv[])
         if (settings->needToResize())
             cv::resize(image, image, settings->newImSize());
         
-        DetectFull(image, vKeypoints, localDescriptors, globalDescriptors, 1000, nNMSRadius, threshold);
-        cout << "Get features number: " << vKeypoints.size() << endl;
+        DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, 1000, nNMSRadius, threshold);
+        cout << "Get features number: " << vKeyPoints.size() << endl;
         
-        ShowKeypoints("press 'q' to exit", image, vKeypoints);
+        ShowKeypoints("press 'q' to exit", image, vKeyPoints);
         cout << endl;
         command = cv::waitKey();
     }
@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
         if (settings->needToResize())
             cv::resize(image, image, settings->newImSize());
-        DetectOnlyLocal(image, vKeypoints, localDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
+        DetectOnlyLocal(image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
         
         timerDetect.clearBuff();
         timerRun.clearBuff();
@@ -218,7 +218,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            DetectOnlyLocal(image, vKeypoints, localDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
+            DetectOnlyLocal(image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
             timerDetect.Toc();
         }
         cout << "Only detect the local keypoints: " << endl
@@ -229,7 +229,7 @@ int main(int argc, char* argv[])
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
         if (settings->needToResize())
             cv::resize(image, image, settings->newImSize());
-        DetectFull(image, vKeypoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
+        DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
         
         timerDetect.clearBuff();
         timerRun.clearBuff();
@@ -239,7 +239,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            DetectFull(image, vKeypoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
+            DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
             timerDetect.Toc();
         }
         cout << "Detect the full features: " << endl
@@ -251,18 +251,18 @@ int main(int argc, char* argv[])
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
         if (settings->needToResize())
             cv::resize(image, image, settings->newImSize());
-        extractor(image, vKeypoints, localDescriptors, globalDescriptors);
+        extractor(image, vKeyPoints, localDescriptors, globalDescriptors);
 
         timerDetect.clearBuff();
         timerRun.clearBuff();
-        vKeypoints.clear();
+        vKeyPoints.clear();
         for (const string& file : files)
         {
             image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            extractor(image, vKeypoints, localDescriptors, globalDescriptors);
+            extractor(image, vKeyPoints, localDescriptors, globalDescriptors);
             timerDetect.Toc();
         }
         cout << "Detect the full features with HFextractor: " << endl
