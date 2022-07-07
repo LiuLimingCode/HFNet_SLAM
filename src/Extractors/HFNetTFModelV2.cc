@@ -14,26 +14,16 @@ HFNetTFModelV2::HFNetTFModelV2(const std::string &strModelDir)
     mbVaild = LoadHFNetTFModel(strModelDir);
 }
 
-HFNetTFModelV2* HFNetTFModelV2::clone(void)
+void HFNetTFModelV2::Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatures)
 {
-    if (!mbVaild) return nullptr;
-    HFNetTFModelV2 *newModel = new HFNetTFModelV2(mStrModelPath);
-    return newModel;
-}
-
-void HFNetTFModelV2::WarmUp(const cv::Size warmUpSize, bool onlyDetectLocalFeatures)
-{
-    // Warming up, the tensorflow model cost huge time at the first detection.
-    // Therefore, give a fake image to waming up
+    // The tensorflow model cost huge time at the first detection.
+    // Therefore, give a fake image to compile
     // The size of fake image should be the same as the real image.
 
-    if (mbVaild && warmUpSize.width > 0 && warmUpSize.height > 0)
-    {
-        Mat fakeImg(warmUpSize, CV_8UC1);
-        cv::randu(fakeImg, Scalar(0), Scalar(255));
-        vector<tensorflow::Tensor> vNetResults;
-        Run(fakeImg, vNetResults, onlyDetectLocalFeatures, 4);
-    }
+    Mat fakeImg(inputSize(2), inputSize(1), CV_8UC1);
+    cv::randu(fakeImg, Scalar(0), Scalar(255));
+    vector<tensorflow::Tensor> vNetResults;
+    Run(fakeImg, vNetResults, onlyDetectLocalFeatures, 4);
 }
 
 bool HFNetTFModelV2::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
@@ -68,6 +58,8 @@ void HFNetTFModelV2::PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints,
 bool HFNetTFModelV2::Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vNetResults, bool onlyDetectLocalFeatures,
                          int nRadius) 
 {
+    if (!mbVaild) return false;
+
     Tensor tRadius(DT_INT32, TensorShape());
     tRadius.scalar<int>()() = nRadius;
 
@@ -124,7 +116,7 @@ void HFNetTFModelV2::GetLocalFeaturesFromTensor(const tensorflow::Tensor &tScore
         });
         vKeyPoints.resize(nKeypointsNum);
     }
-
+    
     localDescriptors = cv::Mat(vKeyPoints.size(), 256, CV_32F);
     Tensor tWarp(DT_FLOAT, TensorShape({(int)vKeyPoints.size(), 2}));
     auto pWarp = tWarp.tensor<float, 2>();

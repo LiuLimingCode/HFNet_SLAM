@@ -447,18 +447,25 @@ namespace ORB_SLAM3 {
         if (type == "HFNetTF") {
             modelType_ = kHFNetTFModel;
         }
+        else if (type == "HFNetVINO") {
+            modelType_ = kHFNetVINOModel;
+        }
         else {
             cerr << "Wrong extractor type in setting file!" << endl;
             exit(-1);
         }
-        nFeatures_ = readParameter<int>(fSettings,"Extractor.nFeatures",found);
         scaleFactor_ = readParameter<float>(fSettings,"Extractor.scaleFactor",found);
         nLevels_ = readParameter<int>(fSettings,"Extractor.nLevels",found);
+        nFeatures_ = readParameter<int>(fSettings,"Extractor.nFeatures",found);
+        nNMSRadius_ = readParameter<int>(fSettings, "Extractor.nNMSRadius",found);
+        threshold_ = readParameter<float>(fSettings, "Extractor.threshold",found);
         if (modelType_ == kHFNetTFModel) {
-            nNMSRadius_ = readParameter<int>(fSettings, "Extractor.HFNetTF.nNMSRadius",found);
-            threshold_ = readParameter<float>(fSettings, "Extractor.HFNetTF.threshold",found);
             strModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.modelPath",found);
             strResamplerPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.resamplerPath",found);
+        }
+        else if (modelType_ == kHFNetVINOModel) {
+            strXmlPath_ = readParameter<string>(fSettings, "Extractor.HFNetVINO.xmlPath",found);
+            strBinPath_ = readParameter<string>(fSettings, "Extractor.HFNetVINO.binPath",found);
         }
     }
 
@@ -639,15 +646,20 @@ namespace ORB_SLAM3 {
             output << "\t-RGB-D depth map factor: " << settings.depthMapFactor_ << endl;
         }
 
-        output << "\t-Features per image: " << settings.nFeatures_ << endl;
         output << "\t-ORB scale factor: " << settings.scaleFactor_ << endl;
         output << "\t-ORB number of scales: " << settings.nLevels_ << endl;
+        output << "\t-Features per image: " << settings.nFeatures_ << endl;
+        output << "\t-Detector threshold: " << settings.threshold_ << endl;
+        output << "\t-NMS radius: " << settings.nNMSRadius_ << endl;
         if (settings.modelType_ == kHFNetTFModel)
         {
-            output << "\t-Detector threshold: " << settings.threshold_ << endl;
-            output << "\t-NMS radius: " << settings.nNMSRadius_ << endl;
-            output << "\t-Model path: " << settings.strModelPath_ << endl;
+            output << "\t-TensorFlow model path: " << settings.strModelPath_ << endl;
             output << "\t-Resampler.so path: " << settings.strResamplerPath_ << endl;
+        }
+        else if (settings.modelType_ == kHFNetVINOModel)
+        {
+            output << "\t-VINO .xml model path: " << settings.strXmlPath_ << endl;
+            output << "\t-VINO .bin model path: " << settings.strBinPath_ << endl;
         }
 
         return output;

@@ -2,6 +2,7 @@
 #include "Extractors/BaseModel.h"
 #include "Extractors/HFNetTFModel.h"
 #include "Extractors/HFNetTFModelV2.h"
+#include "Extractors/HFNetVINOModel.h"
 
 using namespace std;
 
@@ -22,34 +23,17 @@ std::vector<BaseModel*> InitModelsVec(Settings* settings)
     cv::Size ImSize = settings->newImSize();
     float scaleFactor = settings->scaleFactor();
     gvpModels.reserve(nLevels);
-    if (settings->modelType() == kHFNetTFModel)
-    {
-        // HFNetTFModel* pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
-        HFNetTFModelV2* pModel = new HFNetTFModelV2(settings->strModelPath());
-        pModel->WarmUp(ImSize, false);
-        if (pModel->IsValid())
-        {
-            cout << "Successfully loaded HFNetTF model" << endl;
-            gvpModels.emplace_back(pModel);
+    
 
-            float scale = 1.0;
-            for (int level = 1; level < nLevels; ++level)
-            {
-                scale /= scaleFactor;
-                pModel = pModel->clone();
-                pModel->WarmUp(cv::Size(cvRound(ImSize.width * scale), cvRound(ImSize.height * scale)), true);
-                gvpModels.emplace_back(pModel);
-            }
-        }
-        else
-        {
-            exit(-1);
-        }
-    }
-    else
+    float scale = 1.0f;
+    for (int level = 0; level < nLevels; ++level)
     {
-        cerr << "Wrong type of detector!" << endl;
-        exit(-1);
+        cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
+        BaseModel *pNewModel;
+        if (level == 0) pNewModel = InitModel(settings, inputShape, false);
+        else pNewModel = InitModel(settings, inputShape, true);
+        gvpModels.emplace_back(pNewModel);
+        scale /= scaleFactor;
     }
 
     return gvpModels;
@@ -65,17 +49,27 @@ std::vector<BaseModel*> GetModelVec(void)
     return gvpModels;
 }
 
-BaseModel* InitModel(Settings *settings)
+BaseModel* InitModel(Settings *settings, cv::Vec4i inputSize, bool onlyDetectLocalFeatures)
 {
-    cv::Size ImSize = settings->newImSize();
     BaseModel* pModel;
     if (settings->modelType() == kHFNetTFModel)
     {
         // pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
         pModel = new HFNetTFModelV2(settings->strModelPath());
+        pModel->Compile(inputSize, onlyDetectLocalFeatures);
         if (pModel->IsValid())
         {
             cout << "Successfully loaded HFNetTF model" << endl;
+        }
+        else exit(-1);
+    }
+    else if (settings->modelType() == kHFNetVINOModel)
+    {
+        pModel = new HFNetVINOModel(settings->strXmlPath(), settings->strBinPath());
+        pModel->Compile(inputSize, onlyDetectLocalFeatures);
+        if (pModel->IsValid())
+        {
+            cout << "Successfully loaded HFNetVINO model" << endl;
         }
         else exit(-1);
     }

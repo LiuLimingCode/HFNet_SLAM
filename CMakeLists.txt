@@ -69,6 +69,7 @@ src/Extractors/BaseModel.cc
 src/Extractors/HFextractor.cc
 src/Extractors/HFNetTFModel.cc
 src/Extractors/HFNetTFModelV2.cc
+src/Extractors/HFNetVINOModel.cc
 src/Matcher.cc
 src/FrameDrawer.cc
 src/Converter.cc
@@ -100,6 +101,7 @@ include/Extractors/HFextractor.h
 include/Extractors/BaseModel.h
 include/Extractors/HFNetTFModel.h
 include/Extractors/HFNetTFModelV2.h
+include/Extractors/HFNetVINOModel.h
 include/Matcher.h
 include/FrameDrawer.h
 include/Converter.h
@@ -160,6 +162,10 @@ target_link_libraries(test_hfnet_tf_v1 ${PROJECT_NAME})
 add_executable(test_hfnet_tf_v2
         Examples/Utility/test_hfnet_tf_v2.cc)
 target_link_libraries(test_hfnet_tf_v2 ${PROJECT_NAME})
+
+add_executable(test_hfnet_vino
+        Examples/Utility/test_hfnet_vino.cc)
+target_link_libraries(test_hfnet_vino ${PROJECT_NAME})
 
 add_executable(test_match_global_feats
         Examples/Utility/test_match_global_feats.cc)

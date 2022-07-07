@@ -18,26 +18,16 @@ HFNetTFModel::HFNetTFModel(const std::string &strResamplerDir, const std::string
     mbVaild = bLoadedLib & bLoadedModel;
 }
 
-HFNetTFModel* HFNetTFModel::clone(void)
+void HFNetTFModel::Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatures)
 {
-    if (!mbVaild) return nullptr;
-    HFNetTFModel *newModel = new HFNetTFModel(string(), mStrModelPath);
-    return newModel;
-}
-
-void HFNetTFModel::WarmUp(const cv::Size warmUpSize, bool onlyDetectLocalFeatures)
-{
-    // Warming up, the tensorflow model cost huge time at the first detection.
-    // Therefore, give a fake image to waming up
+    // The tensorflow model cost huge time at the first detection.
+    // Therefore, give a fake image to compile
     // The size of fake image should be the same as the real image.
 
-    if (mbVaild && warmUpSize.width > 0 && warmUpSize.height > 0)
-    {
-        Mat fakeImg(warmUpSize, CV_8UC1);
-        cv::randu(fakeImg, Scalar(0), Scalar(255));
-        vector<tensorflow::Tensor> vNetResults;
-        Run(fakeImg, vNetResults, onlyDetectLocalFeatures, 1000, 0.1, 4);
-    }
+    Mat fakeImg(inputSize(2), inputSize(1), CV_8UC1);
+    cv::randu(fakeImg, Scalar(0), Scalar(255));
+    vector<tensorflow::Tensor> vNetResults;
+    Run(fakeImg, vNetResults, onlyDetectLocalFeatures, 1000, 0.1, 4);
 }
 
 bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
@@ -66,6 +56,8 @@ void HFNetTFModel::PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, c
 bool HFNetTFModel::Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vNetResults, bool onlyDetectLocalFeatures,
                        int nKeypointsNum, float threshold, int nRadius) 
 {
+    if (!mbVaild) return false;
+
     Tensor tKeypointsNum(DT_INT32, TensorShape());
     Tensor tRadius(DT_INT32, TensorShape());
     Tensor tThreshold(DT_FLOAT, TensorShape());

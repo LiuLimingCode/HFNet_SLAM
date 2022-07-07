@@ -56,7 +56,7 @@ void ResamplerTF(const tensorflow::Tensor &data, const tensorflow::Tensor &warp,
 }
 
 bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                     int nKeypointsNum, int nRadius, float threshold)
+                     int nKeypointsNum, float threshold, int nRadius)
 {
     vKeyPoints.clear();
     Tensor tKeypointsNum(DT_INT32, TensorShape());
@@ -135,7 +135,7 @@ bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints
 }
 
 bool DetectFull(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                int nKeypointsNum, int nRadius, float threshold)
+                int nKeypointsNum, float threshold, int nRadius)
 {
     vKeyPoints.clear();
     TicToc timer;
@@ -231,10 +231,12 @@ const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
 const int dbStart = 50;
 const int dbEnd = 50;
 
+const std::string strModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS2/");
+
 int main(int argc, char* argv[])
 {
     settings = new Settings(strSettingsPath, 0);
-    pModel = new HFNetTFModelV2(settings->strModelPath());
+    pModel = new HFNetTFModelV2(strModelPath);
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     
@@ -247,7 +249,7 @@ int main(int argc, char* argv[])
     
     // randomly detect an image and show the results
     char command = ' ';
-    float threshold = 0.005;
+    float threshold = 0;
     int nNMSRadius = 4;
     int select = 0;
     while(1)
@@ -255,7 +257,7 @@ int main(int argc, char* argv[])
         if (command == 'q') break;
         else if (command == 's') select = std::max(select - 1, 0);
         else if (command == 'w') select += 1;
-        else if (command == 'a') threshold = std::max(threshold - 0.005, 0.005);
+        else if (command == 'a') threshold = std::max(threshold - 0.01, 0.0);
         else if (command == 'd') threshold += 0.01;
         else if (command == 'z') nNMSRadius = std::max(nNMSRadius - 1, 0);
         else if (command == 'c') nNMSRadius += 1;
@@ -269,7 +271,7 @@ int main(int argc, char* argv[])
         if (settings->needToResize())
             cv::resize(image, image, settings->newImSize());
         
-        DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, 1000, nNMSRadius, threshold);
+        DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, 1000, threshold, nNMSRadius);
         cout << "Get features number: " << vKeyPoints.size() << endl;
         
         ShowKeypoints("press 'q' to exit", image, vKeyPoints);
@@ -283,7 +285,7 @@ int main(int argc, char* argv[])
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
         if (settings->needToResize())
             cv::resize(image, image, settings->newImSize());
-        DetectOnlyLocal(image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
+        DetectOnlyLocal(image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius());
         
         timerDetect.clearBuff();
         timerRun.clearBuff();
@@ -293,7 +295,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            DetectOnlyLocal(image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
+            DetectOnlyLocal(image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius());
             timerDetect.Toc();
         }
         cout << "Only detect the local keypoints: " << endl
@@ -304,7 +306,7 @@ int main(int argc, char* argv[])
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
         if (settings->needToResize())
             cv::resize(image, image, settings->newImSize());
-        DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
+        DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius());
         
         timerDetect.clearBuff();
         timerRun.clearBuff();
@@ -314,7 +316,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->nNMSRadius(), settings->threshold());
+            DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius());
             timerDetect.Toc();
         }
         cout << "Detect the full features: " << endl

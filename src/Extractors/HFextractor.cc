@@ -155,14 +155,14 @@ void HFextractor::ComputePyramid(const cv::Mat &image)
 }
 
 // scheme 1: disable pyramid
-// int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
-//                              cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
-// {
-//     if(image.empty() || image.type() != CV_8UC1) return -1;
-//     mvpModels[0]->Detect(image, vKeyPoints, localDescriptors, globalDescriptors, nfeatures, threshold, nNMSRadius);
+int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+                             cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
+{
+    if(image.empty() || image.type() != CV_8UC1) return -1;
+    mvpModels[0]->Detect(image, vKeyPoints, localDescriptors, globalDescriptors, nfeatures, threshold, nNMSRadius);
 
-//     return vKeyPoints.size();
-// }
+    return vKeyPoints.size();
+}
 
 // scheme 2: 
 // int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
@@ -214,43 +214,43 @@ void HFextractor::ComputePyramid(const cv::Mat &image)
 
 
 
-int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
-                             cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
-{
-    if(image.empty()) return -1;
-    assert(image.type() == CV_8UC1 );
+// int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+//                              cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
+// {
+//     if(image.empty()) return -1;
+//     assert(image.type() == CV_8UC1 );
 
-    ComputePyramid(image);
-    int nKeypoints = 0;
-    vector<vector<cv::KeyPoint>> allKeypoints(nlevels);
-    vector<cv::Mat> allDescriptors(nlevels);
-    for (int level = 0; level < nlevels; ++level)
-    {
-        if (level == 0)
-        {
-            mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], globalDescriptors, mnFeaturesPerLevel[level], threshold, nNMSRadius);
-        }
-        else
-        {
-            mvpModels[level]->DetectOnlyLocal(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
-        }
-        nKeypoints += allKeypoints[level].size();
-        // ShowKeypoints("t" + std::to_string(level), mvImagePyramid[level], allKeypoints[level]);
-    }
-    vKeyPoints.clear();
-    vKeyPoints.reserve(nKeypoints);
-    for (int level = 0; level < nlevels; ++level)
-    {
-        for (auto keypoint : allKeypoints[level])
-        {
-            keypoint.octave = level;
-            keypoint.pt *= mvScaleFactor[level];
-            vKeyPoints.emplace_back(keypoint);
-        }
-    }
-    cv::vconcat(allDescriptors.data(), allDescriptors.size(), localDescriptors);
+//     ComputePyramid(image);
+//     int nKeypoints = 0;
+//     vector<vector<cv::KeyPoint>> allKeypoints(nlevels);
+//     vector<cv::Mat> allDescriptors(nlevels);
+//     for (int level = 0; level < nlevels; ++level)
+//     {
+//         if (level == 0)
+//         {
+//             mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], globalDescriptors, mnFeaturesPerLevel[level], threshold, nNMSRadius);
+//         }
+//         else
+//         {
+//             mvpModels[level]->DetectOnlyLocal(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
+//         }
+//         nKeypoints += allKeypoints[level].size();
+//         // ShowKeypoints("t" + std::to_string(level), mvImagePyramid[level], allKeypoints[level]);
+//     }
+//     vKeyPoints.clear();
+//     vKeyPoints.reserve(nKeypoints);
+//     for (int level = 0; level < nlevels; ++level)
+//     {
+//         for (auto keypoint : allKeypoints[level])
+//         {
+//             keypoint.octave = level;
+//             keypoint.pt *= mvScaleFactor[level];
+//             vKeyPoints.emplace_back(keypoint);
+//         }
+//     }
+//     cv::vconcat(allDescriptors.data(), allDescriptors.size(), localDescriptors);
 
-    return vKeyPoints.size();
-}
+//     return vKeyPoints.size();
+// }
 
 } //namespace ORB_SLAM3

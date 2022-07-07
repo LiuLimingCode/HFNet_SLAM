@@ -104,6 +104,8 @@ namespace ORB_SLAM3 {
         float threshold() {return threshold_;} 
         std::string strModelPath() {return strModelPath_;}
         std::string strResamplerPath() {return strResamplerPath_;}
+        std::string strXmlPath() {return strXmlPath_;}
+        std::string strBinPath() {return strBinPath_;}
 
         float keyFrameSize() {return keyFrameSize_;}
         float keyFrameLineWidth() {return keyFrameLineWidth_;}
@@ -214,6 +216,8 @@ namespace ORB_SLAM3 {
         float threshold_;
         std::string strModelPath_;
         std::string strResamplerPath_;
+        std::string strXmlPath_;
+        std::string strBinPath_;
 
         /*
          * Viewer stuff

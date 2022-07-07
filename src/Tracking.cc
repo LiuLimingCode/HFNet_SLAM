@@ -675,16 +675,13 @@ void Tracking::newParameterLoader(Settings *settings) {
     float fScaleFactor = settings->scaleFactor();
 
     auto vpModels = GetModelVec();
-    if (mModelType == ModelType::kHFNetTFModel)
-    {
-        mpExtractorLeft = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels);
+    mpExtractorLeft = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels);
 
-        if(mSensor==System::STEREO || mSensor==System::IMU_STEREO)
-            mpExtractorRight = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels);
+    if(mSensor==System::STEREO || mSensor==System::IMU_STEREO)
+        mpExtractorRight = new HFextractor(nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels);
 
-        if(mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR)
-            mpIniExtractor = new HFextractor(5*nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels);
-    }
+    if(mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR)
+        mpIniExtractor = new HFextractor(5*nFeatures,nNMSRadius,fThreshold,fScaleFactor,nLevels,vpModels);
 
     //IMU parameters
     Sophus::SE3f Tbc = settings->Tbc();

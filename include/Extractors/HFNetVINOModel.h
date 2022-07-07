@@ -15,12 +15,10 @@ namespace ORB_SLAM3
 class HFNetVINOModel : public BaseModel
 {
 public:
-    HFNetVINOModel(const std::string &strXmlPath, const std::string &strModelDir);
+    HFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath);
     virtual ~HFNetVINOModel(void) = default;
 
-    HFNetVINOModel* clone(void);
-
-    void WarmUp(const cv::Size warmUpSize, bool onlyDetectLocalFeatures);
+    void Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatures);
 
     bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                 int nKeypointsNum, float threshold, int nRadius) override;
@@ -33,13 +31,16 @@ public:
 
     bool IsValid(void) override { return mbVaild; }
 
-    // std::shared_ptr<ov::Session> mSession;
-    // ov::GraphDef mGraph;
+    std::shared_ptr<ov::Model> mpModel;
+    std::shared_ptr<ov::CompiledModel> mpExecutableNet;
+    std::shared_ptr<ov::InferRequest> mInferRequest;
 
 protected:
-    bool LoadHFNetTFModel(const std::string &strModelDir);
+    bool LoadHFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath);
 
-    bool Run(const cv::Mat &image, std::vector<ov::Tensor> &vNetResults, bool onlyDetectLocalFeatures);
+    void printInputAndOutputsInfo(const ov::Model& network);
+
+    bool Run(const cv::Mat &image, std::vector<ov::Tensor> &vNetResults);
 
     void GetLocalFeaturesFromTensor(const ov::Tensor &tScoreDense, const ov::Tensor &tDescriptorsMap,
                                     std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, 
@@ -49,10 +50,10 @@ protected:
 
     void Mat2Tensor(const cv::Mat &image, ov::Tensor *tensor);
 
-    void ResamplerTF(const ov::Tensor &data, const ov::Tensor &warp, cv::Mat &output);
+    void ResamplerOV(const ov::Tensor &data, const ov::Tensor &warp, cv::Mat &output);
 
     std::string mStrXmlPath;
-    std::string mStrModelDir;
+    std::string mStrBinPath;
     bool mbVaild;
     std::vector<ov::Tensor> mvNetResults;
     static ov::Core core;

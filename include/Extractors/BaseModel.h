@@ -30,6 +30,8 @@ class BaseModel
 {
 public:
     virtual ~BaseModel(void) = default;
+
+    virtual void Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatures) = 0;
     
     virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                         int nKeypointsNum, float threshold, int nRadius) = 0;
@@ -50,7 +52,7 @@ std::vector<BaseModel*> InitModelsVec(Settings* settings);
 
 std::vector<BaseModel*> GetModelVec(void);
 
-BaseModel* InitModel(Settings *settings);
+BaseModel* InitModel(Settings *settings, cv::Vec4i inputSize, bool onlyDetectLocalFeatures);
 
 std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int minX,
                                            const int maxX, const int minY, const int maxY, const int N);

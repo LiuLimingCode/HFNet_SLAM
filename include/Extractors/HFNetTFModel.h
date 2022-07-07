@@ -25,9 +25,7 @@ public:
     HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir);
     virtual ~HFNetTFModel(void) = default;
 
-    HFNetTFModel* clone(void);
-
-    void WarmUp(const cv::Size warmUpSize, bool onlyDetectLocalFeatures);
+    void Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatures);
 
     bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                 int nKeypointsNum, float threshold, int nRadius) override;

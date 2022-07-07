@@ -66,10 +66,13 @@ Viewer.ViewpointF: 500.0
 #--------------------------------------------------------------------------------------------
 
 # Extractor: Type of extractor
-Extractor.type: "HFNetTF" # [HFNetTF HFNetVINO]
+Extractor.type: "HFNetVINO" # [HFNetTF HFNetVINO]
 
-# Extractor: Number of features per image
-Extractor.nFeatures: 1250
+# HFNET Extractor
+Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS2/"
+Extractor.HFNetTF.resamplerPath: "/home/llm/src/tensorflow-1.15.5/bazel-bin/tensorflow/contrib/resampler/python/ops/_resampler_ops.so"
+Extractor.HFNetVINO.xmlPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_vino_v2/saved_model.xml"
+Extractor.HFNetVINO.binPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_vino_v2/saved_model.bin"
 
 # Extractor: Scale factor between levels in the scale pyramid 	
 Extractor.scaleFactor: 1.2
@@ -77,13 +80,9 @@ Extractor.scaleFactor: 1.2
 # Extractor: Number of levels in the scale pyramid	
 Extractor.nLevels: 8
 
-
-# HFNET Extractor
-Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS2/"
-Extractor.HFNetTF.resamplerPath: "/home/llm/src/tensorflow-1.15.5/bazel-bin/tensorflow/contrib/resampler/python/ops/_resampler_ops.so"
-Extractor.HFNetTF.nNMSRadius: 4
-Extractor.HFNetTF.threshold: 0.01
-# Extractor.ORB.iniThFAST: 20
-# Extractor.ORB.minThFAST: 7
+# Extractor: Number of features per image
+Extractor.nFeatures: 1250
+Extractor.nNMSRadius: 4
+Extractor.threshold: 0.01
 
 loopClosing: 0
