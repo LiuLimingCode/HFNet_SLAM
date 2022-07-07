@@ -49,8 +49,15 @@ public:
     }
 
     std::vector<cv::Mat> mvImagePyramid;
+    std::vector<int> mnFeaturesPerLevel;
 
-public:
+    int nfeatures;
+    int nNMSRadius;
+    float threshold;
+
+    std::vector<BaseModel*> mvpModels;
+
+protected:
 
     double scaleFactor;
     int nlevels;
@@ -60,13 +67,6 @@ public:
     std::vector<float> mvInvScaleFactor;    
     std::vector<float> mvLevelSigma2;
     std::vector<float> mvInvLevelSigma2;
-
-    int nfeatures;
-    int nNMSRadius;
-    float threshold;
-    std::vector<BaseModel*> mvpModels;
-
-    std::vector<int> mnFeaturesPerLevel;
 
     std::vector<int> umax;
 

@@ -167,6 +167,14 @@ add_executable(test_hfnet_vino
         Examples/Utility/test_hfnet_vino.cc)
 target_link_libraries(test_hfnet_vino ${PROJECT_NAME})
 
+add_executable(test_extractors_tf
+        Examples/Utility/test_extractors_tf.cc)
+target_link_libraries(test_extractors_tf ${PROJECT_NAME})
+
+add_executable(test_extractors_vino
+        Examples/Utility/test_extractors_vino.cc)
+target_link_libraries(test_extractors_vino ${PROJECT_NAME})
+
 add_executable(test_match_global_feats
         Examples/Utility/test_match_global_feats.cc)
 target_link_libraries(test_match_global_feats ${PROJECT_NAME})

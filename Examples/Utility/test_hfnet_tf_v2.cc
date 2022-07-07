@@ -249,7 +249,7 @@ int main(int argc, char* argv[])
     
     // randomly detect an image and show the results
     char command = ' ';
-    float threshold = 0;
+    float threshold = 0.005;
     int nNMSRadius = 4;
     int select = 0;
     while(1)
@@ -257,8 +257,8 @@ int main(int argc, char* argv[])
         if (command == 'q') break;
         else if (command == 's') select = std::max(select - 1, 0);
         else if (command == 'w') select += 1;
-        else if (command == 'a') threshold = std::max(threshold - 0.01, 0.0);
-        else if (command == 'd') threshold += 0.01;
+        else if (command == 'a') threshold = std::max(threshold - 0.005, 0.005);
+        else if (command == 'd') threshold += 0.005;
         else if (command == 'z') nNMSRadius = std::max(nNMSRadius - 1, 0);
         else if (command == 'c') nNMSRadius += 1;
         else select = distribution(generator);

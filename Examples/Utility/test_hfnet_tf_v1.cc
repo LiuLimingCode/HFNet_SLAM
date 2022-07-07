@@ -154,7 +154,7 @@ const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
 const int dbStart = 50;
 const int dbEnd = 50;
 
-const std::string strModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS2/");
+const std::string strModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf/");
 const std::string strResamplerPath("/home/llm/src/tensorflow-1.15.5/bazel-bin/tensorflow/contrib/resampler/python/ops/_resampler_ops.so");
 
 int main(int argc, char* argv[])

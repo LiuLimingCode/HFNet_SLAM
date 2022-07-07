@@ -155,14 +155,14 @@ void HFextractor::ComputePyramid(const cv::Mat &image)
 }
 
 // scheme 1: disable pyramid
-int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
-                             cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
-{
-    if(image.empty() || image.type() != CV_8UC1) return -1;
-    mvpModels[0]->Detect(image, vKeyPoints, localDescriptors, globalDescriptors, nfeatures, threshold, nNMSRadius);
+// int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+//                              cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
+// {
+//     if(image.empty() || image.type() != CV_8UC1) return -1;
+//     mvpModels[0]->Detect(image, vKeyPoints, localDescriptors, globalDescriptors, nfeatures, threshold, nNMSRadius);
 
-    return vKeyPoints.size();
-}
+//     return vKeyPoints.size();
+// }
 
 // scheme 2: 
 // int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
@@ -252,5 +252,71 @@ int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vK
 
 //     return vKeyPoints.size();
 // }
+
+class DetectParallel : public cv::ParallelLoopBody
+{
+public:
+
+    DetectParallel (vector<cv::KeyPoint> *allKeypoints, cv::Mat *allDescriptors, cv::Mat *globalDescriptors, HFextractor* pExtractor)
+        : mAllKeypoints(allKeypoints), mAllDescriptors(allDescriptors), mGlobalDescriptors(globalDescriptors), mpExtractor(pExtractor) {}
+
+    virtual void operator ()(const cv::Range& range) const CV_OVERRIDE
+    {
+        for (int level = range.start; level != range.end; ++level)
+        {
+            if (level == 0)
+            {
+                mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], *mGlobalDescriptors, mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, mpExtractor->nNMSRadius);
+            }
+            else
+            {
+                mpExtractor->mvpModels[level]->DetectOnlyLocal(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, ceil(mpExtractor->nNMSRadius*mpExtractor->GetInverseScaleFactors()[level]));
+            }
+        }
+    }
+
+    DetectParallel& operator=(const DetectParallel &) {
+        return *this;
+    };
+private:
+    vector<cv::KeyPoint> *mAllKeypoints;
+    cv::Mat *mAllDescriptors;
+    cv::Mat *mGlobalDescriptors;
+    HFextractor* mpExtractor;
+};
+
+int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+                             cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
+{
+    if(image.empty()) return -1;
+    assert(image.type() == CV_8UC1 );
+
+    ComputePyramid(image);
+
+    int nKeypoints = 0;
+    vector<vector<cv::KeyPoint>> allKeypoints(nlevels);
+    vector<cv::Mat> allDescriptors(nlevels);
+    
+    DetectParallel detector(allKeypoints.data(), allDescriptors.data(), &globalDescriptors, this);
+    cv::parallel_for_(cv::Range(0, nlevels), detector);
+
+    for (int level = 0; level < nlevels; ++level)
+        nKeypoints += allKeypoints[level].size();
+
+    vKeyPoints.clear();
+    vKeyPoints.reserve(nKeypoints);
+    for (int level = 0; level < nlevels; ++level)
+    {
+        for (auto keypoint : allKeypoints[level])
+        {
+            keypoint.octave = level;
+            keypoint.pt *= mvScaleFactor[level];
+            vKeyPoints.emplace_back(keypoint);
+        }
+    }
+    cv::vconcat(allDescriptors.data(), allDescriptors.size(), localDescriptors);
+
+    return vKeyPoints.size();
+}
 
 } //namespace ORB_SLAM3

@@ -66,7 +66,7 @@ Viewer.ViewpointF: 500.0
 #--------------------------------------------------------------------------------------------
 
 # Extractor: Type of extractor
-Extractor.type: "HFNetVINO" # [HFNetTF HFNetVINO]
+Extractor.type: "HFNetTF" # [HFNetTF HFNetVINO]
 
 # HFNET Extractor
 Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS2/"
