@@ -27,6 +27,23 @@ struct TicToc
         if (timeBuff.empty()) return 0;
         return std::accumulate(timeBuff.begin(), timeBuff.end(), 0.f) / (float)timeBuff.size();
     }
+    float devCost(void)
+    {
+        if (timeBuff.size() <= 1) return 0;
+        float average = aveCost();
+
+        float accum = 0;
+        int total = 0;
+        for(double value : timeBuff)
+        {
+            if(value == 0)
+                continue;
+            accum += pow(value - average, 2);
+            total++;
+        }
+        return sqrt(accum / total);
+    }
+
 
     std::vector<float> timeBuff;
     chrono::steady_clock::time_point t1;

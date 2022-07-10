@@ -9,37 +9,99 @@ namespace ORB_SLAM3
 
 #ifdef USE_TENSORFLOW
 
-HFNetTFModelV2::HFNetTFModelV2(const std::string &strModelDir)
+HFNetTFModelV2::HFNetTFModelV2(const std::string &strModelDir, ModelDetectionMode mode, const cv::Vec4i inputShape)
 {
     mbVaild = LoadHFNetTFModel(strModelDir);
-}
 
-void HFNetTFModelV2::Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatures)
-{
+    if (!mbVaild) return;
+
+    mMode = mode;
+    mInputShape = {inputShape(0), inputShape(1), inputShape(2), inputShape(3)};
+    if (mMode == kImageToLocalAndGlobal)
+    {
+        mvInputTensors.emplace_back("image", Tensor(DT_FLOAT, mInputShape));
+        mvInputTensors.emplace_back("pred/simple_nms/radius", Tensor(DT_INT32, TensorShape()));
+        mvInputTensors[1].second.scalar<int>()() = 4;
+
+        mvOutputTensorNames.emplace_back("scores_dense_nms");
+        mvOutputTensorNames.emplace_back("local_descriptor_map");
+        mvOutputTensorNames.emplace_back("global_descriptor");
+    }
+    else if (mMode == kImageToLocal)
+    {
+        mvInputTensors.emplace_back("image", Tensor(DT_FLOAT, mInputShape));
+        mvInputTensors.emplace_back("pred/simple_nms/radius", Tensor(DT_INT32, TensorShape()));
+        mvInputTensors[1].second.scalar<int>()() = 4;
+
+        mvOutputTensorNames.emplace_back("scores_dense_nms");
+        mvOutputTensorNames.emplace_back("local_descriptor_map");
+    }
+    else if (mMode == kImageToLocalAndIntermediate)
+    {
+        mvInputTensors.emplace_back("image", Tensor(DT_FLOAT, mInputShape));
+        mvInputTensors.emplace_back("pred/simple_nms/radius", Tensor(DT_INT32, TensorShape()));
+        mvInputTensors[1].second.scalar<int>()() = 4;
+
+        mvOutputTensorNames.emplace_back("scores_dense_nms");
+        mvOutputTensorNames.emplace_back("local_descriptor_map");
+        mvOutputTensorNames.emplace_back("pred/MobilenetV2/expanded_conv_6/input:0");
+    }
+    else if (mMode == kIntermediateToGlobal)
+    {
+        mvInputTensors.emplace_back("pred/MobilenetV2/expanded_conv_6/input:0", Tensor(DT_FLOAT, mInputShape));
+
+        mvOutputTensorNames.emplace_back("global_descriptor");
+    }
+    else
+    {
+        mbVaild = false;
+        return;
+    }
+    
     // The tensorflow model cost huge time at the first detection.
-    // Therefore, give a fake image to compile
+    // Therefore, give a fake data to compile
     // The size of fake image should be the same as the real image.
-
-    Mat fakeImg(inputSize(2), inputSize(1), CV_8UC1);
-    cv::randu(fakeImg, Scalar(0), Scalar(255));
-    vector<tensorflow::Tensor> vNetResults;
-    Run(fakeImg, vNetResults, onlyDetectLocalFeatures, 4);
+    std::vector<tensorflow::Tensor> vNetResults;
+    mbVaild = Run(vNetResults);
 }
 
 bool HFNetTFModelV2::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                             int nKeypointsNum, float threshold, int nRadius)
 {
-    Run(image, mvNetResults, false, nRadius);
-    GetGlobalDescriptorFromTensor(mvNetResults[2], globalDescriptors);
+    if (mMode != kImageToLocalAndGlobal && mMode != kImageToLocalAndIntermediate) return false;
+
+    Mat2Tensor(image, &mvInputTensors[0].second);
+    mvInputTensors[1].second.scalar<int>()() = nRadius;
+
+    if (!Run(mvNetResults)) return false;
+
+    if (mMode == kImageToLocalAndGlobal)
+        GetGlobalDescriptorFromTensor(mvNetResults[2], globalDescriptors);
+    else Tensor2Mat(&mvNetResults[2], globalDescriptors);
     GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
     return true;
 }
 
-bool HFNetTFModelV2::DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                                     int nKeypointsNum, float threshold, int nRadius)
+bool HFNetTFModelV2::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
+                            int nKeypointsNum, float threshold, int nRadius)
 {
-    Run(image, mvNetResults, true, nRadius);
+    if (mMode != kImageToLocal) return false;
+
+    Mat2Tensor(image, &mvInputTensors[0].second);
+    mvInputTensors[1].second.scalar<int>()() = nRadius;
+
+    if (!Run(mvNetResults)) return false;
     GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
+    return true;
+}
+
+bool HFNetTFModelV2::Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors)
+{
+    if (mMode != kIntermediateToGlobal) return false;
+
+    Mat2Tensor(intermediate, &mvInputTensors[0].second);
+    if (!Run(mvNetResults)) return false;
+    GetGlobalDescriptorFromTensor(mvNetResults[0], globalDescriptors);
     return true;
 }
 
@@ -55,22 +117,12 @@ void HFNetTFModelV2::PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints,
     GetLocalFeaturesFromTensor(tScaledScoreDense, mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
 }
 
-bool HFNetTFModelV2::Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vNetResults, bool onlyDetectLocalFeatures,
-                         int nRadius) 
+bool HFNetTFModelV2::Run(std::vector<tensorflow::Tensor> &vNetResults) 
 {
     if (!mbVaild) return false;
+    if (mvInputTensors.empty() || mvInputTensors[0].second.shape() != mInputShape) return false;
 
-    Tensor tRadius(DT_INT32, TensorShape());
-    tRadius.scalar<int>()() = nRadius;
-
-    Tensor tImage(DT_FLOAT, TensorShape({1, image.rows, image.cols, 1}));
-    Mat2Tensor(image, &tImage);
-
-    std::vector<string> outputTensorName = {"scores_dense_nms:0", "local_descriptor_map:0"};
-    if (!onlyDetectLocalFeatures) outputTensorName.emplace_back("global_descriptor:0");
-    Status status = mSession->Run({{"image:0", tImage},
-                                   {"pred/simple_nms/radius", tRadius}},
-                                  outputTensorName, {}, &vNetResults);
+    Status status = mSession->Run(mvInputTensors, mvOutputTensorNames, {}, &vNetResults);
 
     return status.ok();
 }
@@ -146,7 +198,7 @@ void HFNetTFModelV2::GetGlobalDescriptorFromTensor(const tensorflow::Tensor &tDe
 
 bool HFNetTFModelV2::LoadHFNetTFModel(const std::string &strModelDir)
 {
-    mStrModelPath = strModelDir;
+    mstrTFModelPath = strModelDir;
     tensorflow::Status status;
     tensorflow::SessionOptions sessionOptions;
     tensorflow::RunOptions runOptions;
@@ -169,11 +221,16 @@ bool HFNetTFModelV2::LoadHFNetTFModel(const std::string &strModelDir)
     return true;
 }
 
-void HFNetTFModelV2::Mat2Tensor(const cv::Mat &image, tensorflow::Tensor *tensor)
+void HFNetTFModelV2::Mat2Tensor(const cv::Mat &mat, tensorflow::Tensor *tensor)
 {
-    float *p = tensor->flat<float>().data();
-    cv::Mat imagepixel(image.rows, image.cols, CV_32F, p);
-    image.convertTo(imagepixel, CV_32F);
+    cv::Mat fromMat(mat.rows, mat.cols, CV_32FC(mat.channels()), tensor->flat<float>().data());
+    mat.convertTo(fromMat, CV_32F);
+}
+
+void HFNetTFModelV2::Tensor2Mat(tensorflow::Tensor *tensor, cv::Mat &mat)
+{
+    const cv::Mat fromTensor(cv::Size(tensor->shape().dim_size(1), tensor->shape().dim_size(2)), CV_32FC(tensor->shape().dim_size(3)), tensor->flat<float>().data());
+    fromTensor.convertTo(mat, CV_32F);
 }
 
 void HFNetTFModelV2::ResamplerTF(const tensorflow::Tensor &data, const tensorflow::Tensor &warp, cv::Mat &output)

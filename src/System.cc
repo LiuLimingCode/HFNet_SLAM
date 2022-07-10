@@ -112,7 +112,7 @@ System::System(const string &strSettingsFile, const eSensor sensor,
 
     bool loadedAtlas = false;
 
-    InitModelsVec(settings_);
+    InitAllModels(settings_);
 
     //Create KeyFrame Database
     // TODO: The initialization of KeyFrameDatabase

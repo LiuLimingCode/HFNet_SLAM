@@ -99,7 +99,7 @@ const int nKeyFrame = 200;
 int main(int argc, char** argv)
 {
     settings = new Settings(strSettingsPath, 0);
-    HFNetTFModelV2 *pModel = new HFNetTFModelV2(settings->strModelPath());
+    HFNetTFModelV2 *pModel = new HFNetTFModelV2(settings->strTFModelPath(), kImageToLocalAndGlobal, {1, settings->newImSize().height, settings->newImSize().width, 1});
     HFextractor *pExtractor = new HFextractor(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),pModel);
     GeometricCamera* pCamera = settings->camera1();
     cv::Mat distCoef = settings->camera1DistortionCoef();

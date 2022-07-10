@@ -28,15 +28,19 @@ public:
     void Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatures);
 
     bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                int nKeypointsNum, float threshold, int nRadius) override;
+                int nKeypointsNum, float threshold, int nRadius);
 
-    bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                         int nKeypointsNum, float threshold, int nRadius) override;
+    bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
+                         int nKeypointsNum, float threshold, int nRadius);
+
+    bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors){}
 
     void PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                              cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius) override;
+                              cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius);
 
-    bool IsValid(void) override { return mbVaild; }
+    bool IsValid(void) { return mbVaild; }
+
+    ModelType Type(void) { return kHFNetTFModel; }
 
     std::shared_ptr<tensorflow::Session> mSession;
     tensorflow::GraphDef mGraph;
@@ -56,7 +60,7 @@ private:
 
     void GetGlobalDescriptorFromTensor(const tensorflow::Tensor &tDescriptors, cv::Mat &globalDescriptors);
 
-    std::string mStrModelPath;
+    std::string mstrTFModelPath;
     bool mbVaild;
     static bool mbLoadedResampler;
     std::vector<tensorflow::Tensor> mvNetResults;

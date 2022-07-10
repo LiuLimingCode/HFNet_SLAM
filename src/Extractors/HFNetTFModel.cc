@@ -39,7 +39,7 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyP
     return true;
 }
 
-bool HFNetTFModel::DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
+bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                                    int nKeypointsNum, float threshold, int nRadius) 
 {
     Run(image, mvNetResults, true, nKeypointsNum, threshold, nRadius);
@@ -132,7 +132,7 @@ bool HFNetTFModel::LoadResamplerOp(const std::string &strResamplerDir)
 
 bool HFNetTFModel::LoadHFNetTFModel(const std::string &strModelDir)
 {
-    mStrModelPath = strModelDir;
+    mstrTFModelPath = strModelDir;
     tensorflow::Status status;
     tensorflow::SessionOptions sessionOptions;
     tensorflow::RunOptions runOptions;

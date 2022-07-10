@@ -40,6 +40,7 @@ match correct percentage: 0.797645
 
 #include "Frame.h"
 #include "Settings.h"
+#include "Extractors/HFNetTFModelV2.h"
 #include "Extractors/HFextractor.h"
 #include "Examples/Utility/utility_common.h"
 #include "CameraModels/Pinhole.h"
@@ -120,12 +121,12 @@ int main(int argc, char* argv[])
 {
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     settings = new Settings(strSettingsPath, 0);
-    HFNetTFModel *pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
+    HFNetTFModelV2 *pModel = new HFNetTFModelV2(settings->strTFModelPath(), kImageToLocalAndGlobal, {1, settings->newImSize().height, settings->newImSize().width, 1});
 
     std::default_random_engine generator;
     std::uniform_int_distribution<unsigned int> distribution(dbStart, files.size() - dbEnd);
 
-    HFextractor extractorHF(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),settings->scaleFactor(),settings->nLevels(),{pModel});
+    HFextractor extractorHF(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),pModel);
 
     char command = ' ';
     float threshold = 10;

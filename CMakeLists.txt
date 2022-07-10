@@ -179,9 +179,9 @@ add_executable(test_match_global_feats
         Examples/Utility/test_match_global_feats.cc)
 target_link_libraries(test_match_global_feats ${PROJECT_NAME})
 
-# add_executable(test_match_local_feats
-#         Examples/Utility/test_match_local_feats.cc)
-# target_link_libraries(test_match_local_feats ${PROJECT_NAME})
+add_executable(test_match_local_feats
+        Examples/Utility/test_match_local_feats.cc)
+target_link_libraries(test_match_local_feats ${PROJECT_NAME})
 
 #Monocular examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular)

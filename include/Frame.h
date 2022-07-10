@@ -226,6 +226,7 @@ public:
 
     // ORB descriptor, each row associated to a keypoint.
     cv::Mat mDescriptors, mDescriptorsRight;
+    cv::Mat mPreGlobalDescriptors;
     cv::Mat mGlobalDescriptors;
 
     // MapPoints associated to keypoints, NULL pointer if no association.

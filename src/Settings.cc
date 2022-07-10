@@ -460,12 +460,12 @@ namespace ORB_SLAM3 {
         nNMSRadius_ = readParameter<int>(fSettings, "Extractor.nNMSRadius",found);
         threshold_ = readParameter<float>(fSettings, "Extractor.threshold",found);
         if (modelType_ == kHFNetTFModel) {
-            strModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.modelPath",found);
-            strResamplerPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.resamplerPath",found);
+            strTFModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.modelPath",found);
+            strTFResamplerPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.resamplerPath",found,false);
         }
         else if (modelType_ == kHFNetVINOModel) {
-            strXmlPath_ = readParameter<string>(fSettings, "Extractor.HFNetVINO.xmlPath",found);
-            strBinPath_ = readParameter<string>(fSettings, "Extractor.HFNetVINO.binPath",found);
+            strVINOLocalModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetVINO.localModelPath",found);
+            strVINOGlobalModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetVINO.globalModelPath",found);
         }
     }
 
@@ -653,13 +653,13 @@ namespace ORB_SLAM3 {
         output << "\t-NMS radius: " << settings.nNMSRadius_ << endl;
         if (settings.modelType_ == kHFNetTFModel)
         {
-            output << "\t-TensorFlow model path: " << settings.strModelPath_ << endl;
-            output << "\t-Resampler.so path: " << settings.strResamplerPath_ << endl;
+            output << "\t-TensorFlow model path: " << settings.strTFModelPath_ << endl;
+            output << "\t-Resampler.so path: " << settings.strTFResamplerPath_ << endl;
         }
         else if (settings.modelType_ == kHFNetVINOModel)
         {
-            output << "\t-VINO .xml model path: " << settings.strXmlPath_ << endl;
-            output << "\t-VINO .bin model path: " << settings.strBinPath_ << endl;
+            output << "\t-VINO local part model path: " << settings.strVINOLocalModelPath_ << endl;
+            output << "\t-VINO global part model path: " << settings.strVINOGlobalModelPath_ << endl;
         }
 
         return output;

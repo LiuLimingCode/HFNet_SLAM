@@ -15,21 +15,25 @@ namespace ORB_SLAM3
 class HFNetVINOModel : public BaseModel
 {
 public:
-    HFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath);
+    HFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath, ModelDetectionMode mode, const cv::Vec4i inputShape);
     virtual ~HFNetVINOModel(void) = default;
-
-    void Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatures);
 
     bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                 int nKeypointsNum, float threshold, int nRadius) override;
 
-    bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
+    bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                          int nKeypointsNum, float threshold, int nRadius) override;
+
+    bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors);
 
     void PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                               cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius) override;
 
+    void PrintInputAndOutputsInfo(void);
+
     bool IsValid(void) override { return mbVaild; }
+
+    ModelType Type(void) override { return kHFNetVINOModel; }
 
     std::shared_ptr<ov::Model> mpModel;
     std::shared_ptr<ov::CompiledModel> mpExecutableNet;
@@ -38,9 +42,7 @@ public:
 protected:
     bool LoadHFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath);
 
-    void printInputAndOutputsInfo(const ov::Model& network);
-
-    bool Run(const cv::Mat &image, std::vector<ov::Tensor> &vNetResults);
+    bool Run(void);
 
     void GetLocalFeaturesFromTensor(const ov::Tensor &tScoreDense, const ov::Tensor &tDescriptorsMap,
                                     std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, 
@@ -48,15 +50,22 @@ protected:
 
     void GetGlobalDescriptorFromTensor(const ov::Tensor &tDescriptors, cv::Mat &globalDescriptors);
 
-    void Mat2Tensor(const cv::Mat &image, ov::Tensor *tensor);
+    void Mat2Tensor(const cv::Mat &mat, ov::Tensor *tensor);
+    
+    void Tensor2Mat(ov::Tensor *tensor, cv::Mat &mat);
 
     void ResamplerOV(const ov::Tensor &data, const ov::Tensor &warp, cv::Mat &output);
 
+    static ov::Core core;
+
+    ModelDetectionMode mMode;
     std::string mStrXmlPath;
     std::string mStrBinPath;
     bool mbVaild;
     std::vector<ov::Tensor> mvNetResults;
-    static ov::Core core;
+    ov::Tensor mInputTensor;
+    std::vector<std::string> mvOutputTensorNames;
+    ov::Shape mInputShape;
 };
 
 } // namespace ORB_SLAM

@@ -58,7 +58,7 @@ Frame::Frame(const Frame &frame)
      mbf(frame.mbf), mb(frame.mb), mThDepth(frame.mThDepth), N(frame.N), mvKeys(frame.mvKeys),
      mvKeysRight(frame.mvKeysRight), mvKeysUn(frame.mvKeysUn), mvuRight(frame.mvuRight),
      mvDepth(frame.mvDepth),
-     mDescriptors(frame.mDescriptors.clone()), mDescriptorsRight(frame.mDescriptorsRight.clone()), mGlobalDescriptors(frame.mGlobalDescriptors.clone()),
+     mDescriptors(frame.mDescriptors.clone()), mDescriptorsRight(frame.mDescriptorsRight.clone()), mPreGlobalDescriptors(frame.mPreGlobalDescriptors.clone()), mGlobalDescriptors(frame.mGlobalDescriptors.clone()),
      mvpMapPoints(frame.mvpMapPoints), mvbOutlier(frame.mvbOutlier), mImuCalib(frame.mImuCalib), mnCloseMPs(frame.mnCloseMPs),
      mpImuPreintegrated(frame.mpImuPreintegrated), mpImuPreintegratedFrame(frame.mpImuPreintegratedFrame), mImuBias(frame.mImuBias),
      mnId(frame.mnId), mpReferenceKF(frame.mpReferenceKF), mnScaleLevels(frame.mnScaleLevels),
@@ -421,9 +421,9 @@ void Frame::ExtractKeyPoints(int flag, const cv::Mat &im, const int x0, const in
 {
     vector<int> vLapping = {x0,x1};
     if(flag==0)
-        monoLeft = (*mpExtractorLeft)(im,mvKeys,mDescriptors,mGlobalDescriptors);
+        monoLeft = (*mpExtractorLeft)(im,mvKeys,mDescriptors,mPreGlobalDescriptors);
     else
-        monoRight = (*mpExtractorRight)(im,mvKeysRight,mDescriptorsRight,mGlobalDescriptors);
+        monoRight = (*mpExtractorRight)(im,mvKeysRight,mDescriptorsRight,mPreGlobalDescriptors);
 }
 
 bool Frame::isSet() const {

@@ -95,7 +95,7 @@ int test(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
         }
         else
         {
-            mvpModels[level]->DetectOnlyLocal(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
+            mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
         }
         TimerDetectPerLevel[level].Toc();
         nKeypoints += allKeypoints[level].size();
@@ -136,7 +136,7 @@ public:
             }
             else
             {
-                mpExtractor->mvpModels[level]->DetectOnlyLocal(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, ceil(mpExtractor->nNMSRadius*mpExtractor->GetInverseScaleFactors()[level]));
+                mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, ceil(mpExtractor->nNMSRadius*mpExtractor->GetInverseScaleFactors()[level]));
             }
         }
     }
@@ -203,9 +203,9 @@ int main(int argc, char* argv[])
     for (int level = 0; level < nLevels; ++level)
     {
         cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
-        BaseModel *pNewModel = new HFNetVINOModel(strXmlPath, strBinPath);
-        if (level == 0) pNewModel->Compile(inputShape, false);
-        else pNewModel->Compile(inputShape, true);
+        BaseModel *pNewModel;
+        if (level == 0) pNewModel = new HFNetVINOModel(strXmlPath, strBinPath, kImageToLocalAndIntermediate, inputShape);
+        else pNewModel = new HFNetVINOModel(strXmlPath, strBinPath, kImageToLocal, inputShape);
         vpModels.emplace_back(pNewModel);
         scale /= scaleFactor;
     }

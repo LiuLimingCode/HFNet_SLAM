@@ -10,8 +10,9 @@ namespace ORB_SLAM3
 {
 
 std::vector<BaseModel*> gvpModels;
+BaseModel* gpGlobalModel = nullptr;
 
-std::vector<BaseModel*> InitModelsVec(Settings* settings)
+void InitAllModels(Settings* settings)
 {
     if (gvpModels.size())
     {
@@ -24,19 +25,18 @@ std::vector<BaseModel*> InitModelsVec(Settings* settings)
     float scaleFactor = settings->scaleFactor();
     gvpModels.reserve(nLevels);
     
-
     float scale = 1.0f;
     for (int level = 0; level < nLevels; ++level)
     {
         cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
         BaseModel *pNewModel;
-        if (level == 0) pNewModel = InitModel(settings, inputShape, false);
-        else pNewModel = InitModel(settings, inputShape, true);
+        if (level == 0) pNewModel = InitModel(settings, kImageToLocalAndGlobal, inputShape);
+        else pNewModel = InitModel(settings, kImageToLocal, inputShape);
         gvpModels.emplace_back(pNewModel);
         scale /= scaleFactor;
     }
 
-    return gvpModels;
+    gpGlobalModel = InitModel(settings, kIntermediateToGlobal, {1, ImSize.height / 8, ImSize.width / 8, 96});
 }
 
 std::vector<BaseModel*> GetModelVec(void)
@@ -49,14 +49,23 @@ std::vector<BaseModel*> GetModelVec(void)
     return gvpModels;
 }
 
-BaseModel* InitModel(Settings *settings, cv::Vec4i inputSize, bool onlyDetectLocalFeatures)
+BaseModel* GetGlobalModel(void)
+{
+    if (gpGlobalModel == nullptr)
+    {
+        cerr << "Try to get global model before initialize it" << endl;
+        exit(-1);
+    }
+    return gpGlobalModel;
+}
+
+BaseModel* InitModel(Settings *settings, ModelDetectionMode mode, cv::Vec4i inputShape)
 {
     BaseModel* pModel;
     if (settings->modelType() == kHFNetTFModel)
     {
-        // pModel = new HFNetTFModel(settings->strResamplerPath(), settings->strModelPath());
-        pModel = new HFNetTFModelV2(settings->strModelPath());
-        pModel->Compile(inputSize, onlyDetectLocalFeatures);
+        // pModel = new HFNetTFModel(settings->strTFResamplerPath(), settings->strTFModelPath());
+        pModel = new HFNetTFModelV2(settings->strTFModelPath(), mode, inputShape);
         if (pModel->IsValid())
         {
             cout << "Successfully loaded HFNetTF model" << endl;
@@ -65,8 +74,13 @@ BaseModel* InitModel(Settings *settings, cv::Vec4i inputSize, bool onlyDetectLoc
     }
     else if (settings->modelType() == kHFNetVINOModel)
     {
-        pModel = new HFNetVINOModel(settings->strXmlPath(), settings->strBinPath());
-        pModel->Compile(inputSize, onlyDetectLocalFeatures);
+        string strModelPath;
+        if (mode != kIntermediateToGlobal) strModelPath = settings->strVINOLocalModelPath();
+        else strModelPath = settings->strVINOGlobalModelPath();
+        string strXmlPath = strModelPath + "/saved_model.xml";
+        string strBinPath = strModelPath + "/saved_model.bin";
+
+        pModel = new HFNetVINOModel(strXmlPath, strBinPath, mode, inputShape);
         if (pModel->IsValid())
         {
             cout << "Successfully loaded HFNetVINO model" << endl;

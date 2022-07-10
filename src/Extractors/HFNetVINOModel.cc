@@ -9,28 +9,51 @@ namespace ORB_SLAM3
     
 ov::Core HFNetVINOModel::core;
 
-HFNetVINOModel::HFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath)
+HFNetVINOModel::HFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath, ModelDetectionMode mode, const cv::Vec4i inputShape)
 {
     mStrXmlPath = strXmlPath;
     mStrBinPath = strBinPath;
-    LoadHFNetVINOModel(strXmlPath, strBinPath);
+    mbVaild = LoadHFNetVINOModel(strXmlPath, strBinPath);
 
-    mbVaild = false; // must call Compile before use
-}
-
-void HFNetVINOModel::Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatures)
-{
-    ov::Shape inputShape{(size_t)inputSize(0), (size_t)inputSize(1), (size_t)inputSize(2), (size_t)inputSize(3)};
+    mMode = mode;
+    mInputShape = {(size_t)inputShape(0), (size_t)inputShape(1), (size_t)inputShape(2), (size_t)inputShape(3)};
+    if (mMode == kImageToLocalAndGlobal)
+    {
+        mvOutputTensorNames.emplace_back("pred/local_head/detector/Squeeze:0");
+        mvOutputTensorNames.emplace_back("local_descriptor_map");
+        mvOutputTensorNames.emplace_back("global_descriptor");
+    }
+    else if (mMode == kImageToLocal)
+    {
+        mvOutputTensorNames.emplace_back("pred/local_head/detector/Squeeze:0");
+        mvOutputTensorNames.emplace_back("local_descriptor_map");
+    }
+    else if (mMode == kImageToLocalAndIntermediate)
+    {
+        mvOutputTensorNames.emplace_back("pred/local_head/detector/Squeeze:0");
+        mvOutputTensorNames.emplace_back("local_descriptor_map");
+        mvOutputTensorNames.emplace_back("pred/MobilenetV2/expanded_conv_6/input:0");
+    }
+    else if (mMode == kIntermediateToGlobal)
+    {
+        mvOutputTensorNames.emplace_back("global_descriptor");
+    }
+    else
+    {
+        mbVaild = false;
+        return;
+    }
+    
     const ov::Layout modelLayout{"NHWC"};
 
-    mpModel->reshape({{mpModel->input().get_any_name(), inputShape}});
+    mpModel->reshape({{mpModel->input().get_any_name(), mInputShape}});
 
     ov::preprocess::PrePostProcessor ppp(mpModel);
 
     ppp.input()
         .tensor()
         .set_layout(modelLayout);
-    ppp.input().model().set_layout("NHWC");
+    ppp.input().model().set_layout(modelLayout);
     // ppp.output(0).tensor().set_element_type(ov::element::f32);
     // ppp.output(1).tensor().set_element_type(ov::element::f32);
     mpModel = ppp.build();
@@ -39,44 +62,80 @@ void HFNetVINOModel::Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeat
 
     mInferRequest = make_shared<ov::InferRequest>(mpExecutableNet->create_infer_request());
 
+    mInputTensor = mInferRequest->get_input_tensor();
     mbVaild = true;
 }
 
 bool HFNetVINOModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                             int nKeypointsNum, float threshold, int nRadius)
 {
-    globalDescriptors = cv::Mat();
-    DetectOnlyLocal(image, vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
+    if (mMode != kImageToLocalAndIntermediate) return false;
+
+    Mat2Tensor(image, &mInputTensor);
+
+    if (!Run()) return false;
+
+    Tensor2Mat(&mvNetResults[2], globalDescriptors);
+    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
     return true;
 }
 
-bool HFNetVINOModel::DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
+bool HFNetVINOModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                             int nKeypointsNum, float threshold, int nRadius)
 {
-    if (!mbVaild) return false;
+    if (mMode != kImageToLocal) return false;
 
     vKeyPoints.clear();
 
-    ov::Tensor inputTensor = mInferRequest->get_input_tensor();
-    ov::Shape inputShape = inputTensor.get_shape();
-    if (inputShape[2] != image.cols || inputShape[1] != image.rows || inputShape[3] != image.channels())
+    Mat2Tensor(image, &mInputTensor);
+
+    if (!Run()) return false;
+    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
+    return true;
+}
+
+bool HFNetVINOModel::Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors)
+{
+    if (mMode != kIntermediateToGlobal) return false;
+
+    Mat2Tensor(intermediate, &mInputTensor);
+    if (!Run()) return false;
+    GetGlobalDescriptorFromTensor(mvNetResults[0], globalDescriptors);
+    return true;
+}
+
+void HFNetVINOModel::PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
+                              cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius)
+{
+    
+}
+
+bool HFNetVINOModel::Run(void) 
+{
+    if (!mbVaild) return false;
+
+    if (mpExecutableNet->input().get_shape() != mInputTensor.get_shape()) return false;
+    
+    mInferRequest->set_input_tensor(mInputTensor);
+    mInferRequest->infer();
+    mvNetResults.clear();
+    for (const auto &ouputName : mvOutputTensorNames)
     {
-        cerr << "The input shape in VINO model should be the same as the compile shape" << endl;
-        return false;
+        mvNetResults.emplace_back(mInferRequest->get_tensor(ouputName));
     }
 
-    Mat2Tensor(image, &inputTensor);
-    
-    mInferRequest->infer();
+    return true;
+}
 
-    ov::Tensor tscoreDense = mInferRequest->get_tensor(mpExecutableNet->output("pred/local_head/detector/Squeeze:0"));
-    ov::Tensor tLocalDescriptorMap = mInferRequest->get_tensor(mpExecutableNet->output("local_descriptor_map"));
+void HFNetVINOModel::GetLocalFeaturesFromTensor(const ov::Tensor &tScoreDense, const ov::Tensor &tDescriptorsMap,
+                                                std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, 
+                                                int nKeypointsNum, float threshold, int nRadius)
+{
+    const int width = tScoreDense.get_shape()[2], height = tScoreDense.get_shape()[1];
+    const float scaleWidth = (tDescriptorsMap.get_shape()[2] - 1.f) / (float)(tScoreDense.get_shape()[2] - 1.f);
+    const float scaleHeight = (tDescriptorsMap.get_shape()[1] - 1.f) / (float)(tScoreDense.get_shape()[1] - 1.f);
 
-    const int width = tscoreDense.get_shape()[2], height = tscoreDense.get_shape()[1];
-    const float scaleWidth = (tLocalDescriptorMap.get_shape()[2] - 1.f) / (float)(tscoreDense.get_shape()[2] - 1.f);
-    const float scaleHeight = (tLocalDescriptorMap.get_shape()[1] - 1.f) / (float)(tscoreDense.get_shape()[1] - 1.f);
-
-    auto vResScoresDense = tscoreDense.data<float>();
+    auto vResScoresDense = tScoreDense.data<float>();
     cv::KeyPoint keypoint;
     std::vector<cv::KeyPoint> vKeyPointsGood;
     vKeyPointsGood.reserve(10 * nKeypointsNum);
@@ -114,20 +173,22 @@ bool HFNetVINOModel::DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPo
         pWarp[temp * 2 + 1] = scaleHeight * vKeyPoints[temp].pt.y;
     }
 
-    ResamplerOV(tLocalDescriptorMap, tWarp, localDescriptors);
+    ResamplerOV(tDescriptorsMap, tWarp, localDescriptors);
 
     for (int index = 0; index < localDescriptors.rows; ++index)
     {
         cv::normalize(localDescriptors.row(index), localDescriptors.row(index));
     }
-
-    return true;
 }
 
-void HFNetVINOModel::PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                              cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius)
+void HFNetVINOModel::GetGlobalDescriptorFromTensor(const ov::Tensor &tDescriptors, cv::Mat &globalDescriptors)
 {
-
+    auto vResGlobalDescriptor = tDescriptors.data<float>();
+    globalDescriptors = cv::Mat(4096, 1, CV_32F);
+    for (int temp = 0; temp < 4096; ++temp)
+    {
+        globalDescriptors.ptr<float>(0)[temp] = vResGlobalDescriptor[temp];
+    }
 }
 
 bool HFNetVINOModel::LoadHFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath)
@@ -136,10 +197,49 @@ bool HFNetVINOModel::LoadHFNetVINOModel(const std::string &strXmlPath, const std
     return true;
 }
 
-void HFNetVINOModel::Mat2Tensor(const cv::Mat &image, ov::Tensor *tensor)
+void HFNetVINOModel::PrintInputAndOutputsInfo(void)
 {
-    cv::Mat imagePixel(image.rows, image.cols, CV_32F, tensor->data<float>());
-    image.convertTo(imagePixel, CV_32F);
+    std::cout << "model name: " << mpModel->get_friendly_name() << std::endl;
+
+    const std::vector<ov::Output<ov::Node>> inputs = mpModel->inputs();
+    for (const ov::Output<ov::Node> input : inputs) {
+        std::cout << "    inputs" << std::endl;
+
+        const std::string name = input.get_names().empty() ? "NONE" : input.get_any_name();
+        std::cout << "        input name: " << name << std::endl;
+
+        const ov::element::Type type = input.get_element_type();
+        std::cout << "        input type: " << type << std::endl;
+
+        const ov::Shape shape = input.get_shape();
+        std::cout << "        input shape: " << shape << std::endl;
+    }
+
+    const std::vector<ov::Output<ov::Node>> outputs = mpModel->outputs();
+    for (const ov::Output<ov::Node> output : outputs) {
+        std::cout << "    outputs" << std::endl;
+
+        const std::string name = output.get_names().empty() ? "NONE" : output.get_any_name();
+        std::cout << "        output name: " << name << std::endl;
+
+        const ov::element::Type type = output.get_element_type();
+        std::cout << "        output type: " << type << std::endl;
+
+        const ov::Shape shape = output.get_shape();
+        std::cout << "        output shape: " << shape << std::endl;
+    }
+}
+
+void HFNetVINOModel::Mat2Tensor(const cv::Mat &mat, ov::Tensor *tensor)
+{
+    cv::Mat fromMat(mat.rows, mat.cols, CV_32FC(mat.channels()), tensor->data<float>());
+    mat.convertTo(fromMat, CV_32F);
+}
+
+void HFNetVINOModel::Tensor2Mat(ov::Tensor *tensor, cv::Mat &mat)
+{
+    const cv::Mat fromTensor(cv::Size(tensor->get_shape()[1], tensor->get_shape()[2]), CV_32FC(tensor->get_shape()[3]), tensor->data<float>());
+    fromTensor.convertTo(mat, CV_32F);
 }
 
 void HFNetVINOModel::ResamplerOV(const ov::Tensor &data, const ov::Tensor &warp, cv::Mat &output)

@@ -13,6 +13,13 @@ enum ModelType {
     kHFNetVINOModel,
 };
 
+enum ModelDetectionMode {
+    kImageToLocalAndGlobal,
+    kImageToLocal,
+    kImageToLocalAndIntermediate,
+    kIntermediateToGlobal
+};
+
 class ExtractorNode
 {
 public:
@@ -30,29 +37,33 @@ class BaseModel
 {
 public:
     virtual ~BaseModel(void) = default;
-
-    virtual void Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatures) = 0;
     
     virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                         int nKeypointsNum, float threshold, int nRadius) = 0;
 
-    virtual bool DetectOnlyLocal(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                                 int nKeypointsNum, float threshold, int nRadius) = 0;
+    virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
+                        int nKeypointsNum, float threshold, int nRadius) = 0;
+
+    virtual bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors) = 0;
 
     virtual void PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                                       cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius) = 0;
 
     virtual bool IsValid(void) = 0;
+
+    virtual ModelType Type(void) = 0;
 };
 
 
 class Settings;
 
-std::vector<BaseModel*> InitModelsVec(Settings* settings);
+void InitAllModels(Settings* settings);
 
 std::vector<BaseModel*> GetModelVec(void);
 
-BaseModel* InitModel(Settings *settings, cv::Vec4i inputSize, bool onlyDetectLocalFeatures);
+BaseModel* GetGlobalModel(void);
+
+BaseModel* InitModel(Settings *settings, ModelDetectionMode mode, cv::Vec4i inputShape);
 
 std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int minX,
                                            const int maxX, const int minY, const int maxY, const int N);
