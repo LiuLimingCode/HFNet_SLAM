@@ -177,6 +177,7 @@ int ExtractUsingFor(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
         }
         TimerDetectPerLevel[level].Toc();
         nKeypoints += allKeypoints[level].size();
+        // ShowKeypoints(std::to_string(level), mvImagePyramid[level], allKeypoints[level]);
     }
 
     TimerCopy.Tic();
@@ -325,7 +326,7 @@ int main(int argc, char* argv[])
         
         ClearTimer();
         TimerTotal.Tic();
-        pExtractor->ExtractUsingParallel(image, vKeyPoints, localDescriptors, globalDescriptors);
+        pExtractor->ExtractUsingFor(image, vKeyPoints, localDescriptors, globalDescriptors);
         TimerTotal.Toc();
 
         cout << "Get features number: " << vKeyPoints.size() << endl;

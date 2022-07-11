@@ -163,10 +163,10 @@ void HFNetTFModelV2::GetLocalFeaturesFromTensor(const tensorflow::Tensor &tScore
     if (vKeyPoints.size() > nKeypointsNum)
     {
         // vKeyPoints = DistributeOctTree(vKeyPoints, 0, width, 0, height, nKeypointsNum);
-        std::partial_sort(vKeyPoints.begin(), vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end(), [](const cv::KeyPoint& p1, const cv::KeyPoint& p2) {
+        std::nth_element(vKeyPoints.begin(), vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end(), [](const cv::KeyPoint& p1, const cv::KeyPoint& p2) {
             return p1.response > p2.response;
         });
-        vKeyPoints.resize(nKeypointsNum);
+        vKeyPoints.erase(vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end());
     }
     
     localDescriptors = cv::Mat(vKeyPoints.size(), 256, CV_32F);

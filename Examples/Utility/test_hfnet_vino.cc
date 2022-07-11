@@ -4,41 +4,50 @@
  * Result:
 ======================================
 Evaluate the run time perfomance in dataset: 
+test parameter, nFeatures: 300, fThreshold: 0.005000, nNMSRadius: 4
+test dataset: /media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/
 
 Only detect the local keypoints: 
-run costs: 13.7171 ± 1.63629
-detect costs: 15.4973 ± 1.84119
-run global costs: 0 ± 0
-detect global costs: 0 ± 0
+run costs: 14.0173 ± 1.08526
+copy costs: 0.073487 ± 0.02281
+select costs: 0.712338 ± 0.0953048
+NMS costs: 1.38445 ± 0.368556
+top costs: 0.00413998 ± 0.00110398
+resampler costs: 0.360226 ± 0.0266516
+detect costs: 16.5651 ± 1.25615
 
 Detect the full features with intermediate: 
-run costs: 14.7501 ± 0.2554
-detect costs: 16.8641 ± 0.363727
-run global costs: 8.9496 ± 0.124993
-detect global costs: 9.101 ± 0.12592
+run costs: 14.8936 ± 0.319231
+copy costs: 0.0750034 ± 0.00427455
+select costs: 0.786258 ± 0.101484
+NMS costs: 1.51293 ± 0.396017
+top costs: 0.00439961 ± 0.00127086
+resampler costs: 0.385109 ± 0.0244027
+detect costs: 17.8576 ± 0.583938
+run global costs: 8.86505 ± 0.141589
+detect global costs: 9.02595 ± 0.141241
 
 Detect the full features: 
-run costs: 22.6395 ± 0.300341
-detect costs: 24.7721 ± 0.403894
-run global costs: 0 ± 0
-detect global costs: 0 ± 0
+run costs: 22.7289 ± 0.331593
+copy costs: 0.0745052 ± 0.00711539
+select costs: 0.873383 ± 0.10625
+NMS costs: 1.68873 ± 0.431953
+top costs: 0.0049334 ± 0.001891
+resampler costs: 0.428852 ± 0.0236922
+detect costs: 25.8261 ± 0.643804
 
 Detect the local features with HFextractor [kImageToLocal]: 
-run costs: 0 ± 0
-detect costs: 15.4288 ± 0.393785
-run global costs: 0 ± 0
-detect global costs: 0 ± 0
+detect costs: 16.3739 ± 0.579497
 
 Detect the local features with HFextractor [kImageToLocalAndIntermediate]: 
-run costs: 0 ± 0
-detect costs: 16.8607 ± 0.314796
-run global costs: 0 ± 0
-detect global costs: 9.10962 ± 0.118789
+detect costs: 17.8502 ± 0.54653
+detect global costs: 9.03912 ± 0.139315
  */
 #include <chrono>
 #include <fstream>
 #include <dirent.h>
 #include <random>
+#include <boost/format.hpp>
 
 #include "Settings.h"
 #include "Frame.h"
@@ -58,6 +67,11 @@ HFNetVINOModel *pModelInterToGlobal;
 
 TicToc timerDetect;
 TicToc timerRun;
+TicToc timerCopy;
+TicToc timerSelect;
+TicToc timerNMS;
+TicToc timerTop;
+TicToc timerResampler;
 TicToc timerDetectGlobal;
 TicToc timerRunGlobal;
 
@@ -65,16 +79,26 @@ void ClearTimer()
 {
     timerDetect.clearBuff();
     timerRun.clearBuff();
+    timerCopy.clearBuff();
+    timerSelect.clearBuff();
+    timerNMS.clearBuff();
+    timerTop.clearBuff();
+    timerResampler.clearBuff();
     timerDetectGlobal.clearBuff();
     timerRunGlobal.clearBuff();
 }
 
 void PrintTimer()
 {
-    cout << "run costs: " << timerRun.aveCost() << " ± " << timerRun.devCost() << endl;
-    cout << "detect costs: " << timerDetect.aveCost() << " ± " << timerDetect.devCost() << endl;
-    cout << "run global costs: " << timerRunGlobal.aveCost() << " ± " << timerRunGlobal.devCost() << endl;
-    cout << "detect global costs: " << timerDetectGlobal.aveCost() << " ± " << timerDetectGlobal.devCost() << endl;
+    if (!timerRun.empty()) cout << "run costs: " << timerRun.aveCost() << " ± " << timerRun.devCost() << endl;
+    if (!timerCopy.empty()) cout << "copy costs: " << timerCopy.aveCost() << " ± " << timerCopy.devCost() << endl;
+    if (!timerSelect.empty()) cout << "select costs: " << timerSelect.aveCost() << " ± " << timerSelect.devCost() << endl;
+    if (!timerNMS.empty()) cout << "NMS costs: " << timerNMS.aveCost() << " ± " << timerNMS.devCost() << endl;
+    if (!timerTop.empty()) cout << "top costs: " << timerTop.aveCost() << " ± " << timerTop.devCost() << endl;
+    if (!timerResampler.empty()) cout << "resampler costs: " << timerResampler.aveCost() << " ± " << timerResampler.devCost() << endl;
+    if (!timerDetect.empty()) cout << "detect costs: " << timerDetect.aveCost() << " ± " << timerDetect.devCost() << endl;
+    if (!timerRunGlobal.empty()) cout << "run global costs: " << timerRunGlobal.aveCost() << " ± " << timerRunGlobal.devCost() << endl;
+    if (!timerDetectGlobal.empty()) cout << "detect global costs: " << timerDetectGlobal.aveCost() << " ± " << timerDetectGlobal.devCost() << endl;
 }
 
 void Mat2Tensor(const cv::Mat &mat, ov::Tensor *tensor)
@@ -110,8 +134,7 @@ void ResamplerOV(const ov::Tensor &data, const ov::Tensor &warp, cv::Mat &output
 bool DetectImageToLocal(HFNetVINOModel *pModel, const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
                             int nKeypointsNum, float threshold, int nRadius)
 {
-    vKeyPoints.clear();
-
+    timerCopy.Tic();
     ov::Tensor inputTensor = pModel->mInferRequest->get_input_tensor();
     ov::Shape inputShape = inputTensor.get_shape();
     if (inputShape[2] != image.cols || inputShape[1] != image.rows || inputShape[3] != image.channels())
@@ -121,20 +144,25 @@ bool DetectImageToLocal(HFNetVINOModel *pModel, const cv::Mat &image, std::vecto
     }
 
     Mat2Tensor(image, &inputTensor);
+    timerCopy.Toc();
     
     timerRun.Tic();
     pModel->mInferRequest->infer();
     timerRun.Toc();
 
-    ov::Tensor tscoreDense = pModel->mInferRequest->get_tensor("pred/local_head/detector/Squeeze:0");
+    ov::Tensor tScoreDense = pModel->mInferRequest->get_tensor("pred/local_head/detector/Squeeze:0");
     ov::Tensor tLocalDescriptorMap = pModel->mInferRequest->get_tensor("local_descriptor_map");
 
-    const int width = tscoreDense.get_shape()[2], height = tscoreDense.get_shape()[1];
-    const float scaleWidth = (tLocalDescriptorMap.get_shape()[2] - 1.f) / (float)(tscoreDense.get_shape()[2] - 1.f);
-    const float scaleHeight = (tLocalDescriptorMap.get_shape()[1] - 1.f) / (float)(tscoreDense.get_shape()[1] - 1.f);
+    const int width = tScoreDense.get_shape()[2], height = tScoreDense.get_shape()[1];
+    const float scaleWidth = (tLocalDescriptorMap.get_shape()[2] - 1.f) / (float)(tScoreDense.get_shape()[2] - 1.f);
+    const float scaleHeight = (tLocalDescriptorMap.get_shape()[1] - 1.f) / (float)(tScoreDense.get_shape()[1] - 1.f);
 
-    auto vResScoresDense = tscoreDense.data<float>();
+    timerSelect.Tic();
+    auto vResScoresDense = tScoreDense.data<float>();
     cv::KeyPoint keypoint;
+    keypoint.angle = 0;
+    keypoint.octave = 0;
+    vKeyPoints.clear();
     vKeyPoints.reserve(2 * nKeypointsNum);
     for (int col = 0; col < width; ++col)
     {
@@ -150,17 +178,24 @@ bool DetectImageToLocal(HFNetVINOModel *pModel, const cv::Mat &image, std::vecto
             }
         }
     }
+    timerSelect.Toc();
 
+    timerNMS.Tic();
     vKeyPoints = NMS(vKeyPoints, width, height, nRadius);
+    timerNMS.Toc();
 
     if (vKeyPoints.size() > nKeypointsNum)
     {
-        std::partial_sort(vKeyPoints.begin(), vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end(), [](const cv::KeyPoint& p1, const cv::KeyPoint& p2) {
+        timerTop.Tic();
+        // vKeyPoints = DistributeOctTree(vKeyPoints, 0, width, 0, height, nKeypointsNum);
+        std::nth_element(vKeyPoints.begin(), vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end(), [](const cv::KeyPoint& p1, const cv::KeyPoint& p2) {
             return p1.response > p2.response;
         });
-        vKeyPoints.resize(nKeypointsNum);
+        vKeyPoints.erase(vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end());
+        timerTop.Toc();
     }
 
+    timerResampler.Tic();
     localDescriptors = cv::Mat(vKeyPoints.size(), 256, CV_32F);
     ov::Tensor tWarp(ov::element::f32, {(size_t)vKeyPoints.size(), 2});
     auto pWarp = tWarp.data<float>();
@@ -176,6 +211,7 @@ bool DetectImageToLocal(HFNetVINOModel *pModel, const cv::Mat &image, std::vecto
     {
         cv::normalize(localDescriptors.row(index), localDescriptors.row(index));
     }
+    timerResampler.Toc();
 
     return true;
 }
@@ -183,8 +219,7 @@ bool DetectImageToLocal(HFNetVINOModel *pModel, const cv::Mat &image, std::vecto
 bool DetectImageToLocalAndGlobal(HFNetVINOModel *pModel, const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
                             int nKeypointsNum, float threshold, int nRadius)
 {
-    vKeyPoints.clear();
-
+    timerCopy.Tic();
     ov::Tensor inputTensor = pModel->mInferRequest->get_input_tensor();
     ov::Shape inputShape = inputTensor.get_shape();
     if (inputShape[2] != image.cols || inputShape[1] != image.rows || inputShape[3] != image.channels())
@@ -194,12 +229,13 @@ bool DetectImageToLocalAndGlobal(HFNetVINOModel *pModel, const cv::Mat &image, s
     }
 
     Mat2Tensor(image, &inputTensor);
+    timerCopy.Toc();
     
     timerRun.Tic();
     pModel->mInferRequest->infer();
     timerRun.Toc();
 
-    ov::Tensor tscoreDense = pModel->mInferRequest->get_tensor("pred/local_head/detector/Squeeze:0");
+    ov::Tensor tScoreDense = pModel->mInferRequest->get_tensor("pred/local_head/detector/Squeeze:0");
     ov::Tensor tLocalDescriptorMap = pModel->mInferRequest->get_tensor("local_descriptor_map");
     ov::Tensor tGlobalDescriptor = pModel->mInferRequest->get_tensor("global_descriptor");
 
@@ -210,12 +246,16 @@ bool DetectImageToLocalAndGlobal(HFNetVINOModel *pModel, const cv::Mat &image, s
         globalDescriptors.ptr<float>(0)[temp] = vResGlobalDescriptor[temp];
     }
 
-    const int width = tscoreDense.get_shape()[2], height = tscoreDense.get_shape()[1];
-    const float scaleWidth = (tLocalDescriptorMap.get_shape()[2] - 1.f) / (float)(tscoreDense.get_shape()[2] - 1.f);
-    const float scaleHeight = (tLocalDescriptorMap.get_shape()[1] - 1.f) / (float)(tscoreDense.get_shape()[1] - 1.f);
+    const int width = tScoreDense.get_shape()[2], height = tScoreDense.get_shape()[1];
+    const float scaleWidth = (tLocalDescriptorMap.get_shape()[2] - 1.f) / (float)(tScoreDense.get_shape()[2] - 1.f);
+    const float scaleHeight = (tLocalDescriptorMap.get_shape()[1] - 1.f) / (float)(tScoreDense.get_shape()[1] - 1.f);
 
-    auto vResScoresDense = tscoreDense.data<float>();
+    timerSelect.Tic();
+    auto vResScoresDense = tScoreDense.data<float>();
     cv::KeyPoint keypoint;
+    keypoint.angle = 0;
+    keypoint.octave = 0;
+    vKeyPoints.clear();
     vKeyPoints.reserve(2 * nKeypointsNum);
     for (int col = 0; col < width; ++col)
     {
@@ -231,17 +271,24 @@ bool DetectImageToLocalAndGlobal(HFNetVINOModel *pModel, const cv::Mat &image, s
             }
         }
     }
+    timerSelect.Toc();
 
+    timerNMS.Tic();
     vKeyPoints = NMS(vKeyPoints, width, height, nRadius);
+    timerNMS.Toc();
 
     if (vKeyPoints.size() > nKeypointsNum)
     {
-        std::partial_sort(vKeyPoints.begin(), vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end(), [](const cv::KeyPoint& p1, const cv::KeyPoint& p2) {
+        timerTop.Tic();
+        // vKeyPoints = DistributeOctTree(vKeyPoints, 0, width, 0, height, nKeypointsNum);
+        std::nth_element(vKeyPoints.begin(), vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end(), [](const cv::KeyPoint& p1, const cv::KeyPoint& p2) {
             return p1.response > p2.response;
         });
-        vKeyPoints.resize(nKeypointsNum);
+        vKeyPoints.erase(vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end());
+        timerTop.Toc();
     }
 
+    timerResampler.Tic();
     localDescriptors = cv::Mat(vKeyPoints.size(), 256, CV_32F);
     ov::Tensor tWarp(ov::element::f32, {(size_t)vKeyPoints.size(), 2});
     auto pWarp = tWarp.data<float>();
@@ -257,6 +304,7 @@ bool DetectImageToLocalAndGlobal(HFNetVINOModel *pModel, const cv::Mat &image, s
     {
         cv::normalize(localDescriptors.row(index), localDescriptors.row(index));
     }
+    timerResampler.Toc();
 
     return true;
 }
@@ -264,8 +312,7 @@ bool DetectImageToLocalAndGlobal(HFNetVINOModel *pModel, const cv::Mat &image, s
 bool DetectImageToLocalAndInter(HFNetVINOModel *pModel, const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &preGlobalDescriptors,
                 int nKeypointsNum, float threshold, int nRadius)
 {
-    vKeyPoints.clear();
-
+    timerCopy.Tic();
     ov::Tensor inputTensor = pModel->mInferRequest->get_input_tensor();
     ov::Shape inputShape = inputTensor.get_shape();
     if (inputShape[2] != image.cols || inputShape[1] != image.rows || inputShape[3] != image.channels())
@@ -275,23 +322,28 @@ bool DetectImageToLocalAndInter(HFNetVINOModel *pModel, const cv::Mat &image, st
     }
 
     Mat2Tensor(image, &inputTensor);
+    timerCopy.Toc();
     
     timerRun.Tic();
     pModel->mInferRequest->infer();
     timerRun.Toc();
 
-    ov::Tensor tscoreDense = pModel->mInferRequest->get_tensor("pred/local_head/detector/Squeeze:0");
+    ov::Tensor tScoreDense = pModel->mInferRequest->get_tensor("pred/local_head/detector/Squeeze:0");
     ov::Tensor tLocalDescriptorMap = pModel->mInferRequest->get_tensor("local_descriptor_map");
     ov::Tensor tIntermediate = pModel->mInferRequest->get_tensor("pred/MobilenetV2/expanded_conv_6/input:0");
 
     Tensor2Mat(&tIntermediate, preGlobalDescriptors);
 
-    const int width = tscoreDense.get_shape()[2], height = tscoreDense.get_shape()[1];
-    const float scaleWidth = (tLocalDescriptorMap.get_shape()[2] - 1.f) / (float)(tscoreDense.get_shape()[2] - 1.f);
-    const float scaleHeight = (tLocalDescriptorMap.get_shape()[1] - 1.f) / (float)(tscoreDense.get_shape()[1] - 1.f);
+    const int width = tScoreDense.get_shape()[2], height = tScoreDense.get_shape()[1];
+    const float scaleWidth = (tLocalDescriptorMap.get_shape()[2] - 1.f) / (float)(tScoreDense.get_shape()[2] - 1.f);
+    const float scaleHeight = (tLocalDescriptorMap.get_shape()[1] - 1.f) / (float)(tScoreDense.get_shape()[1] - 1.f);
 
-    auto vResScoresDense = tscoreDense.data<float>();
+    timerSelect.Tic();
+    auto vResScoresDense = tScoreDense.data<float>();
     cv::KeyPoint keypoint;
+    keypoint.angle = 0;
+    keypoint.octave = 0;
+    vKeyPoints.clear();
     vKeyPoints.reserve(2 * nKeypointsNum);
     for (int col = 0; col < width; ++col)
     {
@@ -307,17 +359,24 @@ bool DetectImageToLocalAndInter(HFNetVINOModel *pModel, const cv::Mat &image, st
             }
         }
     }
+    timerSelect.Toc();
 
+    timerNMS.Tic();
     vKeyPoints = NMS(vKeyPoints, width, height, nRadius);
+    timerNMS.Toc();
 
     if (vKeyPoints.size() > nKeypointsNum)
     {
-        std::partial_sort(vKeyPoints.begin(), vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end(), [](const cv::KeyPoint& p1, const cv::KeyPoint& p2) {
+        timerTop.Tic();
+        // vKeyPoints = DistributeOctTree(vKeyPoints, 0, width, 0, height, nKeypointsNum);
+        std::nth_element(vKeyPoints.begin(), vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end(), [](const cv::KeyPoint& p1, const cv::KeyPoint& p2) {
             return p1.response > p2.response;
         });
-        vKeyPoints.resize(nKeypointsNum);
+        vKeyPoints.erase(vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end());
+        timerTop.Toc();
     }
 
+    timerResampler.Tic();
     localDescriptors = cv::Mat(vKeyPoints.size(), 256, CV_32F);
     ov::Tensor tWarp(ov::element::f32, {(size_t)vKeyPoints.size(), 2});
     auto pWarp = tWarp.data<float>();
@@ -333,6 +392,7 @@ bool DetectImageToLocalAndInter(HFNetVINOModel *pModel, const cv::Mat &image, st
     {
         cv::normalize(localDescriptors.row(index), localDescriptors.row(index));
     }
+    timerResampler.Toc();
 
     return true;
 }
@@ -379,6 +439,10 @@ const std::string strLocalModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet
 const std::string strGlobalModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_vino_global_f32/");
 const std::string strFullModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_vino_full_f32/");
 
+int nFeatures = 300; // 1500~326, 1000~217
+float fThreshold = 0.005;
+int nNMSRadius = 4;
+
 int main(int argc, char* argv[])
 {
     settings = new Settings(strSettingsPath, 0);
@@ -401,22 +465,23 @@ int main(int argc, char* argv[])
     
     // randomly detect an image and show the results
     char command = ' ';
-    float threshold = 0.005;
-    int nNMSRadius = 4;
     int select = 0;
     while(1)
     {
-        if (command == 'q') break;
+        if (command == 'x') break;
         else if (command == 's') select = std::max(select - 1, 0);
         else if (command == 'w') select += 1;
-        else if (command == 'a') threshold = std::max(threshold - 0.005, 0.005);
-        else if (command == 'd') threshold += 0.005;
+        else if (command == 'q') nFeatures = std::max(nFeatures - 20, 0);
+        else if (command == 'e') nFeatures += 20;
+        else if (command == 'a') fThreshold = std::max(fThreshold - 0.005, 0.005);
+        else if (command == 'd') fThreshold += 0.005;
         else if (command == 'z') nNMSRadius = std::max(nNMSRadius - 1, 0);
         else if (command == 'c') nNMSRadius += 1;
         else select = distribution(generator);
         cout << "command: " << command << endl;
         cout << "select: " << select << endl;
-        cout << "threshold: " << threshold << endl;
+        cout << "nFeatures: " << nFeatures << endl;
+        cout << "fThreshold: " << fThreshold << endl;
         cout << "nNMSRadius: " << nNMSRadius << endl;
 
         image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
@@ -425,8 +490,8 @@ int main(int argc, char* argv[])
         
         ClearTimer();
         timerDetect.Tic();
-        // DetectImageToLocalAndInter(pModelImageToLocalAndInter, image, vKeyPoints, localDescriptors, preGlobalDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius()); 
-        if (!pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, preGlobalDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius()))
+        // DetectImageToLocalAndInter(pModelImageToLocalAndInter, image, vKeyPoints, localDescriptors, preGlobalDescriptors, nFeatures, fThreshold, nNMSRadius); 
+        if (!pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, preGlobalDescriptors, nFeatures, fThreshold, nNMSRadius))
             cerr << "error while detecting!" << endl;
         timerDetect.Toc();
         timerDetectGlobal.Tic();
@@ -441,14 +506,16 @@ int main(int argc, char* argv[])
         cout << preGlobalDescriptors.row(50).col(50) << endl;
         cout << globalDescriptors.col(0).rowRange(100, 110) << endl;
         
-        ShowKeypoints("press 'q' to exit", image, vKeyPoints);
+        ShowKeypoints("press 'x' for further test", image, vKeyPoints);
         cout << endl;
         command = cv::waitKey();
     }
     cv::destroyAllWindows();
 
     cout << "======================================" << endl
-         << "Evaluate the run time perfomance in dataset: " << endl;
+         << "Evaluate the run time perfomance in dataset: " << endl
+         << (boost::format("test parameter, nFeatures: %d, fThreshold: %f, nNMSRadius: %d") % nFeatures % fThreshold % nNMSRadius).str() << endl
+         << "test dataset: " << strDatasetPath << endl;
 
     {
         cout << endl;
@@ -459,7 +526,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            DetectImageToLocal(pModelImageToLocal, image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius());
+            DetectImageToLocal(pModelImageToLocal, image, vKeyPoints, localDescriptors, nFeatures, fThreshold, nNMSRadius);
             timerDetect.Toc();
         }
         cout << "Only detect the local keypoints: " << endl;
@@ -475,7 +542,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            DetectImageToLocalAndInter(pModelImageToLocalAndInter, image, vKeyPoints, localDescriptors, preGlobalDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius());
+            DetectImageToLocalAndInter(pModelImageToLocalAndInter, image, vKeyPoints, localDescriptors, preGlobalDescriptors, nFeatures, fThreshold, nNMSRadius);
             timerDetect.Toc();
             timerDetectGlobal.Tic();
             DetectInterToGlobal(pModelInterToGlobal, preGlobalDescriptors, globalDescriptors);
@@ -494,7 +561,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            DetectImageToLocalAndGlobal(pModelImageToLocalAndGlobal, image, vKeyPoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius());
+            DetectImageToLocalAndGlobal(pModelImageToLocalAndGlobal, image, vKeyPoints, localDescriptors, globalDescriptors, nFeatures, fThreshold, nNMSRadius);
             timerDetect.Toc();
         }
         cout << "Detect the full features: " << endl;
@@ -510,7 +577,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            if (!pModelImageToLocal->Detect(image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius()))
+            if (!pModelImageToLocal->Detect(image, vKeyPoints, localDescriptors, nFeatures, fThreshold, nNMSRadius))
                 cerr << "error while detecting!" << endl;
             timerDetect.Toc();
         }
@@ -527,7 +594,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            if (!pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, preGlobalDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius()))
+            if (!pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, preGlobalDescriptors, nFeatures, fThreshold, nNMSRadius))
                 cerr << "error while detecting!" << endl;
             timerDetect.Toc();
             timerDetectGlobal.Tic();

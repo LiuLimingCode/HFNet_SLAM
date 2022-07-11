@@ -137,8 +137,10 @@ void HFNetVINOModel::GetLocalFeaturesFromTensor(const ov::Tensor &tScoreDense, c
 
     auto vResScoresDense = tScoreDense.data<float>();
     cv::KeyPoint keypoint;
-    std::vector<cv::KeyPoint> vKeyPointsGood;
-    vKeyPointsGood.reserve(10 * nKeypointsNum);
+    keypoint.angle = 0;
+    keypoint.octave = 0;
+    vKeyPoints.clear();
+    vKeyPoints.reserve(2 * nKeypointsNum);
     for (int col = 0; col < width; ++col)
     {
         for (int row = 0; row < height; ++row)
@@ -149,19 +151,20 @@ void HFNetVINOModel::GetLocalFeaturesFromTensor(const ov::Tensor &tScoreDense, c
                 keypoint.pt.x = col;
                 keypoint.pt.y = row;
                 keypoint.response = score;
-                vKeyPointsGood.emplace_back(keypoint);
+                vKeyPoints.emplace_back(keypoint);
             }
         }
     }
 
-    vKeyPoints = NMS(vKeyPointsGood, width, height, nRadius);
+    vKeyPoints = NMS(vKeyPoints, width, height, nRadius);
 
     if (vKeyPoints.size() > nKeypointsNum)
     {
-        std::partial_sort(vKeyPoints.begin(), vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end(), [](const cv::KeyPoint& p1, const cv::KeyPoint& p2) {
+        // vKeyPoints = DistributeOctTree(vKeyPoints, 0, width, 0, height, nKeypointsNum);
+        std::nth_element(vKeyPoints.begin(), vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end(), [](const cv::KeyPoint& p1, const cv::KeyPoint& p2) {
             return p1.response > p2.response;
         });
-        vKeyPoints.resize(nKeypointsNum);
+        vKeyPoints.erase(vKeyPoints.begin() + nKeypointsNum, vKeyPoints.end());
     }
 
     localDescriptors = cv::Mat(vKeyPoints.size(), 256, CV_32F);

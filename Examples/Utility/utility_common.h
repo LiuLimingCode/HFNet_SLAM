@@ -43,6 +43,7 @@ struct TicToc
         }
         return sqrt(accum / total);
     }
+    bool empty() {return timeBuff.empty();}
 
 
     std::vector<float> timeBuff;
