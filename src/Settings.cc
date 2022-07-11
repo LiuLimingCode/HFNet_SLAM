@@ -464,6 +464,10 @@ namespace ORB_SLAM3 {
             strTFResamplerPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.resamplerPath",found,false);
         }
         else if (modelType_ == kHFNetVINOModel) {
+            scaleFactor_ = 1.0;
+            nLevels_ = 1;
+            cout << "Becase the HFNetVINO model is too time-consuming, the image pyremid function is disabled." << endl;
+
             strVINOLocalModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetVINO.localModelPath",found);
             strVINOGlobalModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetVINO.globalModelPath",found);
         }

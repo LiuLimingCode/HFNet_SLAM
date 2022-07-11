@@ -18,8 +18,8 @@ const int PATCH_SIZE = 31;
 const int HALF_PATCH_SIZE = 15;
 const int EDGE_THRESHOLD = 19;
 
-HFextractor::HFextractor(int _nfeatures, int _nNMSRadius, float _threshold, BaseModel* _pModels):
-    nfeatures(_nfeatures), nNMSRadius(_nNMSRadius), threshold(_threshold)
+HFextractor::HFextractor(int _nfeatures, float _threshold, int _nNMSRadius, BaseModel* _pModels):
+    nfeatures(_nfeatures), threshold(_threshold), nNMSRadius(_nNMSRadius)
 {
     mvpModels.resize(1);
     mvpModels[0] = _pModels;
@@ -79,9 +79,9 @@ HFextractor::HFextractor(int _nfeatures, int _nNMSRadius, float _threshold, Base
 }
 
 
-HFextractor::HFextractor(int _nfeatures, int _nNMSRadius, float _threshold,
+HFextractor::HFextractor(int _nfeatures, float _threshold, int _nNMSRadius, 
                         float _scaleFactor, int _nlevels, const std::vector<BaseModel*>& _vpModels):
-        nfeatures(_nfeatures), nNMSRadius(_nNMSRadius), threshold(_threshold), mvpModels(_vpModels)
+        nfeatures(_nfeatures), threshold(_threshold), nNMSRadius(_nNMSRadius), mvpModels(_vpModels)
 {
     scaleFactor = _scaleFactor;
     nlevels = _nlevels;
@@ -138,6 +138,24 @@ HFextractor::HFextractor(int _nfeatures, int _nNMSRadius, float _threshold,
     }
 }
 
+
+int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+                             cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
+{
+    if (image.empty() || image.type() != CV_8UC1) return -1;
+    
+    int res = -1;
+    if (nlevels == 1) res = ExtractSingleLayer(image, vKeyPoints, localDescriptors, globalDescriptors);
+    else
+    {
+        if (mvpModels[0]->Type() == kHFNetVINOModel)
+            res = ExtractMultiLayers(image, vKeyPoints, localDescriptors, globalDescriptors);
+        else
+            res = ExtractMultiLayersParallel(image, vKeyPoints, localDescriptors, globalDescriptors);
+    }
+    return res;
+}
+
 void HFextractor::ComputePyramid(const cv::Mat &image)
 {
     mvImagePyramid[0] = image;
@@ -154,105 +172,52 @@ void HFextractor::ComputePyramid(const cv::Mat &image)
     }
 }
 
-// scheme 1: disable pyramid
-// int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
-//                              cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
-// {
-//     if(image.empty() || image.type() != CV_8UC1) return -1;
-//     mvpModels[0]->Detect(image, vKeyPoints, localDescriptors, globalDescriptors, nfeatures, threshold, nNMSRadius);
+int HFextractor::ExtractSingleLayer(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+                                    cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
+{
+    if (!mvpModels[0]->Detect(image, vKeyPoints, localDescriptors, globalDescriptors, nfeatures, threshold, nNMSRadius))
+        cerr << "Error while detecting keypoints" << endl;
 
-//     return vKeyPoints.size();
-// }
+    return vKeyPoints.size();
+}
 
-// scheme 2: 
-// int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
-//                              cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
-// {
-//     if(image.empty() || image.type() != CV_8UC1) return -1;
+int HFextractor::ExtractMultiLayers(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+                                    cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
+{
+    ComputePyramid(image);
 
-//     ComputePyramid(image);
+    int nKeypoints = 0;
+    vector<vector<cv::KeyPoint>> allKeypoints(nlevels);
+    vector<cv::Mat> allDescriptors(nlevels);
+    for (int level = 0; level < nlevels; ++level)
+    {
+        if (level == 0)
+        {
+            if (!mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], globalDescriptors, mnFeaturesPerLevel[level], threshold, nNMSRadius))
+                cerr << "Error while detecting keypoints" << endl;
+        }
+        else
+        {
+            if (!mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level])))
+                cerr << "Error while detecting keypoints" << endl;
+        }
+        nKeypoints += allKeypoints[level].size();
+    }
+    vKeyPoints.clear();
+    vKeyPoints.reserve(nKeypoints);
+    for (int level = 0; level < nlevels; ++level)
+    {
+        for (auto keypoint : allKeypoints[level])
+        {
+            keypoint.octave = level;
+            keypoint.pt *= mvScaleFactor[level];
+            vKeyPoints.emplace_back(keypoint);
+        }
+    }
+    cv::vconcat(allDescriptors.data(), allDescriptors.size(), localDescriptors);
 
-//     vector<vector<cv::KeyPoint>> allKeypoints(nlevels);
-//     vector<cv::Mat> allDescriptors(nlevels);
-
-//     for (int level = 0; level < nlevels; ++level)
-//     {
-//         if (level == 0)
-//         {
-//             mvpModels[0]->Detect(image, allKeypoints[0], allDescriptors[0], globalDescriptors, mnFeaturesPerLevel[0], threshold, nNMSRadius);
-//         }
-//         else
-//         {
-//             float scale = mvInvScaleFactor[level];
-//             Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
-//             mvpModels[0]->PredictScaledResults(allKeypoints[level], allDescriptors[level], sz, mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
-//         }
-//         // ShowKeypoints(std::to_string(level), mvImagePyramid[level], allKeypoints[level]);
-//     }
-
-//     // cv::Mat outImage;
-//     // cv::BFMatcher matcher(cv::NORM_L2, true);
-//     // vector<cv::DMatch> matches;
-//     // matcher.match(allDescriptors[0], allDescriptors[7], matches);
-//     // cv::drawMatches(mvImagePyramid[0], allKeypoints[0], mvImagePyramid[7], allKeypoints[7], matches, outImage, cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255));
-//     // cv::imshow("match",outImage);
-
-//     vKeyPoints.clear();
-//     vKeyPoints.reserve(nfeatures);
-//     for (int level = 0; level < nlevels; ++level)
-//     {
-//         for (auto keypoint : allKeypoints[level])
-//         {
-//             keypoint.octave = level;
-//             keypoint.pt *= mvScaleFactor[level];
-//             vKeyPoints.emplace_back(keypoint);
-//         }
-//     }
-//     cv::vconcat(allDescriptors.data(), allDescriptors.size(), localDescriptors);
-//     return vKeyPoints.size();
-// }
-
-
-
-// int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
-//                              cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
-// {
-//     if(image.empty()) return -1;
-//     assert(image.type() == CV_8UC1 );
-
-//     ComputePyramid(image);
-//     int nKeypoints = 0;
-//     vector<vector<cv::KeyPoint>> allKeypoints(nlevels);
-//     vector<cv::Mat> allDescriptors(nlevels);
-//     for (int level = 0; level < nlevels; ++level)
-//     {
-//         if (level == 0)
-//         {
-//             mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], globalDescriptors, mnFeaturesPerLevel[level], threshold, nNMSRadius);
-//         }
-//         else
-//         {
-//             mvpModels[level]->DetectOnlyLocal(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
-//         }
-//         nKeypoints += allKeypoints[level].size();
-//         // ShowKeypoints("t" + std::to_string(level), mvImagePyramid[level], allKeypoints[level]);
-//     }
-//     vKeyPoints.clear();
-//     vKeyPoints.reserve(nKeypoints);
-//     for (int level = 0; level < nlevels; ++level)
-//     {
-//         for (auto keypoint : allKeypoints[level])
-//         {
-//             keypoint.octave = level;
-//             keypoint.pt *= mvScaleFactor[level];
-//             vKeyPoints.emplace_back(keypoint);
-//         }
-//     }
-//     cv::vconcat(allDescriptors.data(), allDescriptors.size(), localDescriptors);
-
-//     return vKeyPoints.size();
-// }
-
+    return vKeyPoints.size();
+}
 class DetectParallel : public cv::ParallelLoopBody
 {
 public:
@@ -266,11 +231,13 @@ public:
         {
             if (level == 0)
             {
-                mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], *mGlobalDescriptors, mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, mpExtractor->nNMSRadius);
+                if (!mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], *mGlobalDescriptors, mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, mpExtractor->nNMSRadius))
+                    cerr << "Error while detecting keypoints" << endl;
             }
             else
             {
-                mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, ceil(mpExtractor->nNMSRadius*mpExtractor->GetInverseScaleFactors()[level]));
+                if (!mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, ceil(mpExtractor->nNMSRadius*mpExtractor->GetInverseScaleFactors()[level])))
+                    cerr << "Error while detecting keypoints" << endl;
             }
         }
     }
@@ -285,12 +252,9 @@ private:
     HFextractor* mpExtractor;
 };
 
-int HFextractor::operator() (const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
-                             cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
+int HFextractor::ExtractMultiLayersParallel(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+                                            cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
 {
-    if(image.empty()) return -1;
-    assert(image.type() == CV_8UC1 );
-
     ComputePyramid(image);
 
     int nKeypoints = 0;

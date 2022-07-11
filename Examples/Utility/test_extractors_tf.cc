@@ -1,19 +1,97 @@
 /**
  * To Test the performance of different dector
  * 
-Detect the full features with TestExtractor: 
+=================kImageToLocalAndGlobal=====================
+Evaluate the run time perfomance in dataset: 
+
+Detect the full features with TestExtractor ExtractUsingParallel(): 
 Get features number: 767
-pyramid costs: 0.536115
-level 0 costs : 8.26348
-level 1 costs : 4.03005
-level 2 costs : 2.88576
-level 3 costs : 2.24501
-level 4 costs : 1.76847
-level 5 costs : 1.71524
-level 6 costs : 1.69197
-level 7 costs : 1.62562
-copy costs: 0.0957283
-total costs: 24.8614
+pyramid costs: 0.661251 ± 0.428323
+level 0 costs : 19.1058 ± 1.58282
+level 1 costs : 0 ± 0
+level 2 costs : 0 ± 0
+level 3 costs : 0 ± 0
+level 4 costs : 0 ± 0
+level 5 costs : 0 ± 0
+level 6 costs : 0 ± 0
+level 7 costs : 0 ± 0
+copy costs: 0.0887773 ± 0.0147211
+total costs: 19.8607 ± 1.94853
+
+Detect the full features with TestExtractor ExtractUsingFor(): 
+Get features number: 767
+pyramid costs: 0.545832 ± 0.104516
+level 0 costs : 8.24998 ± 0.149893
+level 1 costs : 4.15967 ± 0.125181
+level 2 costs : 2.95431 ± 0.110623
+level 3 costs : 2.35679 ± 0.103007
+level 4 costs : 1.76213 ± 0.082669
+level 5 costs : 1.65121 ± 0.0828724
+level 6 costs : 1.72386 ± 0.103847
+level 7 costs : 1.65526 ± 0.0979003
+copy costs: 0.0961109 ± 0.016476
+total costs: 25.1588 ± 0.520166
+
+Detect the full features with HFextractor: 
+Get features number: 767
+pyramid costs: 0 ± 0
+level 0 costs : 0 ± 0
+level 1 costs : 0 ± 0
+level 2 costs : 0 ± 0
+level 3 costs : 0 ± 0
+level 4 costs : 0 ± 0
+level 5 costs : 0 ± 0
+level 6 costs : 0 ± 0
+level 7 costs : 0 ± 0
+copy costs: 0 ± 0
+total costs: 20.1271 ± 0.657104
+
+=================kImageToLocalAndIntermediate=====================
+Evaluate the run time perfomance in dataset: 
+
+Detect the full features with TestExtractor ExtractUsingParallel(): 
+Get features number: 767
+pyramid costs: 0.600662 ± 0.261487
+level 0 costs : 17.2266 ± 0.543516
+level 1 costs : 0 ± 0
+level 2 costs : 0 ± 0
+level 3 costs : 0 ± 0
+level 4 costs : 0 ± 0
+level 5 costs : 0 ± 0
+level 6 costs : 0 ± 0
+level 7 costs : 0 ± 0
+copy costs: 0.089147 ± 0.015477
+total costs: 17.9213 ± 0.627062
+
+Detect the full features with TestExtractor ExtractUsingFor(): 
+Get features number: 767
+pyramid costs: 0.54974 ± 0.125528
+level 0 costs : 6.26992 ± 0.162424
+level 1 costs : 4.09578 ± 0.131906
+level 2 costs : 2.88828 ± 0.104248
+level 3 costs : 2.35263 ± 0.114001
+level 4 costs : 1.77036 ± 0.111224
+level 5 costs : 1.69519 ± 0.11101
+level 6 costs : 1.69839 ± 0.10068
+level 7 costs : 1.58858 ± 0.0917664
+copy costs: 0.0962834 ± 0.0146409
+total costs: 23.0086 ± 0.541149
+
+Detect the full features with HFextractor: 
+Get features number: 767
+pyramid costs: 0 ± 0
+level 0 costs : 0 ± 0
+level 1 costs : 0 ± 0
+level 2 costs : 0 ± 0
+level 3 costs : 0 ± 0
+level 4 costs : 0 ± 0
+level 5 costs : 0 ± 0
+level 6 costs : 0 ± 0
+level 7 costs : 0 ± 0
+copy costs: 0 ± 0
+total costs: 18.2465 ± 0.538864
+
+
  */
 #include <chrono>
 #include <fstream>
@@ -60,19 +138,20 @@ void ClearTimer()
 
 void PrintTimer()
 {
-    cout << "pyramid costs: " << TimerPyramid.aveCost() << endl;
-    for (int level = 0; level < nLevels; ++level) cout << "level " << level << " costs : " << TimerDetectPerLevel[level].aveCost() << endl;
-    cout << "copy costs: " << TimerCopy.aveCost() << endl;
-    cout << "total costs: " << TimerTotal.aveCost() << endl;
+    cout << "pyramid costs: " << TimerPyramid.aveCost() << " ± " << TimerPyramid.devCost() << endl;
+    for (int level = 0; level < nLevels; ++level)
+        cout << "level " << level << " costs : " << TimerDetectPerLevel[level].aveCost() << " ± " << TimerDetectPerLevel[level].devCost() << endl;
+    cout << "copy costs: " << TimerCopy.aveCost() << " ± " << TimerCopy.devCost() << endl;
+    cout << "total costs: " << TimerTotal.aveCost() << " ± " << TimerTotal.devCost() << endl;
 }
 
 struct TestExtractor : public HFextractor
 {
-TestExtractor(int nfeatures, int nNMSRadius, float threshold,
+TestExtractor(int nfeatures, float threshold, int nNMSRadius,
                 float scaleFactor, int nlevels, const std::vector<BaseModel*>& vpModels) :
-    HFextractor(nfeatures, nNMSRadius, threshold, scaleFactor, nLevels, vpModels){}
+    HFextractor(nfeatures, threshold, nNMSRadius, scaleFactor, nLevels, vpModels){}
 
-int test(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+int ExtractUsingFor(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
                 cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
 {
     if(image.empty()) return -1;
@@ -150,7 +229,7 @@ private:
     TestExtractor* mpExtractor;
 };
 
-int test_v2(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+int ExtractUsingParallel(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
                 cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
 {
     if(image.empty()) return -1;
@@ -203,13 +282,13 @@ int main(int argc, char* argv[])
     {
         cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
         BaseModel *pNewModel;
-        if (level == 0) pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocalAndGlobal, inputShape);
+        if (level == 0) pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
         else pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocal, inputShape);
         vpModels.emplace_back(pNewModel);
         scale /= scaleFactor;
     }
 
-    TestExtractor *pExtractor = new TestExtractor(settings->nFeatures(), settings->nNMSRadius(), settings->threshold(), scaleFactor, nLevels, vpModels);
+    TestExtractor *pExtractor = new TestExtractor(settings->nFeatures(), settings->threshold(), settings->nNMSRadius(), scaleFactor, nLevels, vpModels);
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     
@@ -246,7 +325,7 @@ int main(int argc, char* argv[])
         
         ClearTimer();
         TimerTotal.Tic();
-        pExtractor->test_v2(image, vKeyPoints, localDescriptors, globalDescriptors);
+        pExtractor->ExtractUsingParallel(image, vKeyPoints, localDescriptors, globalDescriptors);
         TimerTotal.Toc();
 
         cout << "Get features number: " << vKeyPoints.size() << endl;
@@ -258,13 +337,11 @@ int main(int argc, char* argv[])
     }
     cv::destroyAllWindows();
 
-    // detect full dataset
+    cout << "======================================" << endl
+         << "Evaluate the run time perfomance in dataset: " << endl;
+
     {
-        image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
-        if (settings->needToResize())
-            cv::resize(image, image, settings->newImSize());
-        pExtractor->test_v2(image, vKeyPoints, localDescriptors, globalDescriptors);
-        
+        cout << endl;
         ClearTimer();
         for (const string& file : files)
         {
@@ -272,21 +349,36 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             TimerTotal.Tic();
-            pExtractor->test_v2(image, vKeyPoints, localDescriptors, globalDescriptors);
+            pExtractor->ExtractUsingParallel(image, vKeyPoints, localDescriptors, globalDescriptors);
             TimerTotal.Toc();
         }
-        cout << "Detect the full features with TestExtractor: " << endl
+        cout << "Detect the full features with TestExtractor ExtractUsingParallel(): " << endl
              << "Get features number: " << vKeyPoints.size() << endl;
         PrintTimer();
     }
-    {
-        HFextractor extractor = HFextractor(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),scaleFactor,nLevels,vpModels);
-        image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
-        if (settings->needToResize())
-            cv::resize(image, image, settings->newImSize());
-        extractor(image, vKeyPoints, localDescriptors, globalDescriptors);
 
+    {
+        cout << endl;
         ClearTimer();
+        for (const string& file : files)
+        {
+            image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
+            if (settings->needToResize())
+                cv::resize(image, image, settings->newImSize());
+            TimerTotal.Tic();
+            pExtractor->ExtractUsingFor(image, vKeyPoints, localDescriptors, globalDescriptors);
+            TimerTotal.Toc();
+        }
+        cout << "Detect the full features with TestExtractor ExtractUsingFor(): " << endl
+             << "Get features number: " << vKeyPoints.size() << endl;
+        PrintTimer();
+    }
+
+    {
+        cout << endl;
+        ClearTimer();
+
+        HFextractor extractor = HFextractor(settings->nFeatures(),settings->threshold(),settings->nNMSRadius(),scaleFactor,nLevels,vpModels);
         for (const string& file : files)
         {
             image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
@@ -297,10 +389,11 @@ int main(int argc, char* argv[])
             TimerTotal.Toc();
         }
         cout << "Detect the full features with HFextractor: " << endl
-             << "Get features number: " << vKeyPoints.size() << endl
-             << "total costs: " << TimerTotal.aveCost() << " milliseconds" << endl;
+             << "Get features number: " << vKeyPoints.size() << endl;
+        PrintTimer();
     }
 
+    cout << endl << "Press 'ENTER' to exit" << endl;
     getchar();
 
     return 0;

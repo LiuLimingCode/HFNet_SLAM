@@ -15,9 +15,9 @@ class HFextractor
 {
 public:
 
-    HFextractor(int nfeatures, int nNMSRadius, float threshold, BaseModel* pModels);
+    HFextractor(int nfeatures, float threshold, int nNMSRadius, BaseModel* pModels);
 
-    HFextractor(int nfeatures, int nNMSRadius, float threshold,
+    HFextractor(int nfeatures, float threshold, int nNMSRadius,
                 float scaleFactor, int nlevels, const std::vector<BaseModel*>& vpModels);
 
     ~HFextractor(){}
@@ -52,8 +52,8 @@ public:
     std::vector<int> mnFeaturesPerLevel;
 
     int nfeatures;
-    int nNMSRadius;
     float threshold;
+    int nNMSRadius;
 
     std::vector<BaseModel*> mvpModels;
 
@@ -71,6 +71,15 @@ protected:
     std::vector<int> umax;
 
     void ComputePyramid(const cv::Mat &image);
+
+    int ExtractSingleLayer(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+                           cv::Mat &localDescriptors, cv::Mat &globalDescriptors);
+
+    int ExtractMultiLayers(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+                           cv::Mat &localDescriptors, cv::Mat &globalDescriptors);
+    
+    int ExtractMultiLayersParallel(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
+                                   cv::Mat &localDescriptors, cv::Mat &globalDescriptors);
 };
 
 } //namespace ORB_SLAM

@@ -539,7 +539,7 @@ int main(int argc, char* argv[])
         PrintTimer();
     }
 
-    cout << "Press 'ENTER' to exit" << endl;
+    cout << endl << "Press 'ENTER' to exit" << endl;
     getchar();
 
     return 0;

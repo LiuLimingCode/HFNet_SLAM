@@ -248,7 +248,7 @@ int main(int argc, char* argv[])
              << "detect cost time: " << timerDetect.aveCost() << " milliseconds" << endl;
     }
     {
-        HFextractor extractor = HFextractor(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),pModel);
+        HFextractor extractor = HFextractor(settings->nFeatures(),settings->threshold(),settings->nNMSRadius(),pModel);
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
         if (settings->needToResize())
             cv::resize(image, image, settings->newImSize());

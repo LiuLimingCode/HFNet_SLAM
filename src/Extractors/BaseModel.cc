@@ -30,8 +30,20 @@ void InitAllModels(Settings* settings)
     {
         cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
         BaseModel *pNewModel;
-        if (level == 0) pNewModel = InitModel(settings, kImageToLocalAndGlobal, inputShape);
-        else pNewModel = InitModel(settings, kImageToLocal, inputShape);
+        ModelDetectionMode mode;
+        // if (settings->modelType() == kHFNetTFModel)
+        // {
+        //     if (level == 0) mode = kImageToLocalAndGlobal;
+        //     else mode = kImageToLocal;
+        // }
+        // else if(settings->modelType() == kHFNetVINOModel)
+        // {
+        //     if (level == 0) mode = kImageToLocalAndIntermediate;
+        //     else mode = kImageToLocal;
+        // }
+        if (level == 0) mode = kImageToLocalAndIntermediate;
+        else mode = kImageToLocal;
+        pNewModel = InitModel(settings, mode, inputShape);
         gvpModels.emplace_back(pNewModel);
         scale /= scaleFactor;
     }
