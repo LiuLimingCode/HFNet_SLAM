@@ -70,10 +70,6 @@ class KeyFrame
         //ar & mnBAFixedForKF;
         //ar & mnNumberOfOpt;
         // Variables used by KeyFrameDatabase
-        //ar & mnLoopQuery;
-        //ar & mnLoopWords;
-        //ar & mLoopScore;
-        //ar & mnRelocQuery;
         //ar & mnRelocWords;
         //ar & mRelocScore;
         //ar & mnMergeQuery;
@@ -324,18 +320,12 @@ public:
     long unsigned int mnNumberOfOpt;
 
     // Variables used by the keyframe database
-    long unsigned int mnLoopQuery;
-    int mnLoopWords;
-    float mLoopScore;
     long unsigned int mnRelocQuery;
-    int mnRelocWords;
     float mRelocScore;
-    long unsigned int mnMergeQuery;
-    int mnMergeWords;
-    float mMergeScore;
+    float mRelocAccScore;
     long unsigned int mnPlaceRecognitionQuery;
-    int mnPlaceRecognitionWords;
     float mPlaceRecognitionScore;
+    float mPlaceRecognitionAccScore;
 
     bool mbCurrentPlaceRecognition;
 

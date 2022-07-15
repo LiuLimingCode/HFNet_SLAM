@@ -36,15 +36,15 @@ struct TestKeyFrame
 double mTimeStamp;
 const cv::Mat imgLeft;
 const cv::Mat mGlobalDescriptors;
-float mPlaceRecognitionScore;
+float mPlaceRecognitionScore = 1.0;
 
-TestKeyFrame(Frame &F) :
-mTimeStamp(F.mTimeStamp), imgLeft(F.imgLeft), mGlobalDescriptors(F.mGlobalDescriptors) {}
+TestKeyFrame(double time, const cv::Mat im, const cv::Mat globalDescriptors) :
+mTimeStamp(time), imgLeft(im), mGlobalDescriptors(globalDescriptors) {}
 };
 
 typedef unordered_set<TestKeyFrame*> KeyFrameDB;
 
-vector<TestKeyFrame*> GetNCandidateLoopFrameCV(Frame* query, const KeyFrameDB &db, int k)
+vector<TestKeyFrame*> GetNCandidateLoopFrameCV(TestKeyFrame* query, const KeyFrameDB &db, int k)
 {
     //vector<Frame*> res = db;
     vector<TestKeyFrame*> res(k);
@@ -60,7 +60,7 @@ vector<TestKeyFrame*> GetNCandidateLoopFrameCV(Frame* query, const KeyFrameDB &d
     return res;
 }
 
-vector<TestKeyFrame*> GetNCandidateLoopFrameEigen(Frame* query, const KeyFrameDB &db, int k)
+vector<TestKeyFrame*> GetNCandidateLoopFrameEigen(TestKeyFrame* query, const KeyFrameDB &db, int k)
 {
     vector<TestKeyFrame*> res(k);
     Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> queryDescriptors(query->mGlobalDescriptors.ptr<float>(), query->mGlobalDescriptors.rows, query->mGlobalDescriptors.cols);
@@ -89,22 +89,26 @@ void ShowImageWithText(const string &title, const cv::Mat &image, const string &
 // const int dbStart = 420;
 // const int dbEnd = 50;
 
-const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
+const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor1_512_16/mav0/cam0/data/");
 const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
 const int dbStart = 50;
 const int dbEnd = 50;
 
-const int nKeyFrame = 200;
+const int nKeyFrame = 1200;
 
 int main(int argc, char** argv)
 {
     settings = new Settings(strSettingsPath, 0);
-    HFNetTFModelV2 *pModel = new HFNetTFModelV2(settings->strTFModelPath(), kImageToLocalAndGlobal, {1, settings->newImSize().height, settings->newImSize().width, 1});
-    HFextractor *pExtractor = new HFextractor(settings->nFeatures(),settings->threshold(),settings->nNMSRadius(),pModel);
+    HFNetTFModelV2 *pModelImageToLocalAndInter = new HFNetTFModelV2(settings->strTFModelPath(), kImageToLocalAndIntermediate, {1, settings->newImSize().height, settings->newImSize().width, 1});
+    HFNetTFModelV2 *pModelInterToGlobal = new HFNetTFModelV2(settings->strTFModelPath(), kIntermediateToGlobal, {1, settings->newImSize().height/8, settings->newImSize().width/8, 96});
     GeometricCamera* pCamera = settings->camera1();
-    cv::Mat distCoef = settings->camera1DistortionCoef();
-    const float bf = 0;
-    const float thDepth = 0;
+    cv::Mat distCoef;
+    if(settings->needToUndistort()){
+        distCoef = settings->camera1DistortionCoef();
+    }
+    else{
+        distCoef = cv::Mat::zeros(4,1,CV_32F);
+    }
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     cout << "Got [" << files.size() << "] images in dataset" << endl;
@@ -123,10 +127,16 @@ int main(int argc, char** argv)
     while (cur < end)
     {
         int select = cur;
-        cv::Mat imageGray = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        Frame F = Frame(imageGray,select,pExtractor,pCamera,distCoef,bf,thDepth);
-        F.imgLeft = imageGray;
-        TestKeyFrame *pKF = new TestKeyFrame(F);
+        cv::Mat image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
+        if (settings->needToResize())
+            cv::resize(image, image, settings->newImSize());
+
+        vector<cv::KeyPoint> vKeyPoints;
+        cv::Mat localDescriptors, globalDescriptors, intermediate;
+        pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, intermediate, 1000, 0.01, 4);
+        pModelInterToGlobal->Detect(intermediate, globalDescriptors);
+
+        TestKeyFrame *pKF = new TestKeyFrame(select, image.clone(), globalDescriptors.clone());
         vKeyFrameDB.insert(pKF);
         cur += step;
     }
@@ -150,10 +160,18 @@ int main(int argc, char** argv)
         else if (command == 's') select -= 1, plot = 0;
         else if (command == 'd') plot += 1;
         else if (command == 'a') plot = max(plot - 1, 0);
-        else select = distribution(generator), plot = 0;
+        else select = 5022, plot = 0;
 
-        cv::Mat imageGray = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        Frame *pKF = new Frame(imageGray,select,pExtractor,pCamera,distCoef,bf,thDepth);
+        cv::Mat image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
+        if (settings->needToResize())
+            cv::resize(image, image, settings->newImSize());
+
+        vector<cv::KeyPoint> vKeyPoints;
+        cv::Mat localDescriptors, globalDescriptors, intermediate;
+        pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, intermediate, 1000, 0.01, 4);
+        pModelInterToGlobal->Detect(intermediate, globalDescriptors);
+
+        TestKeyFrame *pKF = new TestKeyFrame(select, image.clone(), globalDescriptors.clone());
 
         auto t1 = chrono::steady_clock::now();
         auto res = GetNCandidateLoopFrameEigen(pKF, vKeyFrameDB, vKeyFrameDB.size());
@@ -161,7 +179,7 @@ int main(int argc, char** argv)
         auto t = chrono::duration_cast<chrono::microseconds>(t2 - t1).count();
         cout << "Query cost time: " << t << endl;
 
-        ShowImageWithText("Query Image", imageGray, std::to_string((int)pKF->mTimeStamp));
+        ShowImageWithText("Query Image", image, std::to_string((int)pKF->mTimeStamp));
         for (int index = 0; index < 3; ++index)
         {
             int plotIndex = plot * 3 + index;

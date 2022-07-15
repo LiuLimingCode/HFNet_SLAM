@@ -97,9 +97,6 @@ workspace.code-workspace
 model/
 output/
 
-TODO
 evaluation/
 Comparison/
-*.docx
-*.xlsx
 hfnet/

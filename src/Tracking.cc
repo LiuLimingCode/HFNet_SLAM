@@ -99,12 +99,15 @@ Tracking::Tracking(System *pSys, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawe
     vnTrackWithMotionModel_goodMatches.clear();
     vnTrackReferenceKeyFrame_searchBoW.clear();
     vnTrackReferenceKeyFrame_goodMatches.clear();
+    vnTrackLocalMap_mvpLocalCoVisKFs.clear();
+    vnTrackLocalMap_earliestCovisKFs.clear();
     vnTrackLocalMap_mvpLocalKeyFrames.clear();
     vnTrackLocalMap_earliestKeyFrames.clear();
     vnTrackLocalMap_mvpLocalMapPoints.clear();
     vnTrackLocalMap_nToMatch.clear();
     vnTrackLocalMap_searchProjection.clear();
     vnTrackLocalMap_goodMatches.clear();
+    vnNeedNewKeyFrame_condition.clear();
 #endif
 }
 
@@ -251,19 +254,24 @@ void Tracking::MatchState2File()
       << "TrackWithMotionModel_goodMatches,"
       << "TrackReferenceKeyFrame_searchBoW,"
       << "TrackReferenceKeyFrame_goodMatches,"
+      << "TrackLocalMap_mvpLocalCoVisKFs,"
+      << "TrackLocalMap_earliestCovisKFs,"
       << "TrackLocalMap_mvpLocalKeyFrames,"
       << "TrackLocalMap_earliestKeyFrames,"
       << "TrackLocalMap_mvpLocalMapPoints,"
       << "TrackLocalMap_nToMatch,"
       << "TrackLocalMap_searchProjection,"
-      << "TrackLocalMap_goodMatches" << endl;
+      << "TrackLocalMap_goodMatches,"
+      << "NeedNewKeyFrame_condition" << endl;
     
     for (size_t index = 0; index < vnKeyPointExtraction.size(); ++index)
     {
         f << vnKeyPointExtraction[index] << "," << vnTrackWithMotionModel_smallThProjection[index] << "," << vnTrackWithMotionModel_bigThProjection[index] << ","
           << vnTrackWithMotionModel_goodMatches[index] << "," << vnTrackReferenceKeyFrame_searchBoW[index] << "," << vnTrackReferenceKeyFrame_goodMatches[index] << ","
+          << vnTrackLocalMap_mvpLocalCoVisKFs[index] << "," << vnTrackLocalMap_earliestCovisKFs[index] << ","
           << vnTrackLocalMap_mvpLocalKeyFrames[index] << "," << vnTrackLocalMap_earliestKeyFrames[index] << "," << vnTrackLocalMap_mvpLocalMapPoints[index] << ","
-          << vnTrackLocalMap_nToMatch[index] << "," << vnTrackLocalMap_searchProjection[index] << "," << vnTrackLocalMap_goodMatches[index] << endl;
+          << vnTrackLocalMap_nToMatch[index] << "," << vnTrackLocalMap_searchProjection[index] << "," << vnTrackLocalMap_goodMatches[index] << ","
+          << vnNeedNewKeyFrame_condition[index] << endl;
     }
 
     f.close();
@@ -894,12 +902,15 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
     if (vnTrackWithMotionModel_goodMatches.size() < num) vnTrackWithMotionModel_goodMatches.push_back(-1);
     if (vnTrackReferenceKeyFrame_searchBoW.size() < num) vnTrackReferenceKeyFrame_searchBoW.push_back(-1);
     if (vnTrackReferenceKeyFrame_goodMatches.size() < num) vnTrackReferenceKeyFrame_goodMatches.push_back(-1);
+    if (vnTrackLocalMap_mvpLocalCoVisKFs.size() < num) vnTrackLocalMap_mvpLocalCoVisKFs.push_back(-1);
+    if (vnTrackLocalMap_earliestCovisKFs.size() < num) vnTrackLocalMap_earliestCovisKFs.push_back(-1);
     if (vnTrackLocalMap_mvpLocalKeyFrames.size() < num) vnTrackLocalMap_mvpLocalKeyFrames.push_back(-1);
     if (vnTrackLocalMap_earliestKeyFrames.size() < num) vnTrackLocalMap_earliestKeyFrames.push_back(-1);
     if (vnTrackLocalMap_mvpLocalMapPoints.size() < num) vnTrackLocalMap_mvpLocalMapPoints.push_back(-1);
     if (vnTrackLocalMap_nToMatch.size() < num) vnTrackLocalMap_nToMatch.push_back(-1);
     if (vnTrackLocalMap_searchProjection.size() < num) vnTrackLocalMap_searchProjection.push_back(-1);
     if (vnTrackLocalMap_goodMatches.size() < num) vnTrackLocalMap_goodMatches.push_back(-1);
+    if (vnNeedNewKeyFrame_condition.size() < num) vnNeedNewKeyFrame_condition.push_back(-1);
 #endif
 
     return mCurrentFrame.GetPose();
@@ -2498,6 +2509,10 @@ bool Tracking::NeedNewKeyFrame()
     else
         c4=false;
 
+#ifdef REGISTER_TIMES
+    vnNeedNewKeyFrame_condition.emplace_back(c1a*100000+c1b*10000+c1c*1000+c2*100+c3*10+c4);
+#endif
+
     if(((c1a||c1b||c1c) && c2)||c3 ||c4)
     {
         // If the mapping accepts keyframes, insert keyframe.
@@ -2841,6 +2856,16 @@ void Tracking::UpdateLocalKeyFrames()
     int max=0;
     KeyFrame* pKFmax= static_cast<KeyFrame*>(NULL);
 
+#ifdef REGISTER_TIMES
+    vnTrackLocalMap_mvpLocalCoVisKFs.push_back(keyframeCounter.size());
+    unsigned long minId = ULONG_MAX;
+    for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
+    {
+        minId = std::min(minId, it->first->mnFrameId);
+    }
+    vnTrackLocalMap_earliestCovisKFs.push_back(minId);
+#endif
+
     mvpLocalKeyFrames.clear();
     mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
 
@@ -2862,28 +2887,44 @@ void Tracking::UpdateLocalKeyFrames()
         pKF->mnTrackReferenceForFrame = mCurrentFrame.mnId;
     }
 
+    auto vpAllKeyFrames = mpAtlas->GetAllKeyFrames();
+    auto transCurrent = mCurrentFrame.GetPose().translation();
+    for (KeyFrame* pKF : vpAllKeyFrames)
+    {
+        if (pKF->isBad()) continue;
+        
+        if(pKF->mnTrackReferenceForFrame!=mCurrentFrame.mnId)
+        {
+            auto transKF = pKF->GetTranslation();
+            float distance = (transKF - transCurrent).norm();
+            if (distance < 8)
+            {
+                mvpLocalKeyFrames.push_back(pKF);
+                pKF->mnTrackReferenceForFrame=mCurrentFrame.mnId;
+            }
+        }
+    }
+
     // Include also some not-already-included keyframes that are neighbors to already-included keyframes
     for(vector<KeyFrame*>::const_iterator itKF=mvpLocalKeyFrames.begin(), itEndKF=mvpLocalKeyFrames.end(); itKF!=itEndKF; itKF++)
     {
         // Limit the number of keyframes
-        if(mvpLocalKeyFrames.size()>80) // 80
+        if(mvpLocalKeyFrames.size()>120) // 80
             break;
 
         KeyFrame* pKF = *itKF;
 
-        const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(10);
+        const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(12);
 
-
-        for(vector<KeyFrame*>::const_iterator itNeighKF=vNeighs.begin(), itEndNeighKF=vNeighs.end(); itNeighKF!=itEndNeighKF; itNeighKF++)
+        for(int index = 0; index < vNeighs.size(); ++index)
         {
-            KeyFrame* pNeighKF = *itNeighKF;
+            KeyFrame* pNeighKF = vNeighs[index];
             if(!pNeighKF->isBad())
             {
                 if(pNeighKF->mnTrackReferenceForFrame!=mCurrentFrame.mnId)
                 {
                     mvpLocalKeyFrames.push_back(pNeighKF);
                     pNeighKF->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-                    break;
                 }
             }
         }
@@ -2898,7 +2939,6 @@ void Tracking::UpdateLocalKeyFrames()
                 {
                     mvpLocalKeyFrames.push_back(pChildKF);
                     pChildKF->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-                    break;
                 }
             }
         }
@@ -2910,7 +2950,6 @@ void Tracking::UpdateLocalKeyFrames()
             {
                 mvpLocalKeyFrames.push_back(pParent);
                 pParent->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-                break;
             }
         }
     }
@@ -2928,8 +2967,8 @@ void Tracking::UpdateLocalKeyFrames()
             {
                 mvpLocalKeyFrames.push_back(tempKeyFrame);
                 tempKeyFrame->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-                tempKeyFrame=tempKeyFrame->mPrevKF;
             }
+            tempKeyFrame=tempKeyFrame->mPrevKF;
         }
     }
 

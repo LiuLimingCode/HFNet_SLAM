@@ -194,12 +194,15 @@ public:
     vector<int> vnTrackWithMotionModel_goodMatches;
     vector<int> vnTrackReferenceKeyFrame_searchBoW;
     vector<int> vnTrackReferenceKeyFrame_goodMatches;
+    vector<int> vnTrackLocalMap_mvpLocalCoVisKFs;
+    vector<int> vnTrackLocalMap_earliestCovisKFs;
     vector<int> vnTrackLocalMap_mvpLocalKeyFrames;
     vector<int> vnTrackLocalMap_earliestKeyFrames;
     vector<int> vnTrackLocalMap_mvpLocalMapPoints;
     vector<int> vnTrackLocalMap_nToMatch;
     vector<int> vnTrackLocalMap_searchProjection;
     vector<int> vnTrackLocalMap_goodMatches;
+    vector<int> vnNeedNewKeyFrame_condition;
 #endif
 
 protected:
