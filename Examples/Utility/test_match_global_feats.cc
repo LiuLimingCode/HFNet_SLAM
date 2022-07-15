@@ -160,7 +160,7 @@ int main(int argc, char** argv)
         else if (command == 's') select -= 1, plot = 0;
         else if (command == 'd') plot += 1;
         else if (command == 'a') plot = max(plot - 1, 0);
-        else select = 5022, plot = 0;
+        else select = distribution(generator), plot = 0;
 
         cv::Mat image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
         if (settings->needToResize())

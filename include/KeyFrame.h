@@ -70,7 +70,7 @@ class KeyFrame
         //ar & mnBAFixedForKF;
         //ar & mnNumberOfOpt;
         // Variables used by KeyFrameDatabase
-        //ar & mnRelocWords;
+        //ar & mnRelocQuery;
         //ar & mRelocScore;
         //ar & mnMergeQuery;
         //ar & mnMergeWords;

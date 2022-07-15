@@ -99,4 +99,5 @@ output/
 
 evaluation/
 Comparison/
-hfnet/
+hfnet/logs/
+__pycache__/
