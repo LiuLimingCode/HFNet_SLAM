@@ -195,12 +195,26 @@ void LocalMapping::Run()
                 // Initialize IMU here
                 if(!mpCurrentKeyFrame->GetMap()->isImuInitialized() && mbInertial)
                 {
-                    if (mbMonocular)
-                        InitializeIMU(1e2, 1e10, true);
-                    else
-                        InitializeIMU(1e2, 1e5, true);
-                }
+                    float dist = (mpCurrentKeyFrame->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->GetCameraCenter()).norm();
 
+                    if (dist < 0.1)
+                    {
+                        cout << "Not enough motion for initializing. Reseting..." << endl;
+                        unique_lock<mutex> lock(mMutexReset);
+                        mbResetRequestedActiveMap = true;
+                        mbBadImu = true;
+                    }
+                    else
+                    {
+                        if (mbMonocular)
+                            InitializeIMU(1e2, 1e10, true);
+                        else
+                            InitializeIMU(1e2, 1e5, true);
+                            
+                        if (mpCurrentKeyFrame->GetMap()->isImuInitialized())
+                            cout << "Imu initialized" << endl;
+                    }
+                }
 
                 // Check redundant local Keyframes
                 KeyFrameCulling();
@@ -1293,7 +1307,6 @@ void LocalMapping::ResetIfRequested()
             mTinit = 0.f;
             mbNotBA2 = true;
             mbNotBA1 = true;
-            mbBadImu=false;
 
             mIdxInit=0;
 
@@ -1310,7 +1323,6 @@ void LocalMapping::ResetIfRequested()
             mTinit = 0.f;
             mbNotBA2 = true;
             mbNotBA1 = true;
-            mbBadImu=false;
 
             mbResetRequested = false;
             mbResetRequestedActiveMap = false;

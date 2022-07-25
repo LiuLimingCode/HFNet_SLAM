@@ -91,14 +91,14 @@ void ShowKeypoints(const string &title, Mat image, const std::vector<KeyPoint> &
     cv::imshow(title.c_str(), image_show);
 }
 
-void FindCorrectMatches(const std::vector<cv::KeyPoint> &keypoints1, const std::vector<cv::KeyPoint> &keypoints2, 
+cv::Mat FindCorrectMatches(const std::vector<cv::KeyPoint> &keypoints1, const std::vector<cv::KeyPoint> &keypoints2, 
                         const std::vector<cv::DMatch> &matches, std::vector<cv::DMatch> &inlierMatches, std::vector<cv::DMatch> &wrongMatches)
 {
     if (matches.size() < 10) 
     {
         wrongMatches = matches;
         inlierMatches.clear();
-        return;
+        return cv::Mat();
     }
     vector<cv::Point2f> vPt1, vPt2;
     for (const auto &match : matches)
@@ -109,7 +109,7 @@ void FindCorrectMatches(const std::vector<cv::KeyPoint> &keypoints1, const std::
 
     cv::Mat homography;
     std::vector<int> inliers;
-    cv::findHomography(vPt1, vPt2, cv::RANSAC, 10.0, inliers);
+    homography = cv::findHomography(vPt1, vPt2, cv::RANSAC, 10.0, inliers);
 
     inlierMatches.clear();
     wrongMatches.clear();
@@ -120,16 +120,48 @@ void FindCorrectMatches(const std::vector<cv::KeyPoint> &keypoints1, const std::
         if (inliers[index]) inlierMatches.emplace_back(matches[index]);
         else wrongMatches.emplace_back(matches[index]);
     }
+
+    return homography;
 }
 
 cv::Mat ShowCorrectMatches(const cv::Mat &image1, const cv::Mat &image2,
                            const std::vector<cv::KeyPoint> &keypoints1, const std::vector<cv::KeyPoint> &keypoints2, 
-                           const std::vector<cv::DMatch> &matches, std::vector<cv::DMatch> &inlierMatches, std::vector<cv::DMatch> &wrongMatches)
+                           const std::vector<cv::DMatch> &inlierMatches, const std::vector<cv::DMatch> &wrongMatches, bool showSinglePoints = false)
 {
     cv::Mat outImage;
-    FindCorrectMatches(keypoints1, keypoints2, matches, inlierMatches, wrongMatches);
     cv::drawMatches(image1, keypoints1, image2, keypoints2, wrongMatches, outImage, cv::Scalar(0, 0, 255), cv::Scalar(-1, -1, -1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
     cv::drawMatches(image1, keypoints1, image2, keypoints2, inlierMatches, outImage, cv::Scalar(0, 255, 0), cv::Scalar(-1, -1, -1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS | cv::DrawMatchesFlags::DRAW_OVER_OUTIMG);
+    if (showSinglePoints)
+    {
+        std::vector<bool> matched1(keypoints1.size(), true);
+        std::vector<bool> matched2(keypoints2.size(), true);
+        for (auto m : inlierMatches)
+        {
+            matched1[m.queryIdx] = false;
+            matched2[m.trainIdx] = false;
+        }
+        for (auto m : wrongMatches)
+        {
+            matched1[m.queryIdx] = false;
+            matched2[m.trainIdx] = false;
+        }
+        std::vector<cv::KeyPoint> singlePoint1, singlePoint2;
+        for (size_t index = 0; index < matched1.size(); ++index)
+        {
+            if (matched1[index])
+            {
+                singlePoint1.emplace_back(keypoints1[index]);
+            }
+        }
+        for (size_t index = 0; index < matched2.size(); ++index)
+        {
+            if (matched2[index])
+            {
+                singlePoint2.emplace_back(keypoints2[index]);
+            }
+        }
+        cv::drawMatches(image1, singlePoint1, image2, singlePoint2, std::vector<cv::DMatch>(), outImage, cv::Scalar(0, 255, 0), cv::Scalar(-1, -1, -1), std::vector<char>(), cv::DrawMatchesFlags::DRAW_OVER_OUTIMG);
+    }
     return outImage;
 }
 

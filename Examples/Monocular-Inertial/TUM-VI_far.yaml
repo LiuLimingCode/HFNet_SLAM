@@ -46,7 +46,7 @@ IMU.NoiseGyro: 0.00016 # 0.004 (VINS) # 0.00016 (TUM) # 0.00016    # rad/s^0.5
 IMU.NoiseAcc: 0.0028 # 0.04 (VINS) # 0.0028 (TUM) # 0.0028     # m/s^1.5
 IMU.GyroWalk: 0.000022 # 0.000022 (VINS and TUM) rad/s^1.5
 IMU.AccWalk: 0.00086 # 0.0004 (VINS) # 0.00086 # 0.00086    # m/s^2.5
-IMU.Frequency: 200
+IMU.Frequency: 200.0
 System.thFarPoints: 20.0
 
 #--------------------------------------------------------------------------------------------
@@ -77,12 +77,14 @@ Extractor.HFNetVINO.localModelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet
 Extractor.HFNetVINO.globalModelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_vino_global_f32/"
 
 # Extractor: Scale factor between levels in the scale pyramid 	
-Extractor.scaleFactor: 1.2
+Extractor.scaleFactor: 1.44
 
 # Extractor: Number of levels in the scale pyramid	
-Extractor.nLevels: 8
+Extractor.nLevels: 4
 
 # Extractor: Number of features per image
-Extractor.nFeatures: 1250
+Extractor.nFeatures: 750
 Extractor.nNMSRadius: 4
-Extractor.threshold: 0.01
+Extractor.threshold: 0.010
+
+loopClosing: 1

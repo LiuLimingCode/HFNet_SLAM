@@ -209,6 +209,9 @@ public:
 
     unsigned int mnOriginMapId;
 
+    static int mnScaleLevels;
+    static float mfScaleFactor;
+
 protected:    
 
      // Position in absolute coordinates

@@ -113,6 +113,8 @@ System::System(const string &strSettingsFile, const eSensor sensor,
     bool loadedAtlas = false;
 
     InitAllModels(settings_);
+    MapPoint::mnScaleLevels = settings_->nLevels();
+    MapPoint::mfScaleFactor = settings_->scaleFactor();
 
     //Create KeyFrame Database
     // TODO: The initialization of KeyFrameDatabase

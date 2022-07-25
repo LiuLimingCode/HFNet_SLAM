@@ -124,6 +124,7 @@ bool HFNetTFModelV2::Run(std::vector<tensorflow::Tensor> &vNetResults)
 
     Status status = mSession->Run(mvInputTensors, mvOutputTensorNames, {}, &vNetResults);
 
+    if (!status.ok()) cerr << status.error_message() << endl;
     return status.ok();
 }
 

@@ -1108,6 +1108,7 @@ void Tracking::Track()
     {
         cout << "TRACK: Reset map because local mapper set the bad imu flag " << endl;
         mpSystem->ResetActiveMap();
+        mpLocalMapper->mbBadImu = false;
         return;
     }
 
@@ -1879,6 +1880,7 @@ void Tracking::CreateInitialMapMonocular()
 
     // Bundle Adjustment
     Verbose::PrintMess("New Map created with " + to_string(mpAtlas->MapPointsInMap()) + " points", Verbose::VERBOSITY_QUIET);
+    Verbose::PrintMess("Init frame id: " + to_string(pKFini->mnFrameId), Verbose::VERBOSITY_QUIET);
     Optimizer::GlobalBundleAdjustemnt(mpAtlas->GetCurrentMap(),20);
 
     float medianDepth = pKFini->ComputeSceneMedianDepth(2);
@@ -2768,6 +2770,7 @@ void Tracking::UpdateLocalMap()
 
 void Tracking::UpdateLocalPoints()
 {
+    // unordered_set<MapPoint*> spLocalMapPoints;
     mvpLocalMapPoints.clear();
 
     int count_pts = 0;
@@ -2795,6 +2798,21 @@ void Tracking::UpdateLocalPoints()
         }
     }
 
+    // auto vpAllMapPoints = mpAtlas->GetAllMapPoints();
+    // auto transCurrent = mCurrentFrame.GetPose().inverse().translation();
+    // for (MapPoint* pMP : vpAllMapPoints)
+    // {
+    //     if (pMP->isBad() || spLocalMapPoints.count(pMP)) continue;
+        
+    //     auto transKF = pMP->GetWorldPos();
+    //     float distance = (transKF - transCurrent).norm();
+    //     if (distance < 8)
+    //     {
+    //         spLocalMapPoints.insert(pMP);
+    //     }
+    // }
+    // mvpLocalMapPoints.assign(spLocalMapPoints.begin(), spLocalMapPoints.end());
+
 #ifdef REGISTER_TIMES
     vnTrackLocalMap_mvpLocalKeyFrames.push_back(mvpLocalKeyFrames.size());
     vnTrackLocalMap_earliestKeyFrames.push_back(earliest_id);
@@ -2806,7 +2824,7 @@ void Tracking::UpdateLocalPoints()
 void Tracking::UpdateLocalKeyFrames()
 {
     // Each map point vote for the keyframes in which it has been observed
-    map<KeyFrame*,int> keyframeCounter;
+    unordered_map<KeyFrame*,int> keyframeCounter;
     if(!mpAtlas->isImuInitialized() || (mCurrentFrame.mnId<mnLastRelocFrameId+2))
     {
         for(int i=0; i<mCurrentFrame.N; i++)
@@ -2859,7 +2877,7 @@ void Tracking::UpdateLocalKeyFrames()
 #ifdef REGISTER_TIMES
     vnTrackLocalMap_mvpLocalCoVisKFs.push_back(keyframeCounter.size());
     unsigned long minId = ULONG_MAX;
-    for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
+    for(auto it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
     {
         minId = std::min(minId, it->first->mnFrameId);
     }
@@ -2869,8 +2887,43 @@ void Tracking::UpdateLocalKeyFrames()
     mvpLocalKeyFrames.clear();
     mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
 
+    // if (keyframeCounter.size() < 50)
+    // {
+    //     auto vpAllKeyFrames = mpAtlas->GetAllKeyFrames();
+    //     auto transCurrent = mCurrentFrame.GetPose().inverse().translation();
+    //     vector<float> vfDistance(vpAllKeyFrames.size());
+
+    //     for (size_t index = 0; index < vpAllKeyFrames.size(); ++index)
+    //     {
+    //         KeyFrame* pKF = vpAllKeyFrames[index];
+    //         if (pKF->isBad() || keyframeCounter.count(pKF))
+    //             vfDistance[index] = std::numeric_limits<float>::max();
+    //         else
+    //         {
+    //             auto transKF = pKF->GetPoseInverse().translation();
+    //             vfDistance[index] = (transKF - transCurrent).norm();
+    //         }
+    //     }
+
+    //     vector<int> vnIndexes(vpAllKeyFrames.size());
+    //     std::iota(vnIndexes.begin(), vnIndexes.end(), 0);
+    //     std::sort(vnIndexes.begin(), vnIndexes.end(), [&vfDistance](const int idx1, const int idx2){
+    //         return vfDistance[idx1] < vfDistance[idx2];
+    //     });
+
+    //     for (int idx : vnIndexes)
+    //     {
+    //         if (keyframeCounter.size() >= 40 || vfDistance[idx] >= 8) break;
+
+    //         keyframeCounter[vpAllKeyFrames[idx]] = 0;
+    //     }
+    // }
+
+    mvpLocalKeyFrames.clear();
+    mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
+
     // All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
-    for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
+    for(auto it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
     {
         KeyFrame* pKF = it->first;
 
@@ -2887,34 +2940,16 @@ void Tracking::UpdateLocalKeyFrames()
         pKF->mnTrackReferenceForFrame = mCurrentFrame.mnId;
     }
 
-    auto vpAllKeyFrames = mpAtlas->GetAllKeyFrames();
-    auto transCurrent = mCurrentFrame.GetPose().translation();
-    for (KeyFrame* pKF : vpAllKeyFrames)
-    {
-        if (pKF->isBad()) continue;
-        
-        if(pKF->mnTrackReferenceForFrame!=mCurrentFrame.mnId)
-        {
-            auto transKF = pKF->GetTranslation();
-            float distance = (transKF - transCurrent).norm();
-            if (distance < 8)
-            {
-                mvpLocalKeyFrames.push_back(pKF);
-                pKF->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-            }
-        }
-    }
-
     // Include also some not-already-included keyframes that are neighbors to already-included keyframes
     for(vector<KeyFrame*>::const_iterator itKF=mvpLocalKeyFrames.begin(), itEndKF=mvpLocalKeyFrames.end(); itKF!=itEndKF; itKF++)
     {
         // Limit the number of keyframes
-        if(mvpLocalKeyFrames.size()>120) // 80
+        if(mvpLocalKeyFrames.size()>160) // 80
             break;
 
         KeyFrame* pKF = *itKF;
 
-        const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(12);
+        const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(15);
 
         for(int index = 0; index < vNeighs.size(); ++index)
         {
@@ -2950,6 +2985,26 @@ void Tracking::UpdateLocalKeyFrames()
             {
                 mvpLocalKeyFrames.push_back(pParent);
                 pParent->mnTrackReferenceForFrame=mCurrentFrame.mnId;
+            }
+        }
+    }
+
+    auto vpAllKeyFrames = mpAtlas->GetAllKeyFrames();
+    auto transCurrent = mCurrentFrame.GetPose().inverse().translation();
+    for (KeyFrame* pKF : vpAllKeyFrames)
+    {
+        if(mvpLocalKeyFrames.size()>160) // 80
+            break;
+        if (pKF->isBad()) continue;
+        
+        if(pKF->mnTrackReferenceForFrame!=mCurrentFrame.mnId)
+        {
+            auto transKF = pKF->GetPoseInverse().translation();
+            float distance = (transKF - transCurrent).norm();
+            if (distance < 8)
+            {
+                mvpLocalKeyFrames.push_back(pKF);
+                pKF->mnTrackReferenceForFrame=mCurrentFrame.mnId;
             }
         }
     }

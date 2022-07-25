@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(HFNet_ORBSLAM3)
+project(HFNet_SLAM)
 
 set(DEFAULT_BUILD_TYPE "Release")
 if (NOT CMAKE_BUILD_TYPE)
@@ -8,13 +8,14 @@ if (NOT CMAKE_BUILD_TYPE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif ()
 MESSAGE("build type: " ${CMAKE_BUILD_TYPE})
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -fopenmp -march=native -pthread -DREGISTER_TIMES -DCOMPILEDWITHC11")
+set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -fopenmp -march=native -pthread -DCOMPILEDWITHC11")
 set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS} -g")
 set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 set(USE_TENSORFLOW ON)
+set(BUILD_COMPARISON ON)
 
 find_package(OpenCV 4.4 REQUIRED
 PATHS ~/src/opencv-4.5/install
@@ -31,21 +32,21 @@ find_package(OpenVINO REQUIRED)
 
 if(${USE_TENSORFLOW}) # TensorFlow is optional
     ADD_DEFINITIONS(-DUSE_TENSORFLOW)
-    set(Tensorflow_Root "/home/llm/src/tensorflow-1.15.5")
-    set(Tensorflow_INCLUDE_DIRS
-        ${Tensorflow_Root}/bazel-bin/tensorflow/include
-        ${Tensorflow_Root}/bazel-bin/tensorflow/include/src)
-    set(Tensorflow_LIBS
-        ${Tensorflow_Root}/bazel-bin/tensorflow/libtensorflow_cc.so
-        ${Tensorflow_Root}/bazel-bin/tensorflow/libtensorflow_framework.so)
-#     set(Tensorflow_Root "~/src/tensorflow_cc-2.9.0/tensorflow_cc/install")
+#     set(Tensorflow_Root "/home/llm/src/tensorflow-1.15.5")
 #     set(Tensorflow_INCLUDE_DIRS
-#         ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include
-#         ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include/src
-#     )
+#         ${Tensorflow_Root}/bazel-bin/tensorflow/include
+#         ${Tensorflow_Root}/bazel-bin/tensorflow/include/src)
 #     set(Tensorflow_LIBS
-#         ${Tensorflow_Root}/lib/libtensorflow_cc.so
-#         ${Tensorflow_Root}/lib/libtensorflow_framework.so)
+#         ${Tensorflow_Root}/bazel-bin/tensorflow/libtensorflow_cc.so
+#         ${Tensorflow_Root}/bazel-bin/tensorflow/libtensorflow_framework.so)
+    set(Tensorflow_Root "~/src/tensorflow_cc-2.9.0/tensorflow_cc/install")
+    set(Tensorflow_INCLUDE_DIRS
+        ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include
+        ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include/src
+    )
+    set(Tensorflow_LIBS
+        ${Tensorflow_Root}/lib/libtensorflow_cc.so
+        ${Tensorflow_Root}/lib/libtensorflow_framework.so)
 endif()
 
 include_directories(
@@ -54,8 +55,8 @@ ${PROJECT_SOURCE_DIR}/include
 ${PROJECT_SOURCE_DIR}/include/CameraModels
 ${PROJECT_SOURCE_DIR}/Thirdparty/Sophus
 ${EIGEN3_INCLUDE_DIR}
+${OpenCV_INCLUDE_DIRS}
 ${Pangolin_INCLUDE_DIRS}
-${PROJECT_SOURCE_DIR}/Thirdparty/fbow/src
 )
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
@@ -204,3 +205,10 @@ target_link_libraries(mono_inertial_euroc ${PROJECT_NAME})
 add_executable(mono_inertial_tum_vi
         Examples/Monocular-Inertial/mono_inertial_tum_vi.cc)
 target_link_libraries(mono_inertial_tum_vi ${PROJECT_NAME})
+
+#Compare HFNet-SLAM with original ORB-SLAM3
+if(BUILD_COMPARISON)
+
+add_subdirectory(Comparison)
+
+endif()

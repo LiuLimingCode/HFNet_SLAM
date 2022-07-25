@@ -119,6 +119,11 @@ const int dbEnd = 50;
 
 int main(int argc, char* argv[])
 {
+    // By default, the Eigen will use the maximum number of threads in OpenMP.
+    // However, this will somehow slow down the calculation of dense matrix multiplication.
+    // Therefore, use only half of the thresds.
+    Eigen::setNbThreads(std::max(Eigen::nbThreads() / 2, 1));
+    
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     settings = new Settings(strSettingsPath, 0);
     HFNetTFModelV2 *pModel = new HFNetTFModelV2(settings->strTFModelPath(), kImageToLocalAndGlobal, {1, settings->newImSize().height, settings->newImSize().width, 1});
@@ -133,7 +138,9 @@ int main(int argc, char* argv[])
     bool showUndistort = false;
     int select = 0;
     auto cameraMatrix = settings->camera1();
-    auto distCoef = settings->camera1DistortionCoef();
+    cv::Mat distCoef;
+    if(settings->needToUndistort()) distCoef = settings->camera1DistortionCoef();
+    else distCoef = cv::Mat::zeros(4,1,CV_32F);
     do {
         if (command == 'u') showUndistort = !showUndistort;
         else if (command == 'w') select += 1;
@@ -157,7 +164,7 @@ int main(int argc, char* argv[])
 
 
         cv::Mat image1, image2;
-        if (showUndistort)
+        if (showUndistort && settings->needToUndistort())
         {
             cv::undistort(imageRaw1, image1, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
             cv::undistort(imageRaw2, image2, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
@@ -189,7 +196,8 @@ int main(int argc, char* argv[])
             //     cout << "distance by BFMatcher: " << match.distance << endl;
             //     cout << "distance by cv::norm: " << cv::norm(d1 - d2, cv::NORM_L2) << endl;
             // }
-            cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::Mat H = FindCorrectMatches(keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, inlierMatchesHF, wrongMatchesHF);
             cv::imshow("HF + BFMatcher_L2", plotHF);
             cout << "HF + BFMatcher_L2:" << endl;
             cout << "match costs time: " << timeCost << "ms" << endl;
@@ -211,7 +219,8 @@ int main(int argc, char* argv[])
                 if (match.distance > threshold) continue;
                 thresholdMatchesHF.emplace_back(match);
             }
-            cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::Mat H = FindCorrectMatches(keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, inlierMatchesHF, wrongMatchesHF);
             cv::imshow("HF + BFMatcher_L1", plotHF);
             cout << "HF + BFMatcher_L1:" << endl;
             cout << "match costs time: " << timeCost << "ms" << endl;
@@ -232,7 +241,8 @@ int main(int argc, char* argv[])
                 if (match.distance > (threshold * 0.1)*(threshold * 0.1)) continue;
                 thresholdMatchesHF.emplace_back(match);
             }
-            cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::Mat H = FindCorrectMatches(keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, inlierMatchesHF, wrongMatchesHF);
             cv::imshow("HF + SearchByBoWV2", plotHF);
             cout << "HF + SearchByBoWV2:" << endl;
             cout << "match costs time: " << timeCost << "ms" << endl;

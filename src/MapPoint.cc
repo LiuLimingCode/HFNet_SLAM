@@ -26,6 +26,8 @@ namespace ORB_SLAM3
 
 long unsigned int MapPoint::nNextId=0;
 mutex MapPoint::mGlobalMutex;
+int MapPoint::mnScaleLevels;
+float MapPoint::mfScaleFactor;
 
 MapPoint::MapPoint():
     mnFirstKFid(0), mnFirstFrame(0), nObs(0), mnTrackReferenceForFrame(0),
@@ -501,18 +503,21 @@ void MapPoint::SetNormalVector(const Eigen::Vector3f& normal)
 
 float MapPoint::GetMinDistanceInvariance()
 {
+    if (mnScaleLevels <= 1) return 0;
     unique_lock<mutex> lock(mMutexPos);
     return mfMinDistance / 1.2f;
 }
 
 float MapPoint::GetMaxDistanceInvariance()
 {
+    if (mnScaleLevels <= 1) return 10000;
     unique_lock<mutex> lock(mMutexPos);
     return 1.2f * mfMaxDistance;
 }
 
 int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
 {
+    if (mnScaleLevels <= 1) return 0;
     float ratio;
     {
         unique_lock<mutex> lock(mMutexPos);
@@ -530,6 +535,7 @@ int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
 
 int MapPoint::PredictScale(const float &currentDist, Frame* pF)
 {
+    if (mnScaleLevels <= 1) return 0;
     float ratio;
     {
         unique_lock<mutex> lock(mMutexPos);
