@@ -27,7 +27,6 @@ match correct percentage: 0.797645
  * 4. SearchByBoW can increase the correct percentage of ORB descriptor
  * 5. SearchByBoW does not work well for HF descriptor, maybe it is because the vocabulary for HF is bad.
  * 6. The vocabulary costs too much time!
- * 7. TODO: 加了去畸变后效果变差了，为什么？
  */
 #include <chrono>
 #include <fstream>
@@ -112,7 +111,7 @@ int SearchByBoWV2(float mfNNratio, int threshold,
 // const int dbStart = 420;
 // const int dbEnd = 50;
 
-const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
+const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-outdoors5_512_16/mav0/cam0/data");
 const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
 const int dbStart = 50;
 const int dbEnd = 50;
@@ -131,7 +130,7 @@ int main(int argc, char* argv[])
     std::default_random_engine generator;
     std::uniform_int_distribution<unsigned int> distribution(dbStart, files.size() - dbEnd);
 
-    HFextractor extractorHF(settings->nFeatures(),settings->nNMSRadius(),settings->threshold(),pModel);
+    HFextractor extractorHF(settings->nFeatures(),settings->threshold(),settings->nNMSRadius(),pModel);
 
     char command = ' ';
     float threshold = 10;

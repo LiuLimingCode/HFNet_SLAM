@@ -2887,37 +2887,25 @@ void Tracking::UpdateLocalKeyFrames()
     mvpLocalKeyFrames.clear();
     mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
 
-    // if (keyframeCounter.size() < 50)
-    // {
-    //     auto vpAllKeyFrames = mpAtlas->GetAllKeyFrames();
-    //     auto transCurrent = mCurrentFrame.GetPose().inverse().translation();
-    //     vector<float> vfDistance(vpAllKeyFrames.size());
 
-    //     for (size_t index = 0; index < vpAllKeyFrames.size(); ++index)
-    //     {
-    //         KeyFrame* pKF = vpAllKeyFrames[index];
-    //         if (pKF->isBad() || keyframeCounter.count(pKF))
-    //             vfDistance[index] = std::numeric_limits<float>::max();
-    //         else
-    //         {
-    //             auto transKF = pKF->GetPoseInverse().translation();
-    //             vfDistance[index] = (transKF - transCurrent).norm();
-    //         }
-    //     }
-
-    //     vector<int> vnIndexes(vpAllKeyFrames.size());
-    //     std::iota(vnIndexes.begin(), vnIndexes.end(), 0);
-    //     std::sort(vnIndexes.begin(), vnIndexes.end(), [&vfDistance](const int idx1, const int idx2){
-    //         return vfDistance[idx1] < vfDistance[idx2];
-    //     });
-
-    //     for (int idx : vnIndexes)
-    //     {
-    //         if (keyframeCounter.size() >= 40 || vfDistance[idx] >= 8) break;
-
-    //         keyframeCounter[vpAllKeyFrames[idx]] = 0;
-    //     }
-    // }
+    {
+        auto vpAllKeyFrames = mpAtlas->GetAllKeyFrames();
+        auto transCurrent = mCurrentFrame.GetPose().inverse().translation();
+        for (KeyFrame* pKF : vpAllKeyFrames)
+        {
+            if (pKF->isBad()) continue;
+            
+            if(pKF->mnTrackReferenceForFrame!=mCurrentFrame.mnId)
+            {
+                auto transKF = pKF->GetPoseInverse().translation();
+                float distance = (transKF - transCurrent).norm();
+                if (distance < 0.5)
+                {
+                    keyframeCounter[pKF] = 0;
+                }
+            }
+        }
+    }
 
     mvpLocalKeyFrames.clear();
     mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
@@ -2949,7 +2937,7 @@ void Tracking::UpdateLocalKeyFrames()
 
         KeyFrame* pKF = *itKF;
 
-        const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(15);
+        const vector<KeyFrame*> vNeighs = pKF->GetVectorCovisibleKeyFrames();
 
         for(int index = 0; index < vNeighs.size(); ++index)
         {
@@ -2989,25 +2977,27 @@ void Tracking::UpdateLocalKeyFrames()
         }
     }
 
-    auto vpAllKeyFrames = mpAtlas->GetAllKeyFrames();
-    auto transCurrent = mCurrentFrame.GetPose().inverse().translation();
-    for (KeyFrame* pKF : vpAllKeyFrames)
-    {
-        if(mvpLocalKeyFrames.size()>160) // 80
-            break;
-        if (pKF->isBad()) continue;
+    // auto vpAllKeyFrames = mpAtlas->GetAllKeyFrames();
+    // auto transCurrent = mCurrentFrame.GetPose().inverse().translation();
+    // for (KeyFrame* pKF : vpAllKeyFrames)
+    // {
+    //     // Limit the number of keyframes
+    //     if(mvpLocalKeyFrames.size()>160) // 80
+    //         break;
         
-        if(pKF->mnTrackReferenceForFrame!=mCurrentFrame.mnId)
-        {
-            auto transKF = pKF->GetPoseInverse().translation();
-            float distance = (transKF - transCurrent).norm();
-            if (distance < 8)
-            {
-                mvpLocalKeyFrames.push_back(pKF);
-                pKF->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-            }
-        }
-    }
+    //     if (pKF->isBad()) continue;
+        
+    //     if(pKF->mnTrackReferenceForFrame!=mCurrentFrame.mnId)
+    //     {
+    //         auto transKF = pKF->GetPoseInverse().translation();
+    //         float distance = (transKF - transCurrent).norm();
+    //         if (distance < 4)
+    //         {
+    //             mvpLocalKeyFrames.push_back(pKF);
+    //             pKF->mnTrackReferenceForFrame=mCurrentFrame.mnId;
+    //         }
+    //     }
+    // }
 
     // Add 10 last temporal KFs (mainly for IMU)
     if((mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD) &&mvpLocalKeyFrames.size()<80)

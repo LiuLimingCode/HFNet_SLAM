@@ -517,7 +517,7 @@ float MapPoint::GetMaxDistanceInvariance()
 
 int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
 {
-    if (mnScaleLevels <= 1) return 0;
+    if (pKF->mnScaleLevels <= 1) return 0;
     float ratio;
     {
         unique_lock<mutex> lock(mMutexPos);
@@ -535,7 +535,7 @@ int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
 
 int MapPoint::PredictScale(const float &currentDist, Frame* pF)
 {
-    if (mnScaleLevels <= 1) return 0;
+    if (pF->mnScaleLevels <= 1) return 0;
     float ratio;
     {
         unique_lock<mutex> lock(mMutexPos);

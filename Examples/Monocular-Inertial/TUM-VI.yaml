@@ -75,13 +75,13 @@ Extractor.HFNetVINO.localModelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet
 Extractor.HFNetVINO.globalModelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_vino_global_f32/"
 
 # Extractor: Scale factor between levels in the scale pyramid 	
-Extractor.scaleFactor: 1.44
+Extractor.scaleFactor: 1.2
 
 # Extractor: Number of levels in the scale pyramid	
 Extractor.nLevels: 4
 
 # Extractor: Number of features per image
-Extractor.nFeatures: 750
+Extractor.nFeatures: 850
 Extractor.nNMSRadius: 4
 Extractor.threshold: 0.01
 

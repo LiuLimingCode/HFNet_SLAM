@@ -30,7 +30,7 @@ using namespace std;
 namespace ORB_SLAM3
 {
 
-    const float Matcher::TH_HIGH = 0.8;
+    const float Matcher::TH_HIGH = 0.75;
     const float Matcher::TH_LOW = 0.6;
 
     Matcher::Matcher()
@@ -263,7 +263,7 @@ namespace ORB_SLAM3
     }
 
     int Matcher::SearchByProjection(KeyFrame* pKF, Sophus::Sim3f &Scw, const vector<MapPoint*> &vpPoints,
-                                       vector<MapPoint*> &vpMatched, int th, float ratio)
+                                       vector<MapPoint*> &vpMatched, int th, const float threshold)
     {
         // Get Calibration Parameters for later projection
         const float &fx = pKF->fx;
@@ -358,7 +358,7 @@ namespace ORB_SLAM3
                 }
             }
 
-            if(bestDist<=TH_LOW*ratio)
+            if(bestDist<=threshold)
             {
                 vpMatched[bestIdx]=pMP;
                 nmatches++;
@@ -370,7 +370,7 @@ namespace ORB_SLAM3
     }
 
     int Matcher::SearchByProjection(KeyFrame* pKF, Sophus::Sim3<float> &Scw, const std::vector<MapPoint*> &vpPoints, const std::vector<KeyFrame*> &vpPointsKFs,
-                                       std::vector<MapPoint*> &vpMatched, std::vector<KeyFrame*> &vpMatchedKF, int th, float ratio)
+                                       std::vector<MapPoint*> &vpMatched, std::vector<KeyFrame*> &vpMatchedKF, int th, const float threshold)
     {
         // Get Calibration Parameters for later projection
         const float &fx = pKF->fx;
@@ -471,7 +471,7 @@ namespace ORB_SLAM3
                 }
             }
 
-            if(bestDist<=TH_LOW*ratio)
+            if(bestDist<=threshold)
             {
                 vpMatched[bestIdx] = pMP;
                 vpMatchedKF[bestIdx] = pKFi;

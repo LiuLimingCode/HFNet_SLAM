@@ -1,4 +1,5 @@
 #!/bin/bash
+
 pathDataset='/media/llm/Datasets/TUM-VI/' # it is necesary to change it by the dataset path
 pathEvaluation='./evaluation/TUM-VI/'
 
