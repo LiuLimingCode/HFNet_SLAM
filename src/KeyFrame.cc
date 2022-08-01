@@ -95,6 +95,14 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mnOriginMapId = pMap->GetId();
 }
 
+void KeyFrame::ComputeGlobalDescription()
+{
+    if (mGlobalDescriptors.empty())
+    {
+        GetGlobalModel()->Detect(mPreGlobalDescriptors, mGlobalDescriptors);
+    }
+}
+
 void KeyFrame::SetPose(const Sophus::SE3f &Tcw)
 {
     unique_lock<mutex> lock(mMutexPose);

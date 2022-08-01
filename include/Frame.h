@@ -66,8 +66,11 @@ public:
     // Destructor
     // ~Frame();
 
-    // Extract ORB on the image. 0 for left image and 1 for right image.
+    // Extract Keypoints on the image. 0 for left image and 1 for right image.
     void ExtractKeyPoints(int flag, const cv::Mat &im, const int x0, const int x1);
+
+    // Compute global image description
+    void ComputeGlobalDescription();
 
     // Set the camera pose. (Imu pose is not modified!)
     void SetPose(const Sophus::SE3<float> &Tcw);

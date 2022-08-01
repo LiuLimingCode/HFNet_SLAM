@@ -1835,9 +1835,8 @@ void Tracking::CreateInitialMapMonocular()
     if(mSensor == System::IMU_MONOCULAR)
         pKFini->mpImuPreintegrated = (IMU::Preintegrated*)(NULL);
 
-    // TODO 
-    // pKFini->ComputeBoW();
-    // pKFcur->ComputeBoW();
+    pKFini->ComputeGlobalDescription();
+    pKFcur->ComputeGlobalDescription();
 
     // Insert KFs in the map
     mpAtlas->AddKeyFrame(pKFini);
@@ -2023,8 +2022,7 @@ void Tracking::CheckReplacedInLastFrame()
 
 bool Tracking::TrackReferenceKeyFrame()
 {
-    // TODO
-    // mCurrentFrame.ComputeBoW();
+    mCurrentFrame.ComputeGlobalDescription();
 
     // We perform first an ORB matching with the reference keyframe
     // If enough matches are found we setup a PnP solver
@@ -3027,8 +3025,8 @@ void Tracking::UpdateLocalKeyFrames()
 bool Tracking::Relocalization()
 {
     Verbose::PrintMess("Starting relocalization", Verbose::VERBOSITY_NORMAL);
-    // TODO
-    // mCurrentFrame.ComputeBoW();
+
+    mCurrentFrame.ComputeGlobalDescription();
 
     // Relocalization is performed when tracking is lost
     // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation

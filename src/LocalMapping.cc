@@ -197,7 +197,7 @@ void LocalMapping::Run()
                 {
                     float dist = (mpCurrentKeyFrame->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->GetCameraCenter()).norm();
 
-                    if (dist < 0.1)
+                    if (dist < 0.05)
                     {
                         cout << "Not enough motion for initializing. Reseting..." << endl;
                         unique_lock<mutex> lock(mMutexReset);
@@ -360,15 +360,7 @@ void LocalMapping::ProcessNewKeyFrame()
     while (vvfCreateNewMapPoints_goodSearch_detail.size() < id) vvfCreateNewMapPoints_goodSearch_detail.push_back(vector<int>());
 #endif
 
-    // if (GetGlobalModel()->Type() == kHFNetTFModel)
-    // {
-    //     mpCurrentKeyFrame->mGlobalDescriptors = mpCurrentKeyFrame->mPreGlobalDescriptors;
-    // }
-    // else if (GetGlobalModel()->Type() == kHFNetVINOModel)
-    // {
-    //     GetGlobalModel()->Detect(mpCurrentKeyFrame->mPreGlobalDescriptors, mpCurrentKeyFrame->mGlobalDescriptors);
-    // }
-    GetGlobalModel()->Detect(mpCurrentKeyFrame->mPreGlobalDescriptors, mpCurrentKeyFrame->mGlobalDescriptors);
+    mpCurrentKeyFrame->ComputeGlobalDescription();
 
     // Associate MapPoints to the new keyframe and update normal and descriptor
     const vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();

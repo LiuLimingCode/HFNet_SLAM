@@ -87,13 +87,6 @@ def align(model,data):
     transGT = data.mean(1) - s*rot * model.mean(1)
     trans = data.mean(1) - rot * model.mean(1)
 
-    # s = 1.0
-    # rot = numpy.diag([1,1,1])
-    # transGT = data.mean(1) - s*rot * model.mean(1)
-    # trans = data.mean(1) - rot * model.mean(1)
-    # transGT = numpy.zeros_like(transGT,numpy.int)
-    # trans = numpy.zeros_like(trans,numpy.int)
-
     model_alignedGT = s*rot * model + transGT
     model_aligned = rot * model + trans
 
@@ -136,27 +129,6 @@ def plot_traj(ax,stamps,traj,style,color,label):
     if len(x)>0:
         ax.plot(x,y,style,color=color,label=label)
 
-def plot_error(ax,stamps,error,style,color,label):
-    """
-    Plot the relationship between error and time using matplotlib. 
-    
-    Input:
-    ax -- the plot
-    stamps -- time stamps (1xn)
-    error -- trajectory error (1xn)
-    style -- line style
-    color -- line color
-    label -- plot legend
-    
-    """
-    stamps.sort()
-    x = []
-    y = []
-    for i in range(len(stamps)):
-        x.append((stamps[i] - stamps[0])/1e9)
-        y.append(error[i])
-    ax.plot(x,y,style,color=color,label=label)
-            
 
 if __name__=="__main__":
     # parse command line
@@ -178,8 +150,6 @@ if __name__=="__main__":
     matches = associate.associate(first_list, second_list,float(args.offset),float(args.max_difference))    
     if len(matches)<2:
         sys.exit("Couldn't find matching timestamp pairs between groundtruth and estimated trajectory! Did you choose the correct sequence?")
-    first_match_timestamps = [(a) for a,b in matches]
-    second_match_timestamps = [(b) for a,b in matches]
     first_xyz = numpy.matrix([[float(value) for value in first_list[a][0:3]] for a,b in matches]).transpose()
     second_xyz = numpy.matrix([[float(value)*float(args.scale) for value in second_list[b][0:3]] for a,b in matches]).transpose()
     dictionary_items = second_list.items()
@@ -259,22 +229,3 @@ if __name__=="__main__":
         file_path = Path(args.save_path, "trajectory.pdf")
         plt.savefig(file_path,format="pdf")
 
-
-        fig = plt.figure()
-        ax = fig.add_subplot(1,1,1)
-        plot_error(ax, second_match_timestamps, trans_errorGT, '-', "blue", 'trans_errorGT')
-        ax.set_xlabel('timestamp [s]')
-        ax.set_ylabel('error [m]')
-        ax.legend()
-        file_path = Path(args.save_path, "errorGT.pdf")
-        plt.savefig(file_path,format="pdf")
-
-        fig = plt.figure()
-        ax = fig.add_subplot(1,1,1)
-        plot_error(ax, second_match_timestamps, trans_error, '-', "blue", 'trans_error')
-        ax.set_xlabel('timestamp [s]')
-        ax.set_ylabel('error [m]')
-        ax.legend()
-        file_path = Path(args.save_path, "error.pdf")
-        plt.savefig(file_path,format="pdf")
-        

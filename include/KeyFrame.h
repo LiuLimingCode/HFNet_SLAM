@@ -204,6 +204,9 @@ public:
     Eigen::Vector3f GetVelocity();
     bool isVelocitySet();
 
+    // Compute global image description
+    void ComputeGlobalDescription();
+
     // Covisibility graph functions
     void AddConnection(KeyFrame* pKF, const int &weight);
     void EraseConnection(KeyFrame* pKF);

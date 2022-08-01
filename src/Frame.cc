@@ -736,6 +736,14 @@ bool Frame::PosInGrid(const cv::KeyPoint &kp, int &posX, int &posY)
     return true;
 }
 
+void Frame::ComputeGlobalDescription()
+{
+    if (mGlobalDescriptors.empty())
+    {
+        GetGlobalModel()->Detect(mPreGlobalDescriptors, mGlobalDescriptors);
+    }
+}
+
 void Frame::UndistortKeyPoints()
 {
     if(mDistCoef.at<float>(0)==0.0)
