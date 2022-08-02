@@ -2989,7 +2989,7 @@ void Tracking::UpdateLocalKeyFrames()
     //     {
     //         auto transKF = pKF->GetPoseInverse().translation();
     //         float distance = (transKF - transCurrent).norm();
-    //         if (distance < 4)
+    //         if (distance < 2)
     //         {
     //             mvpLocalKeyFrames.push_back(pKF);
     //             pKF->mnTrackReferenceForFrame=mCurrentFrame.mnId;
