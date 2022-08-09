@@ -143,20 +143,24 @@ void LocalMapping::Run()
 
                     if(mbInertial && mpCurrentKeyFrame->GetMap()->isImuInitialized())
                     {
+                        static float distFiltered = 0;
                         float dist = (mpCurrentKeyFrame->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->GetCameraCenter()).norm() +
                                 (mpCurrentKeyFrame->mPrevKF->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->mPrevKF->GetCameraCenter()).norm();
+                        if (distFiltered == 0) distFiltered = dist;
+                        else distFiltered = 0.5 * dist + (1-0.5) * distFiltered;
 
                         if(dist>0.05)
                             mTinit += mpCurrentKeyFrame->mTimeStamp - mpCurrentKeyFrame->mPrevKF->mTimeStamp;
                         if(!mpCurrentKeyFrame->GetMap()->GetIniertialBA2())
                         {
-                            if((mTinit<10.f) && (dist<0.02))
+                            if((mTinit<10.f) && (distFiltered < 0.02))
                             {
                                 cout << "Not enough motion for initializing. Reseting..." << endl;
                                 unique_lock<mutex> lock(mMutexReset);
                                 mbResetRequestedActiveMap = true;
                                 mpMapToReset = mpCurrentKeyFrame->GetMap();
                                 mbBadImu = true;
+                                distFiltered = 0;
                             }
                         }
 
@@ -197,7 +201,7 @@ void LocalMapping::Run()
                 {
                     float dist = (mpCurrentKeyFrame->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->GetCameraCenter()).norm();
 
-                    if (dist < 0.05)
+                    if (dist < 0.03)
                     {
                         cout << "Not enough motion for initializing. Reseting..." << endl;
                         unique_lock<mutex> lock(mMutexReset);
