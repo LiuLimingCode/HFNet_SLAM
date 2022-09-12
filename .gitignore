@@ -96,6 +96,5 @@ model/
 output/
 
 evaluation/
-Comparison/
 hfnet/logs/
 __pycache__/
