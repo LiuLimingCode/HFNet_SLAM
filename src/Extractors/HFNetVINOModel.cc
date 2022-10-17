@@ -1,12 +1,15 @@
 #include "Extractors/HFNetVINOModel.h"
 
 using namespace cv;
-using namespace ov;
 using namespace std;
 
 namespace ORB_SLAM3
 {
-    
+
+#ifdef USE_OPENVINO
+
+using namespace ov;
+
 ov::Core HFNetVINOModel::core;
 
 HFNetVINOModel::HFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath, ModelDetectionMode mode, const cv::Vec4i inputShape)
@@ -102,12 +105,6 @@ bool HFNetVINOModel::Detect(const cv::Mat &intermediate, cv::Mat &globalDescript
     if (!Run()) return false;
     GetGlobalDescriptorFromTensor(mvNetResults[0], globalDescriptors);
     return true;
-}
-
-void HFNetVINOModel::PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                              cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius)
-{
-    
 }
 
 bool HFNetVINOModel::Run(void) 
@@ -262,5 +259,7 @@ void HFNetVINOModel::ResamplerOV(const ov::Tensor &data, const ov::Tensor &warp,
                   data_channels, num_sampling_points);
     }
 }
+
+#endif // USE_OPENVINO
 
 } // namespace ORB_SLAM3

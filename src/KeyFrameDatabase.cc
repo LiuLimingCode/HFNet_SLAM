@@ -95,8 +95,7 @@ void KeyFrameDatabase::DetectNBestCandidates(KeyFrame *pKF, vector<KeyFrame*> &v
             bestScore = max(pKFi->mPlaceRecognitionScore, bestScore);
         }
 
-        const float thresholdScore = 0.6;
-        float minScore = std::max(thresholdScore, bestScore * 0.8f);
+        float minScore = bestScore * 0.8f;
         for (auto it = mvDatabase.begin(); it != mvDatabase.end(); ++it)
         {
             KeyFrame *pKFi = *it;

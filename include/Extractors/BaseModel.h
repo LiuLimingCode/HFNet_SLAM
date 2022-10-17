@@ -46,9 +46,6 @@ public:
 
     virtual bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors) = 0;
 
-    virtual void PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                                      cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius) = 0;
-
     virtual bool IsValid(void) = 0;
 
     virtual ModelType Type(void) = 0;

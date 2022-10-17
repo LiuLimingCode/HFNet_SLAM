@@ -16,6 +16,7 @@ set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 set(USE_TENSORFLOW ON)
+set(USE_OPENVINO OFF)
 set(BUILD_COMPARISON ON)
 
 find_package(OpenCV 4.4 REQUIRED
@@ -28,18 +29,14 @@ endif()
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 
-set(OpenVINO_DIR "/home/llm/src/openvino-2022.1/install/runtime/cmake")
-find_package(OpenVINO REQUIRED)
+if(${USE_OPENVINO}) # OpenVINO is optional
+    ADD_DEFINITIONS(-DUSE_OPENVINO)
+    set(OpenVINO_DIR "/home/llm/src/openvino-2022.1/install/runtime/cmake")
+    find_package(OpenVINO REQUIRED)
+endif()
 
-if(${USE_TENSORFLOW}) # TensorFlow is optional
+if(${USE_TENSORFLOW})
     ADD_DEFINITIONS(-DUSE_TENSORFLOW)
-#     set(Tensorflow_Root "/home/llm/src/tensorflow-1.15.5")
-#     set(Tensorflow_INCLUDE_DIRS
-#         ${Tensorflow_Root}/bazel-bin/tensorflow/include
-#         ${Tensorflow_Root}/bazel-bin/tensorflow/include/src)
-#     set(Tensorflow_LIBS
-#         ${Tensorflow_Root}/bazel-bin/tensorflow/libtensorflow_cc.so
-#         ${Tensorflow_Root}/bazel-bin/tensorflow/libtensorflow_framework.so)
     set(Tensorflow_Root "~/src/tensorflow_cc-2.9.0/tensorflow_cc/install")
     set(Tensorflow_INCLUDE_DIRS
         ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include
@@ -139,8 +136,11 @@ ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lboost_serialization
 -lcrypto
-openvino::runtime
 )
+
+if(${USE_OPENVINO})
+    target_link_libraries(openvino::runtime)
+endif()
 
 if(${USE_TENSORFLOW})
     include_directories(${Tensorflow_INCLUDE_DIRS})

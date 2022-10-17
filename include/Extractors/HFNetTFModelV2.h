@@ -19,7 +19,6 @@ namespace ORB_SLAM3
 
 #ifdef USE_TENSORFLOW
 
-
 class HFNetTFModelV2 : public BaseModel
 {
 public:
@@ -33,9 +32,6 @@ public:
                          int nKeypointsNum, float threshold, int nRadius) override;
 
     bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors) override;
-
-    void PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                              cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius) override;
 
     bool IsValid(void) override { return mbVaild; }
 
@@ -75,13 +71,23 @@ protected:
 class HFNetTFModelV2 : public BaseModel
 {
 public:
-    HFNetTFModelV2()
+    HFNetTFModelV2(const std::string &strModelDir, ModelDetectionMode mode, const cv::Vec4i inputShape)
     {
         std::cerr << "You must set USE_TENSORFLOW in CMakeLists.txt to enable tensorflow function." << std::endl;
         exit(-1);
     }
 
+    virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
+                        int nKeypointsNum, float threshold, int nRadius) override { return false; };
+
+    virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
+                        int nKeypointsNum, float threshold, int nRadius) override { return false; };
+
+    virtual bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors) override { return false; };
+
     bool IsValid(void) override { return false; }
+
+    ModelType Type(void) override { return kHFNetTFModel; }
 };
 
 #endif // USE_TENSORFLOW

@@ -7,11 +7,14 @@
 #include <opencv2/opencv.hpp>
 #include "Extractors/BaseModel.h"
 
+#ifdef USE_OPENVINO
 #include "openvino/openvino.hpp"
+#endif // USE_OPENVINO
 
 namespace ORB_SLAM3
 {
 
+#ifdef USE_OPENVINO
 class HFNetVINOModel : public BaseModel
 {
 public:
@@ -67,6 +70,32 @@ protected:
     std::vector<std::string> mvOutputTensorNames;
     ov::Shape mInputShape;
 };
+
+#else // USE_OPENVINO
+
+class HFNetVINOModel : public BaseModel
+{
+public:
+    HFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath, ModelDetectionMode mode, const cv::Vec4i inputShape)
+    {
+        std::cerr << "You must set USE_OPENVINO in CMakeLists.txt to enable openvino function." << std::endl;
+        exit(-1);
+    }
+
+    virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
+                        int nKeypointsNum, float threshold, int nRadius) override { return false; };
+
+    virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
+                        int nKeypointsNum, float threshold, int nRadius) override { return false; };
+
+    virtual bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors) override { return false; };
+
+    bool IsValid(void) override { return false; }
+
+    ModelType Type(void) override { return kHFNetVINOModel; }
+};
+
+#endif // USE_OPENVINO
 
 } // namespace ORB_SLAM
 

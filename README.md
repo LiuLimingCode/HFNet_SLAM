@@ -2,14 +2,33 @@
 
 More detailed README.md is coming soon ....
 
-## Build
+## Prerequisites
+
+### OpenCV
+
+We use OpenCV to manipulate images and features. Dowload and install instructions can be found at: http://opencv.org. Required at leat 4.4
+
+### TensorFlow C++ API
+
+We use TensorFlow C++, CUDA, and cuDNN for model inference. The corresponding version of these libraries should be chosen wisely according to the devices. The following configurations has been tested:
+
+| Name   | version  |
+| --------   | -------:  |
+| Ubuntu | 20.04     |
+| GPU     | RTX 2070    |
+| NVIDIA Driver   |  510.47  |
+| CUDA tool  |  11.6.2 |
+| cuDNN | 8.4.1.50 |
+| TensorFlow | 2.9.0 |
+
+The download and install instructions of CUDA can be found at: https://developer.nvidia.com/cuda-toolkit
+The instructions of cuDNN can be found at: https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html
+An easy method for building TensorFlow C++ API can be found at: https://github.com/FloopCZ/tensorflow_cc
+
+## Building HFNet-SLAM library and examples
 
 ```
-1. Build OpenCV > 4.4
-
-2. Build CUDA and TensorFlow C++ API
-
-3. bash build.sh
+bash build.sh
 ```
 
 ## Evaluation on EuRoC dataset

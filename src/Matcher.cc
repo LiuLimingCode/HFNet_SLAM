@@ -1804,6 +1804,38 @@ namespace ORB_SLAM3
         return nmatches;
     }
 
+    int Matcher::FilterMatchesByResponces(const KeyFrame* pKF, std::vector<MapPoint*>& vpMatches, int nMinMatches, float fGoodRes)
+    {
+        int nCurNum = 0;
+        for (const auto& p : vpMatches) {
+            if (p) nCurNum++;
+        }
+
+        if (nCurNum > nMinMatches) 
+        { // Delete matches with bad response
+            vector<int> vBadMatchesIdxs;
+            vBadMatchesIdxs.reserve(vpMatches.size());
+            for (int index = 0; index < vpMatches.size(); ++index)
+            {
+                if (!vpMatches[index]) continue;
+                if (pKF->mvKeys[index].response > fGoodRes) continue;
+                vBadMatchesIdxs.push_back(index);
+            }
+
+            sort(vBadMatchesIdxs.begin(), vBadMatchesIdxs.end(), [&](const int& n1, const int& n2) {
+                return pKF->mvKeys[n1].response < pKF->mvKeys[n2].response;
+            });
+
+            for (const int& index : vBadMatchesIdxs) {
+                if (nCurNum <= nMinMatches) break;
+                vpMatches[index] = nullptr;
+                nCurNum--;
+            }
+        }
+
+        return nCurNum;
+    }
+
     void Matcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, int &ind2, int &ind3)
     {
         int max1=0;

@@ -105,18 +105,6 @@ bool HFNetTFModelV2::Detect(const cv::Mat &intermediate, cv::Mat &globalDescript
     return true;
 }
 
-void HFNetTFModelV2::PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                                          cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius)
-{
-    tensorflow::Tensor &tScoreDense = mvNetResults[0];
-    tensorflow::Tensor tScaledScoreDense(DT_FLOAT, {1, scaleSize.height, scaleSize.width});
-    cv::Mat src(tScoreDense.dim_size(1), tScoreDense.dim_size(2), CV_32F, tScoreDense.flat<float>().data());
-    cv::Mat dst(tScaledScoreDense.dim_size(1), tScaledScoreDense.dim_size(2), CV_32F, tScaledScoreDense.flat<float>().data());
-    cv::resize(src, dst, cv::Size(scaleSize.height, scaleSize.width), 0, 0, INTER_LINEAR);
-
-    GetLocalFeaturesFromTensor(tScaledScoreDense, mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
-}
-
 bool HFNetTFModelV2::Run(std::vector<tensorflow::Tensor> &vNetResults) 
 {
     if (!mbVaild) return false;

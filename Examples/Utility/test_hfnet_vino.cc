@@ -54,6 +54,8 @@ detect global costs: 9.03912 ± 0.139315
 #include "Extractors/HFNetVINOModel.h"
 #include "Examples/Utility/utility_common.h"
 
+#ifdef USE_OPENVINO
+
 using namespace cv;
 using namespace std;
 using namespace ORB_SLAM3;
@@ -611,3 +613,11 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
+#else // USE_OPENVINO
+
+int main() {
+
+}
+
+#endif // USE_OPENVINO

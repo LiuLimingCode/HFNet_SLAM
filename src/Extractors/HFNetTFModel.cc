@@ -47,12 +47,6 @@ bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyP
     return true;
 }
 
-void HFNetTFModel::PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                                        cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius)
-{
-    
-}
-
 bool HFNetTFModel::Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vNetResults, bool onlyDetectLocalFeatures,
                        int nKeypointsNum, float threshold, int nRadius) 
 {

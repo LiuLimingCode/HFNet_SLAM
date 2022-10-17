@@ -2882,28 +2882,24 @@ void Tracking::UpdateLocalKeyFrames()
     vnTrackLocalMap_earliestCovisKFs.push_back(minId);
 #endif
 
-    mvpLocalKeyFrames.clear();
-    mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
-
-
-    {
-        auto vpAllKeyFrames = mpAtlas->GetAllKeyFrames();
-        auto transCurrent = mCurrentFrame.GetPose().inverse().translation();
-        for (KeyFrame* pKF : vpAllKeyFrames)
-        {
-            if (pKF->isBad()) continue;
+    // {
+    //     auto vpAllKeyFrames = mpAtlas->GetAllKeyFrames();
+    //     auto transCurrent = mCurrentFrame.GetPose().inverse().translation();
+    //     for (KeyFrame* pKF : vpAllKeyFrames)
+    //     {
+    //         if (pKF->isBad()) continue;
             
-            if(pKF->mnTrackReferenceForFrame!=mCurrentFrame.mnId)
-            {
-                auto transKF = pKF->GetPoseInverse().translation();
-                float distance = (transKF - transCurrent).norm();
-                if (distance < 0.5)
-                {
-                    keyframeCounter[pKF] = 0;
-                }
-            }
-        }
-    }
+    //         if(pKF->mnTrackReferenceForFrame!=mCurrentFrame.mnId)
+    //         {
+    //             auto transKF = pKF->GetPoseInverse().translation();
+    //             float distance = (transKF - transCurrent).norm();
+    //             if (distance < 0.5)
+    //             {
+    //                 keyframeCounter[pKF] = 0;
+    //             }
+    //         }
+    //     }
+    // }
 
     mvpLocalKeyFrames.clear();
     mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
@@ -2926,11 +2922,12 @@ void Tracking::UpdateLocalKeyFrames()
         pKF->mnTrackReferenceForFrame = mCurrentFrame.mnId;
     }
 
+    const int nMaxNeighs = 160; // 80
     // Include also some not-already-included keyframes that are neighbors to already-included keyframes
     for(vector<KeyFrame*>::const_iterator itKF=mvpLocalKeyFrames.begin(), itEndKF=mvpLocalKeyFrames.end(); itKF!=itEndKF; itKF++)
     {
         // Limit the number of keyframes
-        if(mvpLocalKeyFrames.size()>160) // 80
+        if(mvpLocalKeyFrames.size() > nMaxNeighs)
             break;
 
         KeyFrame* pKF = *itKF;
