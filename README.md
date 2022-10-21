@@ -18,7 +18,7 @@ Better Loop Closure:
 
 ### OpenCV
 
-We use OpenCV to manipulate images and features. Dowload and install instructions can be found at: http://opencv.org. Required at leat 4.4
+We use OpenCV to manipulate images and features. Dowload and install instructions can be found at: http://opencv.org. Required at leat 4.4.
 
 ### TensorFlow C++ API
 
@@ -33,9 +33,11 @@ We use TensorFlow C++, CUDA, and cuDNN for model inference. The corresponding ve
 | cuDNN | 8.4.1.50 |
 | TensorFlow | 2.9.0 |
 
-The download and install instructions of CUDA can be found at: https://developer.nvidia.com/cuda-toolkit
-The instructions of cuDNN can be found at: https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html
-An easy method for building TensorFlow C++ API can be found at: https://github.com/FloopCZ/tensorflow_cc
+The download and install instructions of CUDA can be found at: https://developer.nvidia.com/cuda-toolkit.
+
+The instructions of cuDNN can be found at: https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html.
+
+An easy method for building TensorFlow C++ API can be found at: https://github.com/FloopCZ/tensorflow_cc.
 
 ## Building HFNet-SLAM library and examples
 
@@ -45,7 +47,7 @@ bash build.sh
 
 ## Evaluation on EuRoC dataset
 
-https://user-images.githubusercontent.com/52725165/197081375-804d7e02-16d8-43c8-9d51-39201ecef7e9.mp4
+https://user-images.githubusercontent.com/52725165/197089468-99c7ebf2-18c7-45da-a62e-b69691c3d248.mp4
 
 Evaluate a single sequence with the pure monocular configuration:
 
@@ -72,7 +74,7 @@ bash Examples/eval_euroc.sh
 
 ## Evaluation on TUM-VI dataset
 
-https://user-images.githubusercontent.com/52725165/197082140-fec0a782-36d4-4b2f-9fb8-cbe62e885177.mp4
+https://user-images.githubusercontent.com/52725165/197089404-e2c96c00-cfb0-4f73-983a-94476a01c009.mp4
 
 Evaluate a single sequence with the monocular-inertial configuration:
 
