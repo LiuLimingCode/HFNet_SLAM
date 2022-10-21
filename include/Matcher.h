@@ -86,7 +86,7 @@ namespace ORB_SLAM3
         // Project MapPoints into KeyFrame using a given Sim3 and search for duplicated MapPoints.
         int Fuse(KeyFrame* pKF, Sophus::Sim3f &Scw, const std::vector<MapPoint*> &vpPoints, float th, std::vector<MapPoint *> &vpReplacePoint);
 
-        int FilterMatchesByResponces(const KeyFrame* pKF, std::vector<MapPoint*>& vpMatches, int nMinMatches, float fGoodRes);
+        int FilterMatchesByResponces(const KeyFrame* pKF, std::vector<MapPoint*>& vpMatches, float fGoodRes, int nMinMatches = -1);
 
     public:
 

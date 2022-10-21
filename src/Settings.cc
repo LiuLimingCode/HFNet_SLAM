@@ -443,17 +443,18 @@ namespace ORB_SLAM3 {
     void Settings::readExtractor(cv::FileStorage &fSettings) {
         bool found;
 
-        string type = readParameter<string>(fSettings, "Extractor.type",found);
-        if (type == "HFNetTF") {
-            modelType_ = kHFNetTFModel;
-        }
-        else if (type == "HFNetVINO") {
-            modelType_ = kHFNetVINOModel;
-        }
-        else {
-            cerr << "Wrong extractor type in setting file!" << endl;
-            exit(-1);
-        }
+        // string type = readParameter<string>(fSettings, "Extractor.type",found);
+        // if (type == "HFNetTF") {
+        //     modelType_ = kHFNetTFModel;
+        // }
+        // else if (type == "HFNetVINO") {
+        //     modelType_ = kHFNetVINOModel;
+        // }
+        // else {
+        //     cerr << "Wrong extractor type in setting file!" << endl;
+        //     exit(-1);
+        // }
+        modelType_ = kHFNetTFModel;
         scaleFactor_ = readParameter<float>(fSettings,"Extractor.scaleFactor",found);
         nLevels_ = readParameter<int>(fSettings,"Extractor.nLevels",found);
         nFeatures_ = readParameter<int>(fSettings,"Extractor.nFeatures",found);
@@ -461,7 +462,7 @@ namespace ORB_SLAM3 {
         threshold_ = readParameter<float>(fSettings, "Extractor.threshold",found);
         if (modelType_ == kHFNetTFModel) {
             strTFModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.modelPath",found);
-            strTFResamplerPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.resamplerPath",found,false);
+            // strTFResamplerPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.resamplerPath",found,false);
         }
         else if (modelType_ == kHFNetVINOModel) {
             scaleFactor_ = 1.0;
@@ -650,15 +651,15 @@ namespace ORB_SLAM3 {
             output << "\t-RGB-D depth map factor: " << settings.depthMapFactor_ << endl;
         }
 
-        output << "\t-ORB scale factor: " << settings.scaleFactor_ << endl;
-        output << "\t-ORB number of scales: " << settings.nLevels_ << endl;
+        output << "\t-Scale factor of image pyramid: " << settings.scaleFactor_ << endl;
+        output << "\t-Levels of image pyramid: " << settings.nLevels_ << endl;
         output << "\t-Features per image: " << settings.nFeatures_ << endl;
         output << "\t-Detector threshold: " << settings.threshold_ << endl;
         output << "\t-NMS radius: " << settings.nNMSRadius_ << endl;
         if (settings.modelType_ == kHFNetTFModel)
         {
             output << "\t-TensorFlow model path: " << settings.strTFModelPath_ << endl;
-            output << "\t-Resampler.so path: " << settings.strTFResamplerPath_ << endl;
+            // output << "\t-Resampler.so path: " << settings.strTFResamplerPath_ << endl;
         }
         else if (settings.modelType_ == kHFNetVINOModel)
         {

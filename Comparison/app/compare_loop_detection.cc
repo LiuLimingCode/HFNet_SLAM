@@ -135,7 +135,7 @@ int main(int argc, char** argv)
 
     ORBextractor extractorORB(1000, 1.2, 8, 20, 7);
 
-    const string strVocFileORB("/home/llm/ROS/HFNet_ORBSLAM3_v2/Comparison/Vocabulary/ORBvoc.txt");
+    const string strVocFileORB("/home/llm/ROS/HFNet_SLAM/Comparison/Vocabulary/ORBvoc.txt");
     ORBVocabulary vocabORB;
     if(!vocabORB.loadFromTextFile(strVocFileORB))
     {

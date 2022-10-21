@@ -1,3 +1,5 @@
+// This file is used to support the original HF-Net model.
+// The original model needs TensorFlow1 and Resampler Op in tensorflow.contrib.
 #ifndef HFNETTFMODEL_H
 #define HFNETTFMODEL_H
 

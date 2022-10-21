@@ -2932,6 +2932,7 @@ void Tracking::UpdateLocalKeyFrames()
 
         KeyFrame* pKF = *itKF;
 
+        // const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(40);
         const vector<KeyFrame*> vNeighs = pKF->GetVectorCovisibleKeyFrames();
 
         for(int index = 0; index < vNeighs.size(); ++index)

@@ -1,3 +1,5 @@
+// This file is used to enable the HF-Net model running on the CPU with the OpenVINO library.
+// But it is still too computationally expensive, and therefore the function is disabled.
 #ifndef HFNETVINOMODEL_H
 #define HFNETVINOMODEL_H
 
@@ -28,9 +30,6 @@ public:
                          int nKeypointsNum, float threshold, int nRadius) override;
 
     bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors);
-
-    void PredictScaledResults(std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                              cv::Size scaleSize, int nKeypointsNum, float threshold, int nRadius) override;
 
     void PrintInputAndOutputsInfo(void);
 

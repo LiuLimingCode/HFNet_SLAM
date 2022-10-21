@@ -98,3 +98,4 @@ output/
 evaluation/
 hfnet/logs/
 __pycache__/
+doc/

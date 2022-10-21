@@ -1804,32 +1804,42 @@ namespace ORB_SLAM3
         return nmatches;
     }
 
-    int Matcher::FilterMatchesByResponces(const KeyFrame* pKF, std::vector<MapPoint*>& vpMatches, int nMinMatches, float fGoodRes)
+    // Delete matches with bad response
+    int Matcher::FilterMatchesByResponces(const KeyFrame* pKF, std::vector<MapPoint*>& vpMatches, float fGoodRes, int nMinMatches)
     {
         int nCurNum = 0;
-        for (const auto& p : vpMatches) {
-            if (p) nCurNum++;
+        if (nMinMatches == -1)
+        {
+            for (int index = 0; index < vpMatches.size(); ++index)
+            {
+                if (!vpMatches[index]) continue;
+                if (pKF->mvKeys[index].response >= fGoodRes) nCurNum++;
+                else vpMatches[index] = nullptr;
+            }
         }
-
-        if (nCurNum > nMinMatches) 
-        { // Delete matches with bad response
+        else 
+        {
             vector<int> vBadMatchesIdxs;
             vBadMatchesIdxs.reserve(vpMatches.size());
             for (int index = 0; index < vpMatches.size(); ++index)
             {
                 if (!vpMatches[index]) continue;
-                if (pKF->mvKeys[index].response > fGoodRes) continue;
+                nCurNum++;
+                if (pKF->mvKeys[index].response >= fGoodRes) continue;
                 vBadMatchesIdxs.push_back(index);
             }
 
-            sort(vBadMatchesIdxs.begin(), vBadMatchesIdxs.end(), [&](const int& n1, const int& n2) {
-                return pKF->mvKeys[n1].response < pKF->mvKeys[n2].response;
-            });
+            if (nCurNum > nMinMatches)
+            {
+                sort(vBadMatchesIdxs.begin(), vBadMatchesIdxs.end(), [&](const int& n1, const int& n2) {
+                    return pKF->mvKeys[n1].response < pKF->mvKeys[n2].response;
+                });
 
-            for (const int& index : vBadMatchesIdxs) {
-                if (nCurNum <= nMinMatches) break;
-                vpMatches[index] = nullptr;
-                nCurNum--;
+                for (const int& index : vBadMatchesIdxs) {
+                    if (nCurNum <= nMinMatches) break;
+                    vpMatches[index] = nullptr;
+                    nCurNum--;
+                }
             }
         }
 

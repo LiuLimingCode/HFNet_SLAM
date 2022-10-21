@@ -69,10 +69,9 @@ Viewer.ViewpointF: 500.0
 Extractor.type: "HFNetTF" # [HFNetTF HFNetVINO]
 
 # HFNET Extractor
-Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS2/"
-Extractor.HFNetTF.resamplerPath: "/home/llm/src/tensorflow-1.15.5/bazel-bin/tensorflow/contrib/resampler/python/ops/_resampler_ops.so"
-Extractor.HFNetVINO.localModelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_vino_local_f32/"
-Extractor.HFNetVINO.globalModelPath: "/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_vino_global_f32/"
+Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2/"
+Extractor.HFNetVINO.localModelPath: "/home/llm/ROS/HFNet_SLAM/model/hfnet_vino_local_f32/"
+Extractor.HFNetVINO.globalModelPath: "/home/llm/ROS/HFNet_SLAM/model/hfnet_vino_global_f32/"
 
 # Extractor: Scale factor between levels in the scale pyramid 	
 Extractor.scaleFactor: 1.2
@@ -81,7 +80,7 @@ Extractor.scaleFactor: 1.2
 Extractor.nLevels: 4
 
 # Extractor: Number of features per image
-Extractor.nFeatures: 850
+Extractor.nFeatures: 800
 Extractor.nNMSRadius: 4
 Extractor.threshold: 0.02
 

@@ -321,8 +321,8 @@ int SearchByBoWHFNetSLAM_BFMatcher(float mfNNratio, float threshold, bool mutual
 
 const string strDatasetPath("/media/llm/Datasets/EuRoC/");
 const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
-const string strVocFileORB("/home/llm/ROS/HFNet_ORBSLAM3_v2/Comparison/Vocabulary/ORBvoc.txt");
-const string strTFModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS2");
+const string strVocFileORB("/home/llm/ROS/HFNet_SLAM/Comparison/Vocabulary/ORBvoc.txt");
+const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
 
 const int nFeatures = 350;
 const float scaleFactor = 1.0f;

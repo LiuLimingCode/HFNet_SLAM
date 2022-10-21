@@ -357,7 +357,7 @@ const string strSettingsPath("Examples/Monocular-Inertial//TUM-VI.yaml");
 const int dbStart = 50;
 const int dbEnd = 50;
 
-const string strVocFileORB("/home/llm/ROS/HFNet_ORBSLAM3_v2/Comparison/Vocabulary/ORBvoc.txt");
+const string strVocFileORB("/home/llm/ROS/HFNet_SLAM/Comparison/Vocabulary/ORBvoc.txt");
 
 int main(int argc, char* argv[])
 {
@@ -366,7 +366,7 @@ int main(int argc, char* argv[])
     // Therefore, use only half of the thresds.
     Eigen::setNbThreads(std::max(Eigen::nbThreads() / 2, 1));
     
-    const string strTFModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS2");
+    const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     settings = new Settings(strSettingsPath, 0);

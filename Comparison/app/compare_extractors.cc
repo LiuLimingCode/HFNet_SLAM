@@ -29,12 +29,12 @@ const int dbStart = 420;
 const int dbEnd = 50;
 
 // const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
-// const string strSettingsPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/Comparison/app/TUM-VI.yaml");
-// const string strTFModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS2");
+// const string strSettingsPath("/home/llm/ROS/HFNet_SLAM/Comparison/app/TUM-VI.yaml");
+// const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
 // const int dbStart = 50;
 // const int dbEnd = 50;
 
-const string strTFModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_tf_v2_NMS2");
+const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
 
 int main(int argc, char* argv[])
 {

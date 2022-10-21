@@ -241,7 +241,7 @@ void LoopClosing::Run()
 
                         Eigen::Vector3d phi = LogSO3(g2oSww_new.rotation().toRotationMatrix());
                         cout << "phi = " << phi.transpose() << endl; 
-                        if (fabs(phi(0))<0.008f && fabs(phi(1))<0.008f && fabs(phi(2))<0.349f)
+                        if (fabs(phi(0))<0.016f && fabs(phi(1))<0.016f && fabs(phi(2))<0.349f)
                         {
                             if(mpCurrentKF->GetMap()->IsInertial())
                             {
@@ -585,7 +585,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
     int nBoWInliers = 30;
     int nSim3Inliers = 25;
     int nProjMatches = 50;
-    int nProjOptMatches = 100;
+    int nProjOptMatches = 90;
 
     set<KeyFrame*> spConnectedKeyFrames = mpCurrentKF->GetConnectedKeyFrames();
     // vector<KeyFrame*> res = mpCurrentKF->GetCovisiblesByWeight(100);
@@ -732,6 +732,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
         // { // For Debug
         //     cout << "\t" << "numBoWMatches: " << numBoWMatches << endl;
         // }
+        // numBoWMatches = matcher.FilterMatchesByResponces(mpCurrentKF, vpMatchedPoints, 0.02);
 
         if(numBoWMatches >= nBoWMatches) // TODO pick a good threshold
         {
@@ -784,7 +785,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
             //     // cv::drawMatches(mpCurrentKF->imgLeft, mpCurrentKF->mvKeysUn, pMostBoWMatchesKF->imgLeft, vKPts, wrongMatches, outImage, cv::Scalar(0, 0, 255), cv::Scalar(-1, -1, -1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
             //     // cv::drawMatches(mpCurrentKF->imgLeft, mpCurrentKF->mvKeysUn, pMostBoWMatchesKF->imgLeft, vKPts, inlierMatches, outImage, cv::Scalar(0, 255, 0), cv::Scalar(-1, -1, -1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS | cv::DrawMatchesFlags::DRAW_OVER_OUTIMG);
 
-            //     // cv::imwrite("/home/llm/ROS/HFNet_ORBSLAM3_v2/output/LoopClosing/" + std::to_string(mpCurrentKF->mnFrameId) + "_2RANSAC.jpg", outImage);
+            //     // cv::imwrite("/home/llm/ROS/HFNet_SLAM/output/LoopClosing/" + std::to_string(mpCurrentKF->mnFrameId) + "_2RANSAC.jpg", outImage);
             // }
 
             if(bConverge)
@@ -831,6 +832,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                 vector<KeyFrame*> vpMatchedKF;
                 vpMatchedKF.resize(mpCurrentKF->GetMapPointMatches().size(), static_cast<KeyFrame*>(NULL));
                 int numProjMatches = matcher.SearchByProjection(mpCurrentKF, mScw, vpMapPoints, vpKeyFrames, vpMatchedMP, vpMatchedKF, 12, (matcher.TH_HIGH + matcher.TH_LOW) / 2.0);
+                // numProjMatches = matcher.FilterMatchesByResponces(mpCurrentKF, vpMatchedMP, 0.02);
                 //cout <<"BoW: " << numProjMatches << " matches between " << vpMapPoints.size() << " points with coarse Sim3" << endl;
                 
                 {
@@ -849,22 +851,15 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                         for (size_t index = 0; index < vbInliers.size(); ++index) {
                             if (vbInliers[index] == false) vpMatchedPoints[index] = nullptr; 
                         }
-                        // nInliers = matcher.FilterMatchesByResponces(mpCurrentKF, vpMatchedPoints, 40, 0.02);
+                        
                         numOptMatches = Optimizer::OptimizeSim3(mpCurrentKF, pKFi, vpMatchedPoints, gScm, 10, mbFixScale, mHessian7x7, true);
                         useMatchesFromRANSAC = 1;
-                        // { // For Debug
-                        //     cout << "\t" << "numOptMatches by : SearchByBoW: " << numOptMatches << endl;
-                        // }
                     }
 
                     if(numOptMatches < nSim3Inliers && numProjMatches >= nProjMatches)
                     {
-                        // numProjMatches = matcher.FilterMatchesByResponces(mpCurrentKF, vpMatchedMP, nProjMatches, 0.02);
                         numOptMatches = Optimizer::OptimizeSim3(mpCurrentKF, pKFi, vpMatchedMP, gScm, 10, mbFixScale, mHessian7x7, true);
                         useMatchesFromRANSAC = 2;
-                        // { // For Debug
-                        //     cout << "\t" << "numOptMatches by : SearchByProjection: " << numOptMatches << endl;
-                        // }
                     }
 
                     if(numOptMatches >= nSim3Inliers)
@@ -876,7 +871,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                         vector<MapPoint*> vpMatchedMP;
                         vpMatchedMP.resize(mpCurrentKF->GetMapPointMatches().size(), static_cast<MapPoint*>(NULL));
                         int numProjOptMatches = matcher.SearchByProjection(mpCurrentKF, mScw, vpMapPoints, vpMatchedMP, 5, matcher.TH_LOW);
-
+                        // numProjOptMatches = matcher.FilterMatchesByResponces(mpCurrentKF, vpMatchedMP, 0.02);
 
                         { // For Debug
                             cout << "numBoWMatches: " << numBoWMatches << endl
@@ -909,7 +904,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                             // }
                             // cv::Mat outImage;
                             // cv::drawMatches(mpCurrentKF->imgLeft, mpCurrentKF->mvKeysUn, pMostBoWMatchesKF->imgLeft, vKPts, matches, outImage, cv::Scalar(0, 255, 0), cv::Scalar(-1, -1, -1));
-                            // cv::imwrite("/home/llm/ROS/HFNet_ORBSLAM3_v2/output/LoopClosing/" + std::to_string(mpCurrentKF->mnFrameId) + "_3SearchByProjection.jpg", outImage);
+                            // cv::imwrite("/home/llm/ROS/HFNet_SLAM/output/LoopClosing/" + std::to_string(mpCurrentKF->mnFrameId) + "_3SearchByProjection.jpg", outImage);
                         }
 
                         if(numProjOptMatches >= nProjOptMatches)

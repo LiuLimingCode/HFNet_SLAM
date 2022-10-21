@@ -437,9 +437,9 @@ const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
 const int dbStart = 50;
 const int dbEnd = 50;
 
-const std::string strLocalModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_vino_local_f32/");
-const std::string strGlobalModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_vino_global_f32/");
-const std::string strFullModelPath("/home/llm/ROS/HFNet_ORBSLAM3_v2/model/hfnet_vino_full_f32/");
+const std::string strLocalModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_vino_local_f32/");
+const std::string strGlobalModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_vino_global_f32/");
+const std::string strFullModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_vino_full_f32/");
 
 int nFeatures = 300; // 1500~326, 1000~217
 float fThreshold = 0.005;

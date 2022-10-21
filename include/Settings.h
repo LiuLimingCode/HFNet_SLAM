@@ -103,7 +103,7 @@ namespace ORB_SLAM3 {
         int nNMSRadius() {return nNMSRadius_;}
         float threshold() {return threshold_;} 
         std::string strTFModelPath() {return strTFModelPath_;}
-        std::string strTFResamplerPath() {return strTFResamplerPath_;}
+        // std::string strTFResamplerPath() {return strTFResamplerPath_;}
         std::string strVINOLocalModelPath() {return strVINOLocalModelPath_;}
         std::string strVINOGlobalModelPath() {return strVINOGlobalModelPath_;}
 
@@ -215,7 +215,7 @@ namespace ORB_SLAM3 {
         int nNMSRadius_;
         float threshold_;
         std::string strTFModelPath_;
-        std::string strTFResamplerPath_;
+        // std::string strTFResamplerPath_;
         std::string strVINOLocalModelPath_;
         std::string strVINOGlobalModelPath_;
 
