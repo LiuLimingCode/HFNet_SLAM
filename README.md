@@ -6,13 +6,21 @@ More detailed README.md is coming soon ....
 
 HFNet-SLAM is the combination and extension of the well-known [ORB-SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3) SLAM framework and a unified CNN model called [HF-Net](https://github.com/ethz-asl/hfnet). It uses the image features from HF-Net to fully replace the hand-crafted ORB features and the BoW method in the ORB-SLAM3 system. This novelty results in better performance in tracking and loop closure, boosting the accuracy of the entire HFNet-SLAM.
 
-Better Tracking:
+## HFNet-SLAM vs ORB-SLAM3
+
+**Better Tracking**:
 
 <img src="https://user-images.githubusercontent.com/52725165/197087949-21196670-335e-4ea9-ac12-f226521da691.png" width="600" title="Better Tracking">
 
-Better Loop Closure:
+**Better Loop Closure**:
 
 <img src="https://user-images.githubusercontent.com/52725165/197088191-1d01fe8a-02ef-4002-8eeb-3c312ef48eb4.png" width="600" title="Better Loop Closure">
+
+**Comparative Runtime Performance**:
+
+<img src="https://user-images.githubusercontent.com/52725165/197371705-e437adc0-ed47-4bb7-a3db-ff0a091b2568.png" title="Comparative Runtime Performance">
+
+HFNet-SLAM has more effective mapping and loop detection threads compared with ORB-SLAM3, but it needs an extra 10 ms and GPU support in the tracking tread because the inference of the HF-Net model uses float64 precision. There is a great potential improvement by using quantization and half-precision technologies to increase the runtime performance.
 
 ## Prerequisites
 
@@ -68,7 +76,6 @@ python3 ./evaluation/evaluate_ate_scale.py "$pathDataset"/"$sequenceName"/mav0/s
 Evaluate the whole dataset:
 
 ```
-
 bash Examples/eval_euroc.sh
 ```
 

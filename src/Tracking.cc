@@ -48,6 +48,8 @@ Tracking::Tracking(System *pSys, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawe
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpAtlas(pAtlas), mnLastRelocFrameId(0), time_recently_lost(5.0),
     mnInitialFrameId(0), mbCreatedMap(false), mnFirstFrameId(0), mpCamera2(nullptr), mpLastKeyFrame(static_cast<KeyFrame*>(NULL))
 {
+    mpReferenceKF = nullptr;
+
     // Load camera parameters from settings file
     if(settings){
         newParameterLoader(settings);

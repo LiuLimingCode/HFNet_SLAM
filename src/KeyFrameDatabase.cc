@@ -187,7 +187,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F, Map
             bestScore = max(pKFi->mRelocScore, bestScore);
         }
 
-        const float thresholdScore = 0.6;
+        const float thresholdScore = 0.5;
         float minScore = std::max(thresholdScore, bestScore * 0.8f);
         for (auto it = mvDatabase.begin(); it != mvDatabase.end(); ++it)
         {

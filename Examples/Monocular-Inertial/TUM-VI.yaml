@@ -80,7 +80,7 @@ Extractor.scaleFactor: 1.2
 Extractor.nLevels: 4
 
 # Extractor: Number of features per image
-Extractor.nFeatures: 800
+Extractor.nFeatures: 850
 Extractor.nNMSRadius: 4
 Extractor.threshold: 0.02
 

@@ -241,7 +241,7 @@ void LoopClosing::Run()
 
                         Eigen::Vector3d phi = LogSO3(g2oSww_new.rotation().toRotationMatrix());
                         cout << "phi = " << phi.transpose() << endl; 
-                        if (fabs(phi(0))<0.016f && fabs(phi(1))<0.016f && fabs(phi(2))<0.349f)
+                        if (fabs(phi(0))<0.016f && fabs(phi(1))<0.016f && fabs(phi(0))+fabs(phi(1))<0.024f && fabs(phi(2))<0.349f)
                         {
                             if(mpCurrentKF->GetMap()->IsInertial())
                             {
@@ -492,6 +492,15 @@ bool LoopClosing::NewDetectCommonRegions()
         std::chrono::steady_clock::time_point time_StartQuery = std::chrono::steady_clock::now();
 #endif
         mpKeyFrameDB->DetectNBestCandidates(mpCurrentKF, vpLoopBowCand, vpMergeBowCand,3);
+
+        // if (std::abs((int)mpCurrentKF->mnFrameId - 6478) < 10) {
+        //     cout << "CID: " << mpCurrentKF->mnFrameId << ", ";
+        //     for (auto pKF : vpLoopBowCand) {
+        //         cout << pKF->mnFrameId << ", ";
+        //     }
+        //     cout << endl;
+        // }
+
 #ifdef REGISTER_TIMES
         std::chrono::steady_clock::time_point time_EndQuery = std::chrono::steady_clock::now();
 
@@ -581,11 +590,11 @@ bool LoopClosing::DetectAndReffineSim3FromLastKF(KeyFrame* pCurrentKF, KeyFrame*
 bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, KeyFrame* &pMatchedKF2, KeyFrame* &pLastCurrentKF, g2o::Sim3 &g2oScw,
                                              int &nNumCoincidences, std::vector<MapPoint*> &vpMPs, std::vector<MapPoint*> &vpMatchedMPs)
 {
-    int nBoWMatches = 100;
-    int nBoWInliers = 30;
-    int nSim3Inliers = 25;
+    int nBoWMatches = 150;
+    int nBoWInliers = 40;
+    int nSim3Inliers = 35;
     int nProjMatches = 50;
-    int nProjOptMatches = 90;
+    int nProjOptMatches = 120;
 
     set<KeyFrame*> spConnectedKeyFrames = mpCurrentKF->GetConnectedKeyFrames();
     // vector<KeyFrame*> res = mpCurrentKF->GetCovisiblesByWeight(100);
@@ -742,7 +751,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                 bFixedScale=false;
 
             Sim3Solver solver = Sim3Solver(mpCurrentKF, pMostBoWMatchesKF, vpMatchedPoints, bFixedScale, vpKeyFrameMatchedMP);
-            solver.SetRansacParameters(0.99, nBoWInliers, 300); // at least 15 inliers
+            solver.SetRansacParameters(0.99, nBoWInliers, 750); // at least 15 inliers
 
             bool bNoMore = false;
             vector<bool> vbInliers;

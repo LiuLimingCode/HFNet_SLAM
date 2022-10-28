@@ -64,4 +64,4 @@ Extractor.nLevels: 4
 # Extractor: Number of features per image
 Extractor.nFeatures: 850
 Extractor.nNMSRadius: 4
-Extractor.threshold: 0.01
+Extractor.threshold: 0.02
