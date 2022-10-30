@@ -41,7 +41,7 @@ match correct percentage: 0.797645
 #include "Settings.h"
 #include "Extractors/HFNetTFModelV2.h"
 #include "Extractors/HFextractor.h"
-#include "Examples/Utility/utility_common.h"
+#include "utility_common.h"
 #include "CameraModels/Pinhole.h"
 
 using namespace cv;
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
     float threshold = 10;
     bool showUndistort = false;
     int select = 0;
-    auto cameraMatrix = settings->camera1();
+    auto cameraMatrix = settings->camera1()->toK();
     cv::Mat distCoef;
     if(settings->needToUndistort()) distCoef = settings->camera1DistortionCoef();
     else distCoef = cv::Mat::zeros(4,1,CV_32F);
@@ -165,10 +165,10 @@ int main(int argc, char* argv[])
         cv::Mat image1, image2;
         if (showUndistort && settings->needToUndistort())
         {
-            cv::undistort(imageRaw1, image1, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
-            cv::undistort(imageRaw2, image2, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
-            keypointsHF1 = undistortPoints(keypointsHF1, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
-            keypointsHF2 = undistortPoints(keypointsHF2, static_cast<Pinhole*>(cameraMatrix)->toK(), distCoef);
+            cv::undistort(imageRaw1, image1, cameraMatrix, distCoef);
+            cv::undistort(imageRaw2, image2, cameraMatrix, distCoef);
+            keypointsHF1 = undistortPoints(keypointsHF1, cameraMatrix, distCoef);
+            keypointsHF2 = undistortPoints(keypointsHF2, cameraMatrix, distCoef);
         }
         else
         {
@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
             //     cout << "distance by BFMatcher: " << match.distance << endl;
             //     cout << "distance by cv::norm: " << cv::norm(d1 - d2, cv::NORM_L2) << endl;
             // }
-            cv::Mat H = FindCorrectMatches(keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, thresholdMatchesHF, cameraMatrix, inlierMatchesHF, wrongMatchesHF);
             cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, inlierMatchesHF, wrongMatchesHF);
             cv::imshow("HF + BFMatcher_L2", plotHF);
             cout << "HF + BFMatcher_L2:" << endl;
@@ -218,7 +218,7 @@ int main(int argc, char* argv[])
                 if (match.distance > threshold) continue;
                 thresholdMatchesHF.emplace_back(match);
             }
-            cv::Mat H = FindCorrectMatches(keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, thresholdMatchesHF, cameraMatrix, inlierMatchesHF, wrongMatchesHF);
             cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, inlierMatchesHF, wrongMatchesHF);
             cv::imshow("HF + BFMatcher_L1", plotHF);
             cout << "HF + BFMatcher_L1:" << endl;
@@ -240,7 +240,7 @@ int main(int argc, char* argv[])
                 if (match.distance > (threshold * 0.1)*(threshold * 0.1)) continue;
                 thresholdMatchesHF.emplace_back(match);
             }
-            cv::Mat H = FindCorrectMatches(keypointsHF1, keypointsHF2, thresholdMatchesHF, inlierMatchesHF, wrongMatchesHF);
+            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, thresholdMatchesHF, cameraMatrix, inlierMatchesHF, wrongMatchesHF);
             cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, inlierMatchesHF, wrongMatchesHF);
             cv::imshow("HF + SearchByBoWV2", plotHF);
             cout << "HF + SearchByBoWV2:" << endl;

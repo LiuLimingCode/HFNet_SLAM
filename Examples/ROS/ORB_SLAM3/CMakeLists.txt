@@ -54,7 +54,7 @@ ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/../../../Thirdparty/g2o/lib/libg2o.so
-${PROJECT_SOURCE_DIR}/../../../lib/libORB_SLAM3.so
+${PROJECT_SOURCE_DIR}/../../../lib/libHFNet_SLAM.so
 -lboost_system
 )
 

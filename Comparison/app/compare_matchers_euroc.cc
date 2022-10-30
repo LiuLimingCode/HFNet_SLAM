@@ -13,7 +13,7 @@
 #include "ORBextractor.h"
 #include "ORBVocabulary.h"
 
-#include "app/utility_common.h"
+#include "../include/utility_common.h"
 
 using namespace cv;
 using namespace std;
@@ -414,7 +414,7 @@ void evaluation(const string sequenceName, Settings *settings, ORBVocabulary &vo
     const std::string strSequencePath = strDatasetPath + "/" + sequenceName + "/mav0";
     auto sequenceData = ReadEuRoCDataset(strSequencePath); // get all image files
 
-    auto cameraMatrix = settings->camera1();
+    auto cameraMatrix = settings->camera1()->toK();
     cv::Mat distCoef;
     if(settings->needToUndistort()) distCoef = settings->camera1DistortionCoef();
     else distCoef = cv::Mat::zeros(4,1,CV_32F);
@@ -445,12 +445,12 @@ void evaluation(const string sequenceName, Settings *settings, ORBVocabulary &vo
 
 
         cv::Mat image1, image2;
-        cv::undistort(imageRaw1, image1, cameraMatrix->toK(), distCoef);
-        cv::undistort(imageRaw2, image2, cameraMatrix->toK(), distCoef);
-        keypointsORB1 = undistortPoints(keypointsORB1, cameraMatrix->toK(), distCoef);
-        keypointsORB2 = undistortPoints(keypointsORB2, cameraMatrix->toK(), distCoef);
-        keypointsHF1 = undistortPoints(keypointsHF1, cameraMatrix->toK(), distCoef);
-        keypointsHF2 = undistortPoints(keypointsHF2, cameraMatrix->toK(), distCoef);
+        cv::undistort(imageRaw1, image1, cameraMatrix, distCoef);
+        cv::undistort(imageRaw2, image2, cameraMatrix, distCoef);
+        keypointsORB1 = undistortPoints(keypointsORB1, cameraMatrix, distCoef);
+        keypointsORB2 = undistortPoints(keypointsORB2, cameraMatrix, distCoef);
+        keypointsHF1 = undistortPoints(keypointsHF1, cameraMatrix, distCoef);
+        keypointsHF2 = undistortPoints(keypointsHF2, cameraMatrix, distCoef);
 
         // ORB-SLAM3
         {
@@ -469,7 +469,7 @@ void evaluation(const string sequenceName, Settings *settings, ORBVocabulary &vo
                     keypointsORB1, descriptorsORB1, featVecORB1, 
                     keypointsORB2, descriptorsORB2, featVecORB2, matchesORB);
             timerORB.Toc();
-            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsORB1, keypointsORB2, matchesORB, cameraMatrix->toK(), inlierMatchesORB, wrongMatchesORB);
+            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsORB1, keypointsORB2, matchesORB, cameraMatrix, inlierMatchesORB, wrongMatchesORB);
             vnInlierNumORB.push_back(inlierMatchesORB.size());
             vfInlierRatioORB.push_back((float)inlierMatchesORB.size()/(float)(matchesORB.size()));
         }
@@ -484,7 +484,7 @@ void evaluation(const string sequenceName, Settings *settings, ORBVocabulary &vo
             timerHF_NN.Tic();
             SearchByBoWHFNetSLAM(ratioThreshold, matchThreshold * matchThreshold, mutual, descriptorsHF1, descriptorsHF2, matchesHF);
             timerHF_NN.Toc();
-            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, matchesHF, cameraMatrix->toK(), inlierMatchesHF, wrongMatchesHF);
+            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, matchesHF, cameraMatrix, inlierMatchesHF, wrongMatchesHF);
             vnInlierNumHF_NN.push_back(inlierMatchesHF.size());
             vfInlierRatioHF_NN.push_back((float)inlierMatchesHF.size()/(float)(matchesHF.size()));
         }
@@ -499,7 +499,7 @@ void evaluation(const string sequenceName, Settings *settings, ORBVocabulary &vo
             timerHF_NN_Mutual.Tic();
             SearchByBoWHFNetSLAM(ratioThreshold, matchThreshold * matchThreshold, mutual, descriptorsHF1, descriptorsHF2, matchesHF);
             timerHF_NN_Mutual.Toc();
-            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, matchesHF, cameraMatrix->toK(), inlierMatchesHF, wrongMatchesHF);
+            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, matchesHF, cameraMatrix, inlierMatchesHF, wrongMatchesHF);
             vnInlierNumHF_NN_Mutual.push_back(inlierMatchesHF.size());
             vfInlierRatioHF_NN_Mutual.push_back((float)inlierMatchesHF.size()/(float)(matchesHF.size()));
         }
@@ -514,7 +514,7 @@ void evaluation(const string sequenceName, Settings *settings, ORBVocabulary &vo
             timerHF_NN_Mutual_Ratio.Tic();
             SearchByBoWHFNetSLAM(ratioThreshold, matchThreshold * matchThreshold, mutual, descriptorsHF1, descriptorsHF2, matchesHF);
             timerHF_NN_Mutual_Ratio.Toc();
-            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, matchesHF, cameraMatrix->toK(), inlierMatchesHF, wrongMatchesHF);
+            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, matchesHF, cameraMatrix, inlierMatchesHF, wrongMatchesHF);
             vnInlierNumHF_NN_Mutual_Ratio.push_back(inlierMatchesHF.size());
             vfInlierRatioHF_NN_Mutual_Ratio.push_back((float)inlierMatchesHF.size()/(float)(matchesHF.size()));
         }
@@ -529,7 +529,7 @@ void evaluation(const string sequenceName, Settings *settings, ORBVocabulary &vo
             timerHF_Slow.Tic();
             SearchByBoWHFNetSLAM_BFMatcher(ratioThreshold, matchThreshold, mutual, descriptorsHF1, descriptorsHF2, matchesHF);
             timerHF_Slow.Toc();
-            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, matchesHF, cameraMatrix->toK(), inlierMatchesHF, wrongMatchesHF);
+            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, matchesHF, cameraMatrix, inlierMatchesHF, wrongMatchesHF);
             vnInlierNumHF_Slow.push_back(inlierMatchesHF.size());
             vfInlierRatioHF_Slow.push_back((float)inlierMatchesHF.size()/(float)(matchesHF.size()));
         }

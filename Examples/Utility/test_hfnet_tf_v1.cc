@@ -17,7 +17,7 @@ outputs[3].shape(): [1,4096]
 #include "Settings.h"
 #include "Extractors/HFNetTFModel.h"
 #include "Extractors/HFextractor.h"
-#include "Examples/Utility/utility_common.h"
+#include "utility_common.h"
 
 using namespace cv;
 using namespace std;

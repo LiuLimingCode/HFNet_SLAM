@@ -39,13 +39,19 @@ We use TensorFlow C++, CUDA, and cuDNN for model inference. The corresponding ve
 | NVIDIA Driver   |  510.47  |
 | CUDA tool  |  11.6.2 |
 | cuDNN | 8.4.1.50 |
-| TensorFlow | 2.9.0 |
+| TensorFlow | 1.15, 2.9 |
 
 The download and install instructions of CUDA can be found at: https://developer.nvidia.com/cuda-toolkit.
 
 The instructions of cuDNN can be found at: https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html.
 
 An easy method for building TensorFlow C++ API can be found at: https://github.com/FloopCZ/tensorflow_cc.
+
+### Download the HF-Net Model
+
+Download the converted model from [here](https://drive.google.com/file/d/1vBmC5t3NDIBULh8xeM2A_Qs2aDlaMAOz/view?usp=share_link).
+
+More details about the process of converting can be found in the [HF-Net Model Converting](hfnet/README.md) document.
 
 ## Building HFNet-SLAM library and examples
 

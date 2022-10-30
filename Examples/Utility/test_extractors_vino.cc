@@ -54,7 +54,7 @@ total costs: 60.0883 ± 4.10698
 #include "Settings.h"
 #include "Extractors/HFNetVINOModel.h"
 #include "Extractors/HFextractor.h"
-#include "Examples/Utility/utility_common.h"
+#include "utility_common.h"
 
 using namespace cv;
 using namespace std;

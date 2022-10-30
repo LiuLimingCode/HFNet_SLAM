@@ -54,7 +54,7 @@ detect global costs: 2.79904 ± 0.0640896
 #include "Settings.h"
 #include "Frame.h"
 #include "Extractors/HFNetTFModelV2.h"
-#include "Examples/Utility/utility_common.h"
+#include "utility_common.h"
 
 using namespace cv;
 using namespace std;

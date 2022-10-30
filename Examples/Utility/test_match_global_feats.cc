@@ -19,7 +19,7 @@ Query cost time: 259
 #include "Settings.h"
 #include "Extractors/HFextractor.h"
 #include "Extractors/HFNetTFModelV2.h"
-#include "Examples/Utility/utility_common.h"
+#include "utility_common.h"
 #include "CameraModels/Pinhole.h"
 
 #include "utility_common.h"

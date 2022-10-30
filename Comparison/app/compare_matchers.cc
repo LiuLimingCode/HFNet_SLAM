@@ -46,28 +46,30 @@ match correct percentage: 0.366167
  * 3. SearchByBoW will increase the matching time
  * 4. SearchByBoW can increase the correct percentage of ORB descriptor
  * 5. SearchByBoW does not work well for HF descriptor, maybe it is because the vocabulary for HF is bad.
- * 6. The vocabulary costs too much time!
- * 7. TODO: 加了去畸变后效果变差了，为什么？
  */
 #include <chrono>
 #include <fstream>
 #include <dirent.h>
 #include <random>
 
-#include "../include/Settings.h"
 #include "../include/CameraModels/Pinhole.h"
 #include "../include/Extractors/HFNetTFModelV2.h"
+#include "../include/Extractors/HFextractor.h"
 
 #include "ORBextractor.h"
 #include "ORBVocabulary.h"
 
-#include "app/utility_common.h"
+#include "../include/utility_common.h"
 
 using namespace cv;
 using namespace std;
 using namespace ORB_SLAM3;
 
-Settings *settings;
+const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
+const string strVocFileORB("/home/llm/ROS/HFNet_SLAM/Comparison/Vocabulary/ORBvoc.txt");
+const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_04_difficult/mav0/cam0/data/");
+// const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor1_512_16/mav0/cam0/data/");
+
 
 std::vector<cv::Mat> toDescriptorVector(const cv::Mat &Descriptors)
 {
@@ -347,51 +349,43 @@ int SearchByBoWHFNetSLAM(float mfNNratio, float threshold, bool mutual,
     return vMatches.size();
 }
 
-// const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_04_difficult/mav0/cam0/data/");
-// const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
-// const int dbStart = 420;
-// const int dbEnd = 50;
-
-const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-outdoors3_512_16/mav0/cam0/data/");
-const string strSettingsPath("Examples/Monocular-Inertial//TUM-VI.yaml");
-const int dbStart = 50;
-const int dbEnd = 50;
-
-const string strVocFileORB("/home/llm/ROS/HFNet_SLAM/Comparison/Vocabulary/ORBvoc.txt");
-
 int main(int argc, char* argv[])
 {
     // By default, the Eigen will use the maximum number of threads in OpenMP.
     // However, this will somehow slow down the calculation of dense matrix multiplication.
     // Therefore, use only half of the thresds.
     Eigen::setNbThreads(std::max(Eigen::nbThreads() / 2, 1));
-    
-    const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
-    settings = new Settings(strSettingsPath, 0);
+    if (files.empty()) {
+        cout << "Error, failed to find any valid image in: " << strDatasetPath << endl;
+        return 1;
+    }
+    cv::Size ImSize = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE).size();
+    if (ImSize.area() == 0) {
+        cout << "Error, failed to read the image at: " << strDatasetPath + files[0] << endl;
+        return 1;
+    }
 
     vector<BaseModel*> vpModels;
-    cv::Size ImSize = settings->newImSize();
     float scale = 1.0;
-    for (int level = 0; level < settings->nLevels(); ++level)
+    for (int level = 0; level < 4; ++level)
     {
         cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
         BaseModel *pNewModel;
         if (level == 0) pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
         else pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocal, inputShape);
         vpModels.emplace_back(pNewModel);
-        scale /= settings->scaleFactor();
+        scale /= 1.2f;
     }
 
     std::default_random_engine generator(chrono::system_clock::now().time_since_epoch().count());
-    std::uniform_int_distribution<unsigned int> distribution(dbStart, files.size() - dbEnd);
+    std::uniform_int_distribution<unsigned int> distribution(0, files.size() - 20);
 
-    int nFeatures = settings->nFeatures();
-    float threshold = settings->threshold();
-    int nNMSRadius = settings->nNMSRadius();
-    ORBextractor extractorORB(1250, 1.2, 8, 20, 7);
-    HFextractor extractorHF(nFeatures, threshold, nNMSRadius, settings->scaleFactor(), settings->nLevels(), vpModels);
+    int nFeatures = 700;
+    float threshold = 0.02;
+    ORBextractor extractorORB(1000, 1.2f, 8, 20, 7);
+    HFextractor extractorHF(nFeatures, threshold, 4, 1.2f, 4, vpModels);
 
     ORBVocabulary vocabORB;
     if(!vocabORB.loadFromTextFile(strVocFileORB))
@@ -400,16 +394,13 @@ int main(int argc, char* argv[])
         exit(-1);
     }
 
-    char command = ' ';
-    float matchThreshold = 1;
-    float ratioThreshold = 1.0;
+    const cv::Mat cameraMatrix = cv::Mat::eye(3,3, CV_32F);
+    char command = 0;
+    float matchThreshold = 0.6;
+    float ratioThreshold = 0.9;
     bool showUndistort = false;
-    int select = 14980;
+    int select = distribution(generator);
     bool showWholeMatches = false;
-    auto cameraMatrix = settings->camera1();
-    cv::Mat distCoef;
-    if(settings->needToUndistort()) distCoef = settings->camera1DistortionCoef();
-    else distCoef = cv::Mat::zeros(4,1,CV_32F);
     while(1)
     {
         if (command == 'x') break;
@@ -418,25 +409,20 @@ int main(int argc, char* argv[])
         else if (command == 's') select -= 1;
         else if (command == 'a') threshold = std::max(threshold - 0.001, 0.005);
         else if (command == 'd') threshold += 0.001;
-        else if (command == 'z') nNMSRadius = std::max(nNMSRadius - 1, 0);
-        else if (command == 'c') nNMSRadius += 1;
         else if (command == 'q') matchThreshold -= 0.05;
         else if (command == 'e') matchThreshold += 0.05;
         else if (command == 'r') ratioThreshold -= 0.1;
         else if (command == 'f') ratioThreshold = std::min(ratioThreshold + 0.1, 1.0);
         else if (command == 'i') showWholeMatches = !showWholeMatches;
-        else select = distribution(generator);
+        else if (command == ' ')select = distribution(generator);
 
         cout << "command: " << command << endl;
         cout << "select: " << select << endl;
         cout << "threshold: " << threshold << endl;
-        cout << "nNMSRadius: " << nNMSRadius << endl;
         cout << "matchThreshold: " << matchThreshold << endl;
         cout << "ratioThreshold: " << ratioThreshold << endl;
         cv::Mat imageRaw1 = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        if (settings->needToResize()) cv::resize(imageRaw1, imageRaw1, settings->newImSize());
         cv::Mat imageRaw2 = imread(strDatasetPath + files[select + 10], IMREAD_GRAYSCALE);
-        if (settings->needToResize()) cv::resize(imageRaw2, imageRaw2, settings->newImSize());
         vector<int> vLapping = {0,1000};
 
 
@@ -445,7 +431,6 @@ int main(int argc, char* argv[])
         extractorORB(imageRaw1, cv::Mat(), keypointsORB1, descriptorsORB1, vLapping);
         extractorORB(imageRaw2, cv::Mat(), keypointsORB2, descriptorsORB2, vLapping);
 
-        extractorHF.nNMSRadius = nNMSRadius;
         extractorHF.threshold = threshold;
         std::vector<cv::KeyPoint> keypointsHF1, keypointsHF2;
         cv::Mat descriptorsHF1, descriptorsHF2, globalDescriptors;
@@ -454,19 +439,7 @@ int main(int argc, char* argv[])
 
 
         cv::Mat image1, image2;
-        if (showUndistort && settings->needToUndistort())
-        {
-            cv::undistort(imageRaw1, image1, cameraMatrix->toK(), distCoef);
-            cv::undistort(imageRaw2, image2, cameraMatrix->toK(), distCoef);
-            keypointsORB1 = undistortPoints(keypointsORB1, cameraMatrix->toK(), distCoef);
-            keypointsORB2 = undistortPoints(keypointsORB2, cameraMatrix->toK(), distCoef);
-            keypointsHF1 = undistortPoints(keypointsHF1, cameraMatrix->toK(), distCoef);
-            keypointsHF2 = undistortPoints(keypointsHF2, cameraMatrix->toK(), distCoef);
-        }
-        else
-        {
-            image1 = imageRaw1, image2 = imageRaw2;
-        }
+        image1 = imageRaw1, image2 = imageRaw2;
 
         cout << "-------------------------------------------------------" << endl;
         {
@@ -484,7 +457,7 @@ int main(int argc, char* argv[])
                     keypointsORB1, descriptorsORB1, featVecORB1, 
                     keypointsORB2, descriptorsORB2, featVecORB2, matchesORB);
             timer.Toc();
-            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsORB1, keypointsORB2, matchesORB, cameraMatrix->toK(), inlierMatchesORB, wrongMatchesORB);
+            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsORB1, keypointsORB2, matchesORB, cameraMatrix, inlierMatchesORB, wrongMatchesORB);
             cv::Mat plotORB = ShowCorrectMatches(image1, image2, keypointsORB1, keypointsORB2, inlierMatchesORB, wrongMatchesORB, showWholeMatches);
             cv::imshow("ORB + SearchByBoW", plotORB);
             cout << "ORB + SearchByBoW:" << endl;
@@ -508,7 +481,7 @@ int main(int argc, char* argv[])
                 if (match.distance > matchThreshold) continue;
                 thresholdMatchesHF.emplace_back(match);
             }
-            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, thresholdMatchesHF, cameraMatrix->toK(), inlierMatchesHF, wrongMatchesHF);
+            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, thresholdMatchesHF, cv::Mat::eye(3,3, CV_32F), inlierMatchesHF, wrongMatchesHF);
             cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, inlierMatchesHF, wrongMatchesHF, showWholeMatches);
             cv::imshow("HF + BFMatcher_L2", plotHF);
             cout << "HF + BFMatcher_L2:" << endl;
@@ -524,7 +497,7 @@ int main(int argc, char* argv[])
             timer.Tic();
             SearchByBoWHFNetSLAM(ratioThreshold, matchThreshold * matchThreshold, true, descriptorsHF1, descriptorsHF2, matchesHF);
             timer.Toc();
-            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, matchesHF, cameraMatrix->toK(), inlierMatchesHF, wrongMatchesHF);
+            cv::Mat E = FindCorrectMatchesByEssentialMat(keypointsHF1, keypointsHF2, matchesHF, cv::Mat::eye(3,3, CV_32F), inlierMatchesHF, wrongMatchesHF);
             cv::Mat plotHF = ShowCorrectMatches(image1, image2, keypointsHF1, keypointsHF2, inlierMatchesHF, wrongMatchesHF, showWholeMatches);
             cv::imshow("HF + SearchByBoWV2", plotHF);
             cout << "HF + SearchByBoWV2:" << endl;

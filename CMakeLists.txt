@@ -8,7 +8,7 @@ if (NOT CMAKE_BUILD_TYPE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif ()
 MESSAGE("build type: " ${CMAKE_BUILD_TYPE})
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -fopenmp -march=native -pthread -DCOMPILEDWITHC11")
+set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -fopenmp -march=native -pthread")
 set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS} -g")
 set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
 # ADD_DEFINITIONS(-DREGISTER_TIMES)
@@ -17,7 +17,6 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 set(USE_TENSORFLOW ON)
 set(USE_OPENVINO OFF)
-set(BUILD_COMPARISON ON)
 
 find_package(OpenCV 4.4 REQUIRED
 PATHS ~/src/opencv-4.5/install
@@ -125,7 +124,8 @@ include/GeometricTools.h
 include/TwoViewReconstruction.h
 include/SerializationUtils.h
 include/Config.h
-include/Settings.h)
+include/Settings.h
+include/utility_common.h)
 
 #add_subdirectory(Thirdparty/g2o)
 
@@ -206,10 +206,3 @@ target_link_libraries(mono_inertial_euroc ${PROJECT_NAME})
 add_executable(mono_inertial_tum_vi
         Examples/Monocular-Inertial/mono_inertial_tum_vi.cc)
 target_link_libraries(mono_inertial_tum_vi ${PROJECT_NAME})
-
-#Compare HFNet-SLAM with original ORB-SLAM3
-if(BUILD_COMPARISON)
-
-add_subdirectory(Comparison)
-
-endif()

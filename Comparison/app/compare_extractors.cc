@@ -10,49 +10,45 @@
 #include <dirent.h>
 #include <random>
 
-#include "../include/Settings.h"
 #include "../include/Extractors/HFNetTFModelV2.h"
-
+#include "../include/Extractors/HFextractor.h"
 #include "ORBextractor.h"
 
-#include "app/utility_common.h"
+#include "../include/utility_common.h"
 
 using namespace cv;
 using namespace std;
 using namespace ORB_SLAM3;
 
-Settings *settings;
-
 const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
-const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
-const int dbStart = 420;
-const int dbEnd = 50;
-
 // const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
-// const string strSettingsPath("/home/llm/ROS/HFNet_SLAM/Comparison/app/TUM-VI.yaml");
-// const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
-// const int dbStart = 50;
-// const int dbEnd = 50;
-
 const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
+const int nLevels = 4;
+const float scaleFactor = 1.2f;
 
 int main(int argc, char* argv[])
 {
-
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
-    settings = new Settings(strSettingsPath, 0);
+    if (files.empty()) {
+        cout << "Error, failed to find any valid image in: " << strDatasetPath << endl;
+        return 1;
+    }
+    cv::Size ImSize = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE).size();
+    if (ImSize.area() == 0) {
+        cout << "Error, failed to read the image at: " << strDatasetPath + files[0] << endl;
+        return 1;
+    }
 
     vector<BaseModel*> vpModels;
-    cv::Size ImSize = settings->newImSize();
     float scale = 1.0;
-    for (int level = 0; level < settings->nLevels(); ++level)
+    for (int level = 0; level < nLevels; ++level)
     {
         cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
         BaseModel *pNewModel;
         if (level == 0) pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
         else pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocal, inputShape);
         vpModels.emplace_back(pNewModel);
-        scale /= settings->scaleFactor();
+        scale /= scaleFactor;
     }
 
     std::default_random_engine generator;
@@ -68,7 +64,7 @@ int main(int argc, char* argv[])
     cv::namedWindow("HFNet-SLAM");
     cv::moveWindow("HFNet-SLAM", 0, 540);
 
-    char command = ' ';
+    char command = 0;
     float threshold = 0.01;
     int nNMSRadius = 4;
     int nFeatures = 1000;
@@ -84,7 +80,7 @@ int main(int argc, char* argv[])
         else if (command == 'c') nNMSRadius += 1;
         else if (command == 'q') nFeatures = std::max(nFeatures - 200, 0);
         else if (command == 'e') nFeatures += 200;
-        else select = distribution(generator);
+        else if (command == ' ')select = distribution(generator);
         cout << "command: " << command << endl;
         cout << "select: " << select << endl;
         cout << "nFeatures: " << nFeatures << endl;
@@ -92,13 +88,11 @@ int main(int argc, char* argv[])
         cout << "nNMSRadius: " << nNMSRadius << endl;
 
         image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        if (settings->needToResize())
-            cv::resize(image, image, settings->newImSize());
 
         {
             cout << "============= ORB-SLAM3 =============" << endl;
             auto t1 = chrono::steady_clock::now();
-            ORBextractor extractor(nFeatures, settings->scaleFactor(), settings->nLevels(), 20, 7);
+            ORBextractor extractor(nFeatures, scaleFactor, 8, 20, 7);
             extractor(image, cv::Mat(), keypoints, localDescripotrs, vLapping);
             auto t2 = chrono::steady_clock::now();
             auto t = chrono::duration_cast<chrono::milliseconds>(t2 - t1).count();
@@ -109,7 +103,7 @@ int main(int argc, char* argv[])
 
         {
             cout << "============= HFNet-SLAM =============" << endl;
-            HFextractor extractorHF(nFeatures, threshold, nNMSRadius, settings->scaleFactor(), settings->nLevels(), vpModels);
+            HFextractor extractorHF(nFeatures, threshold, nNMSRadius, scaleFactor, nLevels, vpModels);
             auto t1 = chrono::steady_clock::now();
             extractorHF(image, keypoints, localDescripotrs, globlaDescriptors);
             auto t2 = chrono::steady_clock::now();

@@ -6,6 +6,8 @@
 #include <dirent.h>
 #include <algorithm>
 #include <opencv2/opencv.hpp>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 using namespace cv;
 using namespace std;

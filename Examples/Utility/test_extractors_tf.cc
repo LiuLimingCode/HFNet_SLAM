@@ -101,7 +101,7 @@ total costs: 18.2465 ± 0.538864
 #include "Settings.h"
 #include "Extractors/HFNetTFModelV2.h"
 #include "Extractors/HFextractor.h"
-#include "Examples/Utility/utility_common.h"
+#include "utility_common.h"
 
 using namespace cv;
 using namespace std;

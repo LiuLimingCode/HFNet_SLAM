@@ -6,32 +6,35 @@
 #include <opencv2/opencv.hpp>
 
 #include "../include/Frame.h"
-#include "../include/Settings.h"
 #include "../include/Extractors/HFextractor.h"
 #include "../include/Extractors/HFNetTFModelV2.h"
 
 #include "ORBextractor.h"
 #include "ORBVocabulary.h"
 
-#include "app/utility_common.h"
+#include "../include/utility_common.h"
 
 using namespace cv;
 using namespace std;
 using namespace Eigen;
 using namespace ORB_SLAM3;
 
-Settings *settings;
+const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
+const string strDatasetPath("/media/llm/Datasets/EuRoC/V203/mav0/cam0/data/");
+// const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-magistrale6_512_16/mav0/cam0/data/");
 
-struct KeyFrameHFNetSLAM
+struct TestKeyFrame
 {
-int mnFrameId;
-const cv::Mat imgLeft;
-cv::Mat mGlobalDescriptors;
+    int mnFrameId;
+    float mPlaceRecognitionScore = 1.0;
+};
 
-float mPlaceRecognitionScore = 1.0;
+struct KeyFrameHFNetSLAM : public TestKeyFrame
+{
+    cv::Mat mGlobalDescriptors;
 
-KeyFrameHFNetSLAM(int id, const cv::Mat im, HFNetTFModelV2* pModelInter, HFNetTFModelV2* pModelGlobal) :
-    mnFrameId(id), imgLeft(im) {
+    KeyFrameHFNetSLAM(int id, const cv::Mat im, HFNetTFModelV2* pModelInter, HFNetTFModelV2* pModelGlobal) {
+        mnFrameId = id;
         vector<cv::KeyPoint> vKeyPoints;
         cv::Mat localDescriptors, intermediate;
         pModelInter->Detect(im, vKeyPoints, localDescriptors, intermediate, 1000, 0.01, 4);
@@ -39,72 +42,60 @@ KeyFrameHFNetSLAM(int id, const cv::Mat im, HFNetTFModelV2* pModelInter, HFNetTF
     }
 };
 
-typedef vector<KeyFrameHFNetSLAM*> KeyFrameDBHFNetSLAM;
-
-struct KeyFrameORBSLAM3
+struct KeyFrameORBSLAM3 : public TestKeyFrame
 {
-int mnFrameId;
-const cv::Mat imgLeft;
+    std::vector<cv::KeyPoint> mvKeys;
+    cv::Mat mDescriptors;
+    DBoW2::BowVector mBowVec;
+    DBoW2::FeatureVector mFeatVec;
 
-std::vector<cv::KeyPoint> mvKeys;
-cv::Mat mDescriptors;
-DBoW2::BowVector mBowVec;
-DBoW2::FeatureVector mFeatVec;
-
-float mPlaceRecognitionScore = 1.0;
-
-// static std::vector<list<KeyFrameORBSLAM3*> > mvInvertedFile;
-
-KeyFrameORBSLAM3(int id, const cv::Mat im, ORBVocabulary* mpORBvocabulary, ORBextractor* extractorLeft) :
-    mnFrameId(id), imgLeft(im) {
+    KeyFrameORBSLAM3(int id, const cv::Mat im, ORBVocabulary* mpORBvocabulary, ORBextractor* extractorLeft) {
+        mnFrameId = id;
         vector<int> vLapping = {0,1000};
-        (*extractorLeft)(imgLeft, cv::Mat(), mvKeys, mDescriptors, vLapping);
+        (*extractorLeft)(im, cv::Mat(), mvKeys, mDescriptors, vLapping);
         vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors);
         mpORBvocabulary->transform(vCurrentDesc,mBowVec,mFeatVec,4);
-
-        // if (mvInvertedFile.empty()) mvInvertedFile.resize(mpORBvocabulary->size());
-        // for(DBoW2::BowVector::const_iterator vit= mBowVec.begin(), vend=mBowVec.end(); vit!=vend; vit++)
-        //     mvInvertedFile[vit->first].push_back(this);
     }
 };
-typedef vector<KeyFrameORBSLAM3*> KeyFrameDBORBSLAM3;
 
-vector<KeyFrameORBSLAM3*> GetNCandidateLoopFrameORBSLAM3(ORBVocabulary* mpVoc, KeyFrameORBSLAM3* query, const KeyFrameDBORBSLAM3 &db, int k)
+typedef vector<TestKeyFrame*> KeyFrameDB;
+
+KeyFrameDB GetNCandidateLoopFrameORBSLAM3(ORBVocabulary* mpVoc, KeyFrameORBSLAM3* query, const KeyFrameDB &db, int k)
 {
-    if (db.front()->mnFrameId > query->mnFrameId - 30) return vector<KeyFrameORBSLAM3*>();
+    if (db.front()->mnFrameId >= query->mnFrameId - 30) return KeyFrameDB();
 
     int count = 0;
     for (auto it = db.begin(); it != db.end(); ++it)
     {
-        KeyFrameORBSLAM3 *pKF = *it;
-        if (pKF->mnFrameId > query->mnFrameId - 30) break;
+        KeyFrameORBSLAM3 *pKF = static_cast<KeyFrameORBSLAM3*>(*it);
+        if (pKF->mnFrameId >= query->mnFrameId - 30) break;
         count++;
         pKF->mPlaceRecognitionScore = mpVoc->score(pKF->mBowVec,query->mBowVec);
     }
-    vector<KeyFrameORBSLAM3*> res(k);
-    std::partial_sort_copy(db.begin(), db.begin() + count, res.begin(), res.end(), [](KeyFrameORBSLAM3* const f1, KeyFrameORBSLAM3* const f2) {
+    KeyFrameDB res(min(k, count));
+    std::partial_sort_copy(db.begin(), db.begin() + count, res.begin(), res.end(), [](TestKeyFrame* const f1, TestKeyFrame* const f2) {
         return f1->mPlaceRecognitionScore > f2->mPlaceRecognitionScore;
     });
     return res;
 }
 
-vector<KeyFrameHFNetSLAM*> GetNCandidateLoopFrameHFNetSLAM(KeyFrameHFNetSLAM* query, const KeyFrameDBHFNetSLAM &db, int k)
+KeyFrameDB GetNCandidateLoopFrameHFNetSLAM(KeyFrameHFNetSLAM* query, const KeyFrameDB &db, int k)
 {
-    if (db.front()->mnFrameId > query->mnFrameId - 30) return vector<KeyFrameHFNetSLAM*>();
+    if (db.front()->mnFrameId >= query->mnFrameId - 30) return KeyFrameDB();
 
     int count = 0;
     Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> queryDescriptors(query->mGlobalDescriptors.ptr<float>(), query->mGlobalDescriptors.rows, query->mGlobalDescriptors.cols);
     for (auto it = db.begin(); it != db.end(); ++it)
     {
-        KeyFrameHFNetSLAM *pKF = *it;
-        if (pKF->mnFrameId > query->mnFrameId - 30) break;
+        KeyFrameHFNetSLAM *pKF = static_cast<KeyFrameHFNetSLAM*>(*it);
+        if (pKF->mnFrameId >= query->mnFrameId - 30) break;
         count++;
         Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> pKFDescriptors(pKF->mGlobalDescriptors.ptr<float>(), pKF->mGlobalDescriptors.rows, pKF->mGlobalDescriptors.cols);
-        pKF->mPlaceRecognitionScore = (queryDescriptors - pKFDescriptors).norm();
+        pKF->mPlaceRecognitionScore = 1 - (queryDescriptors - pKFDescriptors).norm();
     }
-    vector<KeyFrameHFNetSLAM*> res(k);
-    std::partial_sort_copy(db.begin(), db.begin() + count, res.begin(), res.end(), [](KeyFrameHFNetSLAM* const f1, KeyFrameHFNetSLAM* const f2) {
-        return f1->mPlaceRecognitionScore < f2->mPlaceRecognitionScore;
+    KeyFrameDB res(min(k, count));
+    std::partial_sort_copy(db.begin(), db.begin() + count, res.begin(), res.end(), [](TestKeyFrame* const f1, TestKeyFrame* const f2) {
+        return f1->mPlaceRecognitionScore > f2->mPlaceRecognitionScore;
     });
     return res;
 }
@@ -117,21 +108,27 @@ void ShowImageWithText(const string &title, const cv::Mat &image, const string &
     cv::imshow(title, plot);
 }
 
-// const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
-// const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
-// const int dbStart = 420;
-// const int dbEnd = 50;
-
-const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-outdoors7_512_16/mav0/cam0/data/");
-const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
-const int dbStart = 0;
-const int dbEnd = 0;
-
 int main(int argc, char** argv)
 {
-    settings = new Settings(strSettingsPath, 0);
-    HFNetTFModelV2 *pModelImageToLocalAndInter = new HFNetTFModelV2(settings->strTFModelPath(), kImageToLocalAndIntermediate, {1, settings->newImSize().height, settings->newImSize().width, 1});
-    HFNetTFModelV2 *pModelInterToGlobal = new HFNetTFModelV2(settings->strTFModelPath(), kIntermediateToGlobal, {1, settings->newImSize().height/8, settings->newImSize().width/8, 96});
+    // By default, the Eigen will use the maximum number of threads in OpenMP.
+    // However, this will somehow slow down the calculation of dense matrix multiplication.
+    // Therefore, use only half of the thresds.
+    Eigen::setNbThreads(std::max(Eigen::nbThreads() / 2, 1));
+
+    vector<string> files = GetPngFiles(strDatasetPath); // get all image files
+    if (files.empty()) {
+        std::cout << "Error, failed to find any valid image in: " << strDatasetPath << std::endl;
+        return 1;
+    }
+    cv::Size ImSize = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE).size();
+    if (ImSize.area() == 0) {
+        std::cout << "Error, failed to read the image at: " << strDatasetPath + files[0] << std::endl;
+        return 1;
+    }
+    std::cout << "Got [" << files.size() << "] images in dataset" << std::endl;
+
+    HFNetTFModelV2 *pModelImageToLocalAndInter = new HFNetTFModelV2(strTFModelPath, kImageToLocalAndIntermediate, {1, ImSize.height, ImSize.width, 1});
+    HFNetTFModelV2 *pModelInterToGlobal = new HFNetTFModelV2(strTFModelPath, kIntermediateToGlobal, {1, ImSize.height/8, ImSize.width/8, 96});
 
     ORBextractor extractorORB(1000, 1.2, 8, 20, 7);
 
@@ -139,47 +136,34 @@ int main(int argc, char** argv)
     ORBVocabulary vocabORB;
     if(!vocabORB.loadFromTextFile(strVocFileORB))
     {
-        cerr << "Falied to open at: " << strVocFileORB << endl;
+        cerr << "Falied to open at: " << strVocFileORB << std::endl;
         exit(-1);
     }
 
-    GeometricCamera* pCamera = settings->camera1();
-    cv::Mat distCoef;
-    if(settings->needToUndistort()){
-        distCoef = settings->camera1DistortionCoef();
-    }
-    else{
-        distCoef = cv::Mat::zeros(4,1,CV_32F);
-    }
+    int start = 0;
+    int end = files.size();
 
-    vector<string> files = GetPngFiles(strDatasetPath); // get all image files
-    cout << "Got [" << files.size() << "] images in dataset" << endl;
-
-    int end = files.size() - dbEnd;
     std::default_random_engine generator;
-    std::uniform_int_distribution<unsigned int> distribution(dbStart, end);
+    std::uniform_int_distribution<unsigned int> distribution(30, end);
 
     const int step = 4;
-    int nKeyFrame = (end - dbStart) / step;
+    int nKeyFrame = (end - start) / step;
 
     if (nKeyFrame <= 30) exit(-1);
-    cout << "Dataset range: [" << dbStart << " ~ " << end << "]" << ", nKeyFrame: " << nKeyFrame << endl;
+    std::cout << "Dataset range: [" << start << " ~ " << end << "]" << ", nKeyFrame: " << nKeyFrame << std::endl;
 
-    KeyFrameDBHFNetSLAM vKeyFrameDBHFNetSLAM;
+    KeyFrameDB vKeyFrameDBHFNetSLAM, vKeyFrameDBORBSLAM3;
     vKeyFrameDBHFNetSLAM.reserve(nKeyFrame);
-    KeyFrameDBORBSLAM3 vKeyFrameDBORBSLAM3;
     vKeyFrameDBORBSLAM3.reserve(nKeyFrame);
     vector<cv::Mat> vImageDatabase;
-    float cur = dbStart;
+    float cur = start;
     while (cur < end)
     {
         int select = cur;
         cv::Mat image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        if (settings->needToResize())
-            cv::resize(image, image, settings->newImSize());
 
-        // KeyFrameHFNetSLAM *pKFHF = new KeyFrameHFNetSLAM(select, image, pModelImageToLocalAndInter, pModelInterToGlobal);
-        // vKeyFrameDBHFNetSLAM.emplace_back(pKFHF);
+        KeyFrameHFNetSLAM *pKFHF = new KeyFrameHFNetSLAM(select, image, pModelImageToLocalAndInter, pModelInterToGlobal);
+        vKeyFrameDBHFNetSLAM.emplace_back(pKFHF);
 
         KeyFrameORBSLAM3 *pKFORB = new KeyFrameORBSLAM3(select, image, &vocabORB, &extractorORB);
         vKeyFrameDBORBSLAM3.emplace_back(pKFORB);
@@ -196,41 +180,44 @@ int main(int argc, char** argv)
     cv::namedWindow("Candidate 3");
     cv::moveWindow("Candidate 3", 820, 540);
 
-    char command = ' ';
-    int select = 18599;
+    char command = 0;
+    bool showHF = true;
+    int select = distribution(generator);
     while (1)
     {
         if (command == 'w') select += 1;
         else if (command == 'x') select -= 1;
-        else if (command == '1') select = 8317;
-        else if (command == '2') select = 17885;
-        else if (command == '3') select = 18599;
-        // else select = distribution(generator);
+        else if (command == 'q') showHF = !showHF;
+        else if (command == ' ') select = distribution(generator);
 
         cv::Mat image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        if (settings->needToResize())
-            cv::resize(image, image, settings->newImSize());
 
         KeyFrameHFNetSLAM *pKFHF = new KeyFrameHFNetSLAM(select, image, pModelImageToLocalAndInter, pModelInterToGlobal);
 
         KeyFrameORBSLAM3 *pKFORB = new KeyFrameORBSLAM3(select, image, &vocabORB, &extractorORB);
 
         auto t1 = chrono::steady_clock::now();
-        // auto res = GetNCandidateLoopFrameHFNetSLAM(pKF, vKeyFrameDBHFNetSLAM, 3);
-        auto res = GetNCandidateLoopFrameORBSLAM3(&vocabORB, pKFORB, vKeyFrameDBORBSLAM3, 3);
+        vector<TestKeyFrame*> res;
+        if (showHF)
+            res = GetNCandidateLoopFrameHFNetSLAM(pKFHF, vKeyFrameDBHFNetSLAM, 3);
+        else
+            res = GetNCandidateLoopFrameORBSLAM3(&vocabORB, pKFORB, vKeyFrameDBORBSLAM3, 3);
         auto t2 = chrono::steady_clock::now();
         auto t = chrono::duration_cast<chrono::microseconds>(t2 - t1).count();
-        cout << "Query cost time: " << t << endl;
-
+        if (showHF) std::cout << "HFNet-SLAM: " << std::endl;
+        else std::cout << "ORB-SLAM3: " << std::endl;
+        std::cout << "Query cost time: " << t << std::endl;
+        
         ShowImageWithText("Query Image", image, std::to_string((int)pKFORB->mnFrameId));
-        for (int index = 0; index < 3; ++index)
+        for (size_t index = 0; index < 3; ++index)
         {
-            if (index < res.size())
-                ShowImageWithText("Candidate " + std::to_string(index + 1), res[index]->imgLeft,
+            if (index < res.size()) {
+                cv::Mat image = imread(strDatasetPath + files[res[index]->mnFrameId], IMREAD_GRAYSCALE);
+                ShowImageWithText("Candidate " + std::to_string(index + 1), image,
                     std::to_string((int)res[index]->mnFrameId) + ":" + std::to_string(res[index]->mPlaceRecognitionScore));
+            }
             else {
-                Mat empty;
-                empty.create(cv::Size(100,100), CV_8UC1);
+                Mat empty = cv::Mat::zeros(ImSize, CV_8U);
                 cv::imshow("Candidate " + std::to_string(index + 1), empty);
             }
         }

@@ -14,7 +14,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('ckpt_path', type=str)
     parser.add_argument('export_name', type=str)
-    parser.add_argument('nms_iteration', type=int, default=1)
+    parser.add_argument('nms_iteration', type=int, default=2)
     args = parser.parse_args()
 
     export_name = args.export_name
