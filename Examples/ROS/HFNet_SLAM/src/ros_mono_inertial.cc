@@ -75,11 +75,12 @@ int main(int argc, char **argv)
   bool bEqual = false;
   if(argc < 3 || argc > 4)
   {
-    cerr << endl << "Usage: rosrun ORB_SLAM3 Mono_Inertial path_to_vocabulary path_to_settings [do_equalize]" << endl;
+    cerr << endl << "Usage: rosrun HFNet-SLAM Mono_Inertial path_to_settings path_for_result [do_equalize]" << endl;
     ros::shutdown();
     return 1;
   }
-
+  string strPathSaving = string(argv[2]);
+  cout << "result save path: " << strPathSaving << endl;
 
   if(argc==4)
   {
@@ -89,7 +90,7 @@ int main(int argc, char **argv)
   }
 
   // Create SLAM system. It initializes all system threads and gets ready to process frames.
-  ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::IMU_MONOCULAR,true);
+  ORB_SLAM3::System SLAM(argv[1],ORB_SLAM3::System::IMU_MONOCULAR,true);
 
   ImuGrabber imugb;
   ImageGrabber igb(&SLAM,&imugb,bEqual); // TODO
@@ -101,6 +102,18 @@ int main(int argc, char **argv)
   std::thread sync_thread(&ImageGrabber::SyncWithImu,&igb);
 
   ros::spin();
+
+  // Stop all threads
+  SLAM.Shutdown();
+
+  // Save camera trajectory
+  system(("mkdir -p " + strPathSaving).c_str());
+  const string kf_file =  strPathSaving + "/trajectory_keyframe.txt";
+  const string f_file =  strPathSaving + "/trajectory.txt";
+  SLAM.SaveTrajectoryEuRoC(f_file);
+  SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
+
+  ros::shutdown();
 
   return 0;
 }

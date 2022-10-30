@@ -26,7 +26,7 @@ HFNet-SLAM has more effective mapping and loop detection threads compared with O
 
 ### OpenCV
 
-We use OpenCV to manipulate images and features. Dowload and install instructions can be found at: http://opencv.org. Required at leat 4.4.
+We use OpenCV to manipulate images and features. Dowload and install instructions can be found at: http://opencv.org.
 
 ### TensorFlow C++ API
 
@@ -58,6 +58,10 @@ More details about the process of converting can be found in the [HF-Net Model C
 ```
 bash build.sh
 ```
+
+### ROS(optional)
+
+Some examples using ROS are provided. Building these examples is optional. These have been tested with ROS Noetic under Ubuntu 20.04.
 
 ## Evaluation on EuRoC dataset
 

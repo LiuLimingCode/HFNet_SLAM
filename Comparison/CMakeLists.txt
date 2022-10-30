@@ -5,13 +5,7 @@ set(DEFAULT_BUILD_TYPE "RelWithDebInfo")
 MESSAGE("build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -fopenmp -march=native -pthread")
 
-find_package(OpenCV 4.4 REQUIRED
-PATHS ~/src/opencv-4.5/install
-NO_DEFAULT_PATH)
-if(NOT OpenCV_FOUND)
-    message(FATAL_ERROR "OpenCV > 4.4 not found.")
-endif()
-
+find_package(OpenCV REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
 
 add_subdirectory(Thirdparty/DBoW2)

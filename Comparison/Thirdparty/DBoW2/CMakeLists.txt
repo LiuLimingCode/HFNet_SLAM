@@ -29,10 +29,7 @@ set(SRCS_DUTILS
   DUtils/Timestamp.cpp)
 
 
-find_package(OpenCV 4.4 REQUIRED
-PATHS ~/src/opencv-4.5/install
-NO_DEFAULT_PATH)
-
+find_package(OpenCV REQUIRED)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 include_directories(${OpenCV_INCLUDE_DIRS})

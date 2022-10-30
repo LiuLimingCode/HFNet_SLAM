@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="path_to_settings" default="$(find HFNet_SLAM)/../../../Examples/Monocular/EuRoC.yaml"/>
+    <arg name="result_name" default="test"/>
+    <arg name="fold_to_result" default="$(find HFNet_SLAM)/evaluation/$(arg result_name)/"/>
+
+    <node pkg="HFNet_SLAM" type="Mono" name="Mono" cwd="node" 
+        args="$(arg path_to_settings) $(arg fold_to_result)" output="screen">
+        <remap from="/camera/image_raw" to="/cam0/image_raw"/>
+    </node>
+</launch>
