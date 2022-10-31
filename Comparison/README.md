@@ -48,3 +48,10 @@ Query cost time: 420
 <img src="result/compare_loop_detection HFNet-SLAM.png" width="600" title="compare_loop_detection HFNet-SLAM">
 
 Comment: The loop detection of HFNet-SLAM has higher recall and precision compared with ORB-SLAM3. Besides, it is more effective.
+
+
+**Comparative Runtime Performance**:
+
+<img src="https://user-images.githubusercontent.com/52725165/197371705-e437adc0-ed47-4bb7-a3db-ff0a091b2568.png" title="Comparative Runtime Performance">
+
+HFNet-SLAM has more effective mapping and loop detection threads compared with ORB-SLAM3, but it needs an extra 10 ms and GPU support in the tracking tread because the inference of the HF-Net model uses float64 precision. There is a great potential improvement by using quantization and half-precision technologies to increase the runtime performance.

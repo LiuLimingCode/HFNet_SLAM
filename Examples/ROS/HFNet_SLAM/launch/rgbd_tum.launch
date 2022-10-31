@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="path_to_settings" default="$(find HFNet_SLAM)/../../../Examples/RGB-D/TUM1.yaml"/>
+    <arg name="result_name" default="test"/>
+    <arg name="fold_to_result" default="$(find HFNet_SLAM)/evaluation/$(arg result_name)/"/>
+
+    <node pkg="HFNet_SLAM" type="RGBD" name="RGBD" cwd="node" 
+        args="$(arg path_to_settings) $(arg fold_to_result)" output="screen">
+        <remap from="/camera/rgb/image_raw" to="/camera/rgb/image_color"/>
+        <remap from="/camera/depth_registered/image_raw" to="/camera/depth/image"/>
+    </node>
+</launch>

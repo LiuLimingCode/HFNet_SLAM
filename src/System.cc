@@ -495,12 +495,13 @@ void System::Shutdown()
 
     /*if(mpViewer)
         pangolin::BindToContext("ORB-SLAM2: Map Viewer");*/
+}
 
+void System::PrintTimeStats(const std::string& strPathSaving)
+{
 #ifdef REGISTER_TIMES
-    mpTracker->PrintTimeStats();
+    mpTracker->PrintTimeStats(strPathSaving);
 #endif
-
-
 }
 
 bool System::isShutDown() {

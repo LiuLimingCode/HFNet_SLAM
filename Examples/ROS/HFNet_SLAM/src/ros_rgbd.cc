@@ -49,12 +49,15 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "RGBD");
     ros::start();
 
-    if(argc != 2)
+    if(argc != 3)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM3 RGBD path_to_settings" << endl;        
+        cerr << endl << "Usage: rosrun ORB_SLAM3 RGBD path_to_settings path_for_result" << endl;        
         ros::shutdown();
         return 1;
-    }    
+    }
+    string strPathSaving = string(argv[2]);
+    if (strPathSaving.back() != '/') strPathSaving.push_back('/');
+    cout << "result save path: " << strPathSaving << endl;
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM3::System SLAM(argv[1],ORB_SLAM3::System::RGBD,true);
@@ -63,8 +66,8 @@ int main(int argc, char **argv)
 
     ros::NodeHandle nh;
 
-    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_raw", 100);
-    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "camera/depth_registered/image_raw", 100);
+    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_raw", 10);
+    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/depth_registered/image_raw", 10);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
     sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2));
@@ -75,7 +78,12 @@ int main(int argc, char **argv)
     SLAM.Shutdown();
 
     // Save camera trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+    system(("mkdir -p \"" + strPathSaving + "\"").c_str());
+    const string kf_file =  strPathSaving + "trajectory_keyframe.txt";
+    const string f_file =  strPathSaving + "trajectory.txt";
+    SLAM.PrintTimeStats(strPathSaving);
+    SLAM.SaveTrajectoryTUM(f_file);
+    SLAM.SaveKeyFrameTrajectoryTUM(kf_file);
 
     ros::shutdown();
 
@@ -106,7 +114,13 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+#ifdef REGISTER_TIMES
+    double t_track = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
+    mpSLAM->InsertTrackTime(t_track);
+#endif
 }
 
 

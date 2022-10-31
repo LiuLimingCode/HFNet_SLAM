@@ -42,6 +42,7 @@ int main(int argc, char **argv)
     cout << "num_seq = " << num_seq << endl;
     string strPathSetting = argv[1];
     string strPathSaving = string(argv[2]);
+    if (strPathSaving.back() != '/') strPathSaving.push_back('/');
     cout << "settings path: " << strPathSetting << endl;
     cout << "result save path: " << strPathSaving << endl;
 
@@ -169,23 +170,16 @@ int main(int argc, char **argv)
     // Stop all threads
     SLAM.Shutdown();
 
-    int res;
+    // Stop all threads
+    SLAM.Shutdown();
+
     // Save camera trajectory
-    res = system(("mkdir -p " + strPathSaving).c_str());
+    system(("mkdir -p \"" + strPathSaving + "\"").c_str());
     const string kf_file =  strPathSaving + "trajectory_keyframe.txt";
     const string f_file =  strPathSaving + "trajectory.txt";
-    SLAM.SaveTrajectoryEuRoC(f_file);
-    SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
-#ifdef REGISTER_TIMES
-    res = system(("mv ExecMean.txt " + strPathSaving + "ExecMean.txt").c_str());
-    res = system(("mv LBA_Stats.txt " + strPathSaving + "LBA_Stats.txt").c_str());
-    res = system(("mv LocalMapTimeStats.txt " + strPathSaving + "LocalMapTimeStats.txt").c_str());
-    res = system(("mv SessionInfo.txt " + strPathSaving + "SessionInfo.txt").c_str());
-    res = system(("mv TrackingTimeStats.txt " + strPathSaving + "TrackingTimeStats.txt").c_str());
-    res = system(("mv MatchFrame.csv " + strPathSaving + "MatchFrame.csv").c_str());
-    res = system(("mv MatchKeyFrame.csv " + strPathSaving + "MatchKeyFrame.csv").c_str());
-    res = system(("mv MPCreation.csv " + strPathSaving + "MPCreation.csv").c_str());
-#endif
+    SLAM.PrintTimeStats(strPathSaving);
+    SLAM.SaveTrajectoryTUM(f_file);
+    SLAM.SaveKeyFrameTrajectoryTUM(kf_file);
 
     sort(vTimesTrack.begin(),vTimesTrack.end());
     float totaltime = 0;

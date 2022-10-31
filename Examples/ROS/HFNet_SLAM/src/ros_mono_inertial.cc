@@ -57,7 +57,7 @@ public:
 
     queue<sensor_msgs::ImageConstPtr> img0Buf;
     std::mutex mBufMutex;
-   
+    
     ORB_SLAM3::System* mpSLAM;
     ImuGrabber *mpImuGb;
 
@@ -69,139 +69,147 @@ public:
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "Mono_Inertial");
-  ros::NodeHandle n("~");
-  ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
-  bool bEqual = false;
-  if(argc < 3 || argc > 4)
-  {
-    cerr << endl << "Usage: rosrun HFNet-SLAM Mono_Inertial path_to_settings path_for_result [do_equalize]" << endl;
+    ros::init(argc, argv, "Mono_Inertial");
+    ros::NodeHandle n("~");
+    ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
+    bool bEqual = false;
+    if(argc < 3 || argc > 4)
+    {
+        cerr << endl << "Usage: rosrun HFNet-SLAM Mono_Inertial path_to_settings path_for_result [do_equalize]" << endl;
+        ros::shutdown();
+        return 1;
+    }
+    string strPathSaving = string(argv[2]);
+    if (strPathSaving.back() != '/') strPathSaving.push_back('/');
+    cout << "result save path: " << strPathSaving << endl;
+
+    if(argc==4)
+    {
+        std::string sbEqual(argv[3]);
+        if(sbEqual == "true")
+            bEqual = true;
+    }
+
+    // Create SLAM system. It initializes all system threads and gets ready to process frames.
+    ORB_SLAM3::System SLAM(argv[1],ORB_SLAM3::System::IMU_MONOCULAR,true);
+
+    ImuGrabber imugb;
+    ImageGrabber igb(&SLAM,&imugb,bEqual); // TODO
+    
+    // Maximum delay, 5 seconds
+    ros::Subscriber sub_imu = n.subscribe("/imu", 1000, &ImuGrabber::GrabImu, &imugb); 
+    ros::Subscriber sub_img0 = n.subscribe("/camera/image_raw", 100, &ImageGrabber::GrabImage,&igb);
+
+    std::thread sync_thread(&ImageGrabber::SyncWithImu,&igb);
+
+    ros::spin();
+
+    // Stop all threads
+    SLAM.Shutdown();
+
+    // Save camera trajectory
+    system(("mkdir -p \"" + strPathSaving + "\"").c_str());
+    const string kf_file =    strPathSaving + "trajectory_keyframe.txt";
+    const string f_file =    strPathSaving + "trajectory.txt";
+    SLAM.PrintTimeStats(strPathSaving);
+    SLAM.SaveTrajectoryTUM(f_file);
+    SLAM.SaveKeyFrameTrajectoryTUM(kf_file);
+
     ros::shutdown();
-    return 1;
-  }
-  string strPathSaving = string(argv[2]);
-  cout << "result save path: " << strPathSaving << endl;
 
-  if(argc==4)
-  {
-    std::string sbEqual(argv[3]);
-    if(sbEqual == "true")
-      bEqual = true;
-  }
-
-  // Create SLAM system. It initializes all system threads and gets ready to process frames.
-  ORB_SLAM3::System SLAM(argv[1],ORB_SLAM3::System::IMU_MONOCULAR,true);
-
-  ImuGrabber imugb;
-  ImageGrabber igb(&SLAM,&imugb,bEqual); // TODO
-  
-  // Maximum delay, 5 seconds
-  ros::Subscriber sub_imu = n.subscribe("/imu", 1000, &ImuGrabber::GrabImu, &imugb); 
-  ros::Subscriber sub_img0 = n.subscribe("/camera/image_raw", 100, &ImageGrabber::GrabImage,&igb);
-
-  std::thread sync_thread(&ImageGrabber::SyncWithImu,&igb);
-
-  ros::spin();
-
-  // Stop all threads
-  SLAM.Shutdown();
-
-  // Save camera trajectory
-  system(("mkdir -p " + strPathSaving).c_str());
-  const string kf_file =  strPathSaving + "/trajectory_keyframe.txt";
-  const string f_file =  strPathSaving + "/trajectory.txt";
-  SLAM.SaveTrajectoryEuRoC(f_file);
-  SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
-
-  ros::shutdown();
-
-  return 0;
+    return 0;
 }
 
 void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr &img_msg)
 {
-  mBufMutex.lock();
-  if (!img0Buf.empty())
-    img0Buf.pop();
-  img0Buf.push(img_msg);
-  mBufMutex.unlock();
+    mBufMutex.lock();
+    if (!img0Buf.empty())
+        img0Buf.pop();
+    img0Buf.push(img_msg);
+    mBufMutex.unlock();
 }
 
 cv::Mat ImageGrabber::GetImage(const sensor_msgs::ImageConstPtr &img_msg)
 {
-  // Copy the ros image message to cv::Mat.
-  cv_bridge::CvImageConstPtr cv_ptr;
-  try
-  {
-    cv_ptr = cv_bridge::toCvShare(img_msg, sensor_msgs::image_encodings::MONO8);
-  }
-  catch (cv_bridge::Exception& e)
-  {
-    ROS_ERROR("cv_bridge exception: %s", e.what());
-  }
-  
-  if(cv_ptr->image.type()==0)
-  {
-    return cv_ptr->image.clone();
-  }
-  else
-  {
-    std::cout << "Error type" << std::endl;
-    return cv_ptr->image.clone();
-  }
+    // Copy the ros image message to cv::Mat.
+    cv_bridge::CvImageConstPtr cv_ptr;
+    try
+    {
+        cv_ptr = cv_bridge::toCvShare(img_msg, sensor_msgs::image_encodings::MONO8);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+    }
+    
+    if(cv_ptr->image.type()==0)
+    {
+        return cv_ptr->image.clone();
+    }
+    else
+    {
+        std::cout << "Error type" << std::endl;
+        return cv_ptr->image.clone();
+    }
 }
 
 void ImageGrabber::SyncWithImu()
 {
-  while(1)
-  {
-    cv::Mat im;
-    double tIm = 0;
-    if (!img0Buf.empty()&&!mpImuGb->imuBuf.empty())
+    while(1)
     {
-      tIm = img0Buf.front()->header.stamp.toSec();
-      if(tIm>mpImuGb->imuBuf.back()->header.stamp.toSec())
-          continue;
-      {
-      this->mBufMutex.lock();
-      im = GetImage(img0Buf.front());
-      img0Buf.pop();
-      this->mBufMutex.unlock();
-      }
-
-      vector<ORB_SLAM3::IMU::Point> vImuMeas;
-      mpImuGb->mBufMutex.lock();
-      if(!mpImuGb->imuBuf.empty())
-      {
-        // Load imu measurements from buffer
-        vImuMeas.clear();
-        while(!mpImuGb->imuBuf.empty() && mpImuGb->imuBuf.front()->header.stamp.toSec()<=tIm)
+        cv::Mat im;
+        double tIm = 0;
+        if (!img0Buf.empty()&&!mpImuGb->imuBuf.empty())
         {
-          double t = mpImuGb->imuBuf.front()->header.stamp.toSec();
-          cv::Point3f acc(mpImuGb->imuBuf.front()->linear_acceleration.x, mpImuGb->imuBuf.front()->linear_acceleration.y, mpImuGb->imuBuf.front()->linear_acceleration.z);
-          cv::Point3f gyr(mpImuGb->imuBuf.front()->angular_velocity.x, mpImuGb->imuBuf.front()->angular_velocity.y, mpImuGb->imuBuf.front()->angular_velocity.z);
-          vImuMeas.push_back(ORB_SLAM3::IMU::Point(acc,gyr,t));
-          mpImuGb->imuBuf.pop();
+            tIm = img0Buf.front()->header.stamp.toSec();
+            if(tIm>mpImuGb->imuBuf.back()->header.stamp.toSec())
+                    continue;
+            {
+            this->mBufMutex.lock();
+            im = GetImage(img0Buf.front());
+            img0Buf.pop();
+            this->mBufMutex.unlock();
+            }
+
+            vector<ORB_SLAM3::IMU::Point> vImuMeas;
+            mpImuGb->mBufMutex.lock();
+            if(!mpImuGb->imuBuf.empty())
+            {
+                // Load imu measurements from buffer
+                vImuMeas.clear();
+                while(!mpImuGb->imuBuf.empty() && mpImuGb->imuBuf.front()->header.stamp.toSec()<=tIm)
+                {
+                    double t = mpImuGb->imuBuf.front()->header.stamp.toSec();
+                    cv::Point3f acc(mpImuGb->imuBuf.front()->linear_acceleration.x, mpImuGb->imuBuf.front()->linear_acceleration.y, mpImuGb->imuBuf.front()->linear_acceleration.z);
+                    cv::Point3f gyr(mpImuGb->imuBuf.front()->angular_velocity.x, mpImuGb->imuBuf.front()->angular_velocity.y, mpImuGb->imuBuf.front()->angular_velocity.z);
+                    vImuMeas.push_back(ORB_SLAM3::IMU::Point(acc,gyr,t));
+                    mpImuGb->imuBuf.pop();
+                }
+            }
+            mpImuGb->mBufMutex.unlock();
+            if(mbClahe)
+                mClahe->apply(im,im);
+
+            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+            mpSLAM->TrackMonocular(im,tIm,vImuMeas);
+            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+#ifdef REGISTER_TIMES
+            double t_track = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
+            mpSLAM->InsertTrackTime(t_track);
+#endif
         }
-      }
-      mpImuGb->mBufMutex.unlock();
-      if(mbClahe)
-        mClahe->apply(im,im);
 
-      mpSLAM->TrackMonocular(im,tIm,vImuMeas);
+        std::chrono::milliseconds tSleep(1);
+        std::this_thread::sleep_for(tSleep);
     }
-
-    std::chrono::milliseconds tSleep(1);
-    std::this_thread::sleep_for(tSleep);
-  }
 }
 
 void ImuGrabber::GrabImu(const sensor_msgs::ImuConstPtr &imu_msg)
 {
-  mBufMutex.lock();
-  imuBuf.push(imu_msg);
-  mBufMutex.unlock();
-  return;
+    mBufMutex.lock();
+    imuBuf.push(imu_msg);
+    mBufMutex.unlock();
+    return;
 }
 
 

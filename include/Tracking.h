@@ -173,10 +173,10 @@ public:
     bool mbWriteStats;
 
 #ifdef REGISTER_TIMES
-    void LocalMapStats2File();
-    void TrackStats2File();
-    void MatchState2File();
-    void PrintTimeStats();
+    void LocalMapStats2File(const std::string& strPathSaving);
+    void TrackStats2File(const std::string& strPathSaving);
+    void MatchState2File(const std::string& strPathSaving);
+    void PrintTimeStats(const std::string& strPathSaving);
 
     vector<double> vdRectStereo_ms;
     vector<double> vdResizeImage_ms;

@@ -53,6 +53,7 @@ int main(int argc, char **argv)
         return 1;
     }
     string strPathSaving = string(argv[2]);
+    if (strPathSaving.back() != '/') strPathSaving.push_back('/');
     cout << "result save path: " << strPathSaving << endl;
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
@@ -69,11 +70,12 @@ int main(int argc, char **argv)
     SLAM.Shutdown();
 
     // Save camera trajectory
-    system(("mkdir -p " + strPathSaving).c_str());
-    const string kf_file =  strPathSaving + "/trajectory_keyframe.txt";
-    const string f_file =  strPathSaving + "/trajectory.txt";
-    SLAM.SaveTrajectoryEuRoC(f_file);
-    SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
+    system(("mkdir -p \"" + strPathSaving + "\"").c_str());
+    const string kf_file =  strPathSaving + "trajectory_keyframe.txt";
+    const string f_file =  strPathSaving + "trajectory.txt";
+    SLAM.PrintTimeStats(strPathSaving);
+    SLAM.SaveTrajectoryTUM(f_file);
+    SLAM.SaveKeyFrameTrajectoryTUM(kf_file);
 
     ros::shutdown();
 
@@ -93,8 +95,13 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg)
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
-
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     mpSLAM->TrackMonocular(cv_ptr->image,cv_ptr->header.stamp.toSec());
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+#ifdef REGISTER_TIMES
+    double t_track = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
+    mpSLAM->InsertTrackTime(t_track);
+#endif
 }
 
 

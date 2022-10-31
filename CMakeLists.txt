@@ -121,7 +121,7 @@ include/Config.h
 include/Settings.h
 include/utility_common.h)
 
-#add_subdirectory(Thirdparty/g2o)
+# add_subdirectory(Thirdparty/g2o)
 
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
@@ -144,7 +144,7 @@ endif()
 
 # Build examples
 
-#Utility examples
+# Utility examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Utility)
 
 add_executable(test_eigen_cv
@@ -179,7 +179,7 @@ add_executable(test_match_local_feats
         Examples/Utility/test_match_local_feats.cc)
 target_link_libraries(test_match_local_feats ${PROJECT_NAME})
 
-#Monocular examples
+# Monocular examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular)
 
 add_executable(mono_euroc
@@ -190,7 +190,7 @@ add_executable(mono_tum_vi
         Examples/Monocular/mono_tum_vi.cc)
 target_link_libraries(mono_tum_vi ${PROJECT_NAME})
 
-#Monocular inertial examples
+# Monocular inertial examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
 
 add_executable(mono_inertial_euroc
@@ -200,3 +200,10 @@ target_link_libraries(mono_inertial_euroc ${PROJECT_NAME})
 add_executable(mono_inertial_tum_vi
         Examples/Monocular-Inertial/mono_inertial_tum_vi.cc)
 target_link_libraries(mono_inertial_tum_vi ${PROJECT_NAME})
+
+# RGB-D examples
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)
+
+add_executable(rgbd_tum
+        Examples/RGB-D/rgbd_tum.cc)
+target_link_libraries(rgbd_tum ${PROJECT_NAME})
