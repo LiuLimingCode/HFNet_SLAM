@@ -1,59 +1,9 @@
-/**
- * A test for matching
- * 
- * 
- * Result:
-ORB + BFMatcher:
-match costs time: 5ms
-matches total number: 490
-correct matches number: 331
-match correct percentage: 0.67551
-ORB + SearchByBoW:
-vocab costs time: 7ms
-match costs time: 0ms
-matches total number: 304
-correct matches number: 216
-match correct percentage: 0.710526
-HF + BFMatcher_L1:
-match costs time: 28ms
-matches total number: 831
-correct matches number: 614
-match correct percentage: 0.738869
-HF + BFMatcher_L2:
-match costs time: 15ms
-matches total number: 832
-correct matches number: 637
-match correct percentage: 0.765625
-HF + SearchByBoW_L1:
-vocab costs time: 45ms
-match costs time: 4ms
-matches total number: 769
-correct matches number: 342
-match correct percentage: 0.444733
-HF + SearchByBoW_L2:
-vocab costs time: 45ms
-match costs time: 3ms
-matches total number: 693
-correct matches number: 342
-match correct percentage: 0.493506
-HF + SearchByBoWV2:
-match costs time: 75ms
-matches total number: 934
-correct matches number: 342
-match correct percentage: 0.366167
- * 1. HFNet is way better than ORB, but it is more time-consuming
- * 2. The L1 and L2 descriptor distance is the same for HFNet, but L2 norm is more effective
- * 3. SearchByBoW will increase the matching time
- * 4. SearchByBoW can increase the correct percentage of ORB descriptor
- * 5. SearchByBoW does not work well for HF descriptor, maybe it is because the vocabulary for HF is bad.
- */
 #include <chrono>
 #include <fstream>
 #include <dirent.h>
 #include <random>
 
 #include "../include/CameraModels/Pinhole.h"
-#include "../include/Extractors/HFNetTFModelV2.h"
 #include "../include/Extractors/HFextractor.h"
 
 #include "ORBextractor.h"
@@ -64,12 +14,6 @@ match correct percentage: 0.366167
 using namespace cv;
 using namespace std;
 using namespace ORB_SLAM3;
-
-const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
-const string strVocFileORB("/home/llm/ROS/HFNet_SLAM/Comparison/Vocabulary/ORBvoc.txt");
-const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_04_difficult/mav0/cam0/data/");
-// const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor1_512_16/mav0/cam0/data/");
-
 
 std::vector<cv::Mat> toDescriptorVector(const cv::Mat &Descriptors)
 {
@@ -351,6 +295,14 @@ int SearchByBoWHFNetSLAM(float mfNNratio, float threshold, bool mutual,
 
 int main(int argc, char* argv[])
 {
+    if (argc != 4) {
+        cerr << endl << "Usage: compare_matchers path_to_dataset path_to_model path_to_vocabulary" << endl;   
+        return -1;
+    }
+    const string strDatasetPath = string(argv[1]);
+    const string strTFModelPath = string(argv[2]);
+    const string strVocFileORB = string(argv[3]);
+    
     // By default, the Eigen will use the maximum number of threads in OpenMP.
     // However, this will somehow slow down the calculation of dense matrix multiplication.
     // Therefore, use only half of the thresds.
@@ -373,8 +325,8 @@ int main(int argc, char* argv[])
     {
         cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
         BaseModel *pNewModel;
-        if (level == 0) pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
-        else pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocal, inputShape);
+        if (level == 0) pNewModel = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
+        else pNewModel = InitTFModel(strTFModelPath, kImageToLocal, inputShape);
         vpModels.emplace_back(pNewModel);
         scale /= 1.2f;
     }
@@ -414,7 +366,7 @@ int main(int argc, char* argv[])
         else if (command == 'r') ratioThreshold -= 0.1;
         else if (command == 'f') ratioThreshold = std::min(ratioThreshold + 0.1, 1.0);
         else if (command == 'i') showWholeMatches = !showWholeMatches;
-        else if (command == ' ')select = distribution(generator);
+        else if (command == ' ') select = distribution(generator);
 
         cout << "command: " << command << endl;
         cout << "select: " << select << endl;

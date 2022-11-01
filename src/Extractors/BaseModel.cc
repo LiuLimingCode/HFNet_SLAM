@@ -71,33 +71,46 @@ BaseModel* GetGlobalModel(void)
     return gpGlobalModel;
 }
 
+BaseModel* InitTFModel(const std::string& strModelPath, ModelDetectionMode mode, cv::Vec4i inputShape) {
+    BaseModel* pModel;
+    pModel = new HFNetTFModelV2(strModelPath, mode, inputShape);
+    if (pModel->IsValid())
+    {
+        cout << "Successfully loaded HFNetTF model" << endl;
+    }
+    else exit(-1);
+
+    return pModel;
+}
+
+BaseModel* InitVINOModel(const std::string &strModelPath, ModelDetectionMode mode, cv::Vec4i inputShape) {
+    BaseModel* pModel;
+    string strXmlPath = strModelPath + "/saved_model.xml";
+    string strBinPath = strModelPath + "/saved_model.bin";
+    pModel = new HFNetVINOModel(strXmlPath, strBinPath, mode, inputShape);
+    if (pModel->IsValid())
+    {
+        cout << "Successfully loaded HFNetTF model" << endl;
+    }
+    else exit(-1);
+
+    return pModel;
+}
+
 BaseModel* InitModel(Settings *settings, ModelDetectionMode mode, cv::Vec4i inputShape)
 {
     BaseModel* pModel;
     if (settings->modelType() == kHFNetTFModel)
     {
-        // pModel = new HFNetTFModel(settings->strTFResamplerPath(), settings->strTFModelPath());
-        pModel = new HFNetTFModelV2(settings->strTFModelPath(), mode, inputShape);
-        if (pModel->IsValid())
-        {
-            cout << "Successfully loaded HFNetTF model" << endl;
-        }
-        else exit(-1);
+        pModel = InitTFModel(settings->strTFModelPath(), mode, inputShape);
     }
     else if (settings->modelType() == kHFNetVINOModel)
     {
         string strModelPath;
         if (mode != kIntermediateToGlobal) strModelPath = settings->strVINOLocalModelPath();
         else strModelPath = settings->strVINOGlobalModelPath();
-        string strXmlPath = strModelPath + "/saved_model.xml";
-        string strBinPath = strModelPath + "/saved_model.bin";
 
-        pModel = new HFNetVINOModel(strXmlPath, strBinPath, mode, inputShape);
-        if (pModel->IsValid())
-        {
-            cout << "Successfully loaded HFNetVINO model" << endl;
-        }
-        else exit(-1);
+        pModel = InitVINOModel(strModelPath, mode, inputShape);
     }
     else
     {

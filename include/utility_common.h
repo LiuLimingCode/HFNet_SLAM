@@ -192,7 +192,7 @@ cv::Mat FindCorrectMatchesByPnP
 
     cv::Mat rvec, tvec;
     cv::Mat inliers;
-    solvePnPRansac(vPt1, vPt2, cameraMatrix, distCoeffs, rvec, tvec, false, 100, 8.0f, 0.99, inliers);
+    solvePnPRansac(vPt1, vPt2, cameraMatrix, distCoeffs, rvec, tvec, false, 300, 8.0f, 0.99, inliers, cv::SOLVEPNP_EPNP);
     inlierMatches.clear();
     wrongMatches.clear();
     inlierMatches.reserve(matchesTemp.size());
@@ -262,7 +262,7 @@ std::vector<cv::KeyPoint> undistortPoints(const std::vector<cv::KeyPoint> &src, 
     {
         mat.emplace_back(temp.pt);
     }
-    cv::undistortPoints(mat, mat, cameraMatrix, distCoeffs, cameraMatrix);
+    cv::undistortPoints(mat, mat, cameraMatrix, distCoeffs, cv::Mat(), cameraMatrix);
     for (int index = 0; index < mat.size(); ++index) 
     {
         auto kpt = src[index];
@@ -271,113 +271,5 @@ std::vector<cv::KeyPoint> undistortPoints(const std::vector<cv::KeyPoint> &src, 
     }
     return res;
 }
-
-
-std::vector<std::tuple<unsigned long, std::string, Eigen::Isometry3f>> ReadEuRoCDataset(const std::string& strDatasetPath)
-{
-    std::vector<std::tuple<unsigned long, std::string, Eigen::Isometry3f>> res;
-
-    // read ground truth data
-    std::map<unsigned long, Eigen::Isometry3f> sGroundTruth;
-    {
-        const std::string strFileGT = strDatasetPath + "/state_groundtruth_estimate0/data.csv";
-        
-        FILE *f = fopen(strFileGT.c_str(), "r");
-        if (f == nullptr) {
-            cout << "[ERROR]: can't load pose data; wrong path: " << strFileGT.c_str() << endl;
-            return res;
-        }
-
-        char title[500];
-        if (fgets(title, 500, f) == nullptr)
-        {
-            cout << "[ERROR]: can't load pose data; no data available";
-            return res;
-        }
-
-        while(!feof(f)) {
-            char line[300];
-            fgets(line, 300, f);
-            for (int index = 0; index < strlen(line); ++index) {
-                if (line[index] == ' ') line[index] = ',';
-            }
-            
-            unsigned long time;
-            float px, py, pz;
-            float qw, qx, qy, qz;
-
-            auto result = sscanf(line, "%lu,%f,%f,%f,%f,%f,%f,%f\n", 
-                &time,
-                &px, &py, &pz,
-                &qx, &qy, &qz, &qw);
-
-            time = time / 100000 * 100000;
-            Eigen::Vector3f pose;
-            Eigen::Quaternionf rotation;
-            pose << px, py, pz;
-            rotation.coeffs() << qx, qy, qz, qw;
-
-            sGroundTruth.insert(make_pair(time, Eigen::Isometry3f::Identity()));
-            sGroundTruth[time].rotate(rotation);
-            sGroundTruth[time].pretranslate(pose);
-        }
-
-        fclose(f);
-    }
-
-    // read image data
-    std::map<unsigned long, std::string> sImagePath;
-    {
-        const std::string strFileData = strDatasetPath + "/cam0/data.csv";
-        
-        FILE *f = fopen(strFileData.c_str(), "r");
-        if (f == nullptr) {
-            cout << "[ERROR]: cannot find " << strFileData << endl;
-            return res;
-        }
-
-        char title[500];
-        if (fgets(title, 500, f) == nullptr)
-        {
-            cout << "[ERROR]: can't load timestamp data";
-            return res;
-        }
-
-        while(!feof(f)) {
-            char line[300];
-            fgets(line, 300, f);
-            for (int index = 0; index < strlen(line); ++index) {
-                if (line[index] == ' ') line[index] = ',';
-            }
-            
-            unsigned long time;
-            char file[100];
-
-            auto result = sscanf(line, "%lu,%s\n", 
-                &time, file);
-            time = time / 100000 * 100000;
-            sImagePath[time] = strDatasetPath + "/cam0/data/" + file;
-        }
-
-        fclose(f);
-    }
-    
-    {
-        for (auto image : sImagePath) {
-            if (!sGroundTruth.count(image.first)) {
-                cout << "[WARNING]: failed to match timestamp: " << image.first << endl;
-                continue;
-            }
-            res.push_back(make_tuple(image.first, sImagePath[image.first], sGroundTruth[image.first]));
-        }
-        std::sort(res.begin(), res.end(), [](const std::tuple<unsigned long, std::string, Eigen::Isometry3f>& d1,
-                                             const std::tuple<unsigned long, std::string, Eigen::Isometry3f>& d2) {
-            return std::get<0>(d1) < std::get<0>(d2);
-        });
-    }
-
-    return res;
-}
-
 
 #endif

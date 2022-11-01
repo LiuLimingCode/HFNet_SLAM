@@ -60,6 +60,10 @@ std::vector<BaseModel*> GetModelVec(void);
 
 BaseModel* GetGlobalModel(void);
 
+BaseModel* InitTFModel(const std::string& strTFModelPath, ModelDetectionMode mode, cv::Vec4i inputShape);
+
+BaseModel* InitVINOModel(const std::string &strModelPath, ModelDetectionMode mode, cv::Vec4i inputShape);
+
 BaseModel* InitModel(Settings *settings, ModelDetectionMode mode, cv::Vec4i inputShape);
 
 std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int minX,

@@ -6,8 +6,6 @@ More detailed README.md is coming soon ....
 
 HFNet-SLAM is the combination and extension of the well-known [ORB-SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3) SLAM framework and a unified CNN model called [HF-Net](https://github.com/ethz-asl/hfnet). It uses the image features from HF-Net to fully replace the hand-crafted ORB features and the BoW method in the ORB-SLAM3 system. This novelty results in better performance in tracking and loop closure, boosting the accuracy of the entire HFNet-SLAM.
 
-## HFNet-SLAM vs ORB-SLAM3
-
 **Better Tracking**:
 
 <img src="https://user-images.githubusercontent.com/52725165/197087949-21196670-335e-4ea9-ac12-f226521da691.png" width="600" title="Better Tracking">
@@ -15,6 +13,8 @@ HFNet-SLAM is the combination and extension of the well-known [ORB-SLAM3](https:
 **Better Loop Closure**:
 
 <img src="https://user-images.githubusercontent.com/52725165/197088191-1d01fe8a-02ef-4002-8eeb-3c312ef48eb4.png" width="600" title="Better Loop Closure">
+
+More details about the differences can be found in the [HFNet-SLAM vs. ORB-SLAM3](Comparison/README.md) document.
 
 ## Prerequisites
 
@@ -50,6 +50,7 @@ More details about the process of converting can be found in the [HF-Net Model C
 ## Building HFNet-SLAM library and examples
 
 ```
+chmod +x build.sh
 bash build.sh
 ```
 
@@ -148,7 +149,12 @@ chmod +x build_ros.sh
 3. We provide some simple nodes with public benchmarks
 
 ```
-roslaunch HFNet_SLAM mono_euroc.launch # Monocular configuration in EuRoC dataset
-roslaunch HFNet_SLAM mono_inertial_euroc.launch # Monocular Inertial configuration in EuRoC dataset
-roslaunch HFNet_SLAM rgbd_tum.launch # RGB-D configuration in TUM-RGBD dataset
+# Monocular configuration in EuRoC dataset
+roslaunch HFNet_SLAM mono_euroc.launch
+
+# Monocular Inertial configuration in EuRoC dataset
+roslaunch HFNet_SLAM mono_inertial_euroc.launch
+
+# RGB-D configuration in TUM-RGBD dataset
+roslaunch HFNet_SLAM rgbd_tum.launch
 ```

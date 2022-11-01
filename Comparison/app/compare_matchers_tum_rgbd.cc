@@ -8,7 +8,7 @@
 
 #include "../include/Settings.h"
 #include "../include/CameraModels/Pinhole.h"
-#include "../include/Extractors/HFNetTFModelV2.h"
+#include "../include/Extractors/HFextractor.h"
 
 #include "ORBextractor.h"
 #include "ORBVocabulary.h"
@@ -317,11 +317,11 @@ int SearchByBoWHFNetSLAM_BFMatcher(float mfNNratio, float threshold, bool mutual
     return vMatches.size();
 }
 
-const string strDatasetPath("/media/llm/Datasets/TUM-RGBD");
-const string strVocFileORB("/home/llm/ROS/HFNet_SLAM/Comparison/Vocabulary/ORBvoc.txt");
-const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
+string strDatasetPath;
+string strVocFileORB;
+string strTFModelPath;
 
-const int nFeatures = 1000;
+int nFeatures = 1000;
 const int nLevels = 1;
 const float scaleFactor = 1.2f;
 const float fThreshold = 0.01;
@@ -559,6 +559,15 @@ cv::Size ImSize(640,480);
 
 int main(int argc, char* argv[])
 {
+    if (argc != 5) {
+        cerr << endl << "Usage: compare_matchers_tum_rgbd path_to_dataset path_to_model path_to_vocabulary feature_number" << endl;   
+        return -1;
+    }
+    strDatasetPath = string(argv[1]);
+    strTFModelPath = string(argv[2]);
+    strVocFileORB = string(argv[3]);
+    nFeatures = atoi(argv[4]);
+
     // By default, the Eigen will use the maximum number of threads in OpenMP.
     // However, this will somehow slow down the calculation of dense matrix multiplication.
     // Therefore, use only half of the thresds.
@@ -571,8 +580,8 @@ int main(int argc, char* argv[])
     {
         cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
         BaseModel *pNewModel;
-        if (level == 0) pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
-        else pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocal, inputShape);
+        if (level == 0) pNewModel = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
+        else pNewModel = InitTFModel(strTFModelPath, kImageToLocal, inputShape);
         vpModels.emplace_back(pNewModel);
         scale /= scaleFactor;
     }
@@ -588,12 +597,14 @@ int main(int argc, char* argv[])
     }
 
     cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
+    // cv::Mat distCoef = (cv::Mat_<double>(5, 1) << 0.231222, -0.784899, -0.003257, -0.000105, 0.917205);
+    cv::Mat distCoef;
 
     clearResult();
-    evaluation("rgbd_dataset_freiburg2_pioneer_360", cameraMatrix, cv::Mat(), vocabORB, extractorORB, extractorHF);
-    evaluation("rgbd_dataset_freiburg2_pioneer_slam", cameraMatrix, cv::Mat(), vocabORB, extractorORB, extractorHF);
-    evaluation("rgbd_dataset_freiburg2_pioneer_slam2", cameraMatrix, cv::Mat(), vocabORB, extractorORB, extractorHF);
-    evaluation("rgbd_dataset_freiburg2_pioneer_slam3", cameraMatrix, cv::Mat(), vocabORB, extractorORB, extractorHF);
+    evaluation("rgbd_dataset_freiburg2_pioneer_360", cameraMatrix, distCoef, vocabORB, extractorORB, extractorHF);
+    evaluation("rgbd_dataset_freiburg2_pioneer_slam", cameraMatrix, distCoef, vocabORB, extractorORB, extractorHF);
+    evaluation("rgbd_dataset_freiburg2_pioneer_slam2", cameraMatrix, distCoef, vocabORB, extractorORB, extractorHF);
+    evaluation("rgbd_dataset_freiburg2_pioneer_slam3", cameraMatrix, distCoef, vocabORB, extractorORB, extractorHF);
     saveResult("pioneer");
 
     return 0;

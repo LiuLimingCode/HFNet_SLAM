@@ -28,4 +28,35 @@ python3 ./evaluation/evaluate_ate_scale.py "$pathDataset"/"$sequenceName"/ground
 sequenceName='fr2_desk'
 echo "Launching $sequenceName with RGB-D sensor"
 ./Examples/RGB-D/rgbd_tum ./Examples/RGB-D/TUM2.yaml "$pathEvaluation"/"$sequenceName"/ "$pathDataset"/"$sequenceName"/ ./Examples/RGB-D/associations/"$sequenceName".txt
+python3 ./evaluation/evaluate_ate_scale.py "$pathDataset"/"$sequenceName"/groundtruth.txt "$pathEvaluation"/"$sequenceName"/trajectory_keyframe.txt --verbose --save_path "$pathEvaluation"/"$sequenceName"/
+
+sequenceName='fr2_xyz'
+echo "Launching $sequenceName with RGB-D sensor"
+./Examples/RGB-D/rgbd_tum ./Examples/RGB-D/TUM2.yaml "$pathEvaluation"/"$sequenceName"/ "$pathDataset"/"$sequenceName"/ ./Examples/RGB-D/associations/"$sequenceName".txt
+python3 ./evaluation/evaluate_ate_scale.py "$pathDataset"/"$sequenceName"/groundtruth.txt "$pathEvaluation"/"$sequenceName"/trajectory_keyframe.txt --verbose --save_path "$pathEvaluation"/"$sequenceName"/
+
+#------------------------------------
+sequenceName='fr3_nstr_tex_near'
+echo "Launching $sequenceName with RGB-D sensor"
+./Examples/RGB-D/rgbd_tum ./Examples/RGB-D/TUM3.yaml "$pathEvaluation"/"$sequenceName"/ "$pathDataset"/"$sequenceName"/ ./Examples/RGB-D/associations/"$sequenceName".txt
+python3 ./evaluation/evaluate_ate_scale.py "$pathDataset"/"$sequenceName"/groundtruth.txt "$pathEvaluation"/"$sequenceName"/trajectory.txt --verbose --save_path "$pathEvaluation"/"$sequenceName"/
+
+sequenceName='fr3_office'
+echo "Launching $sequenceName with RGB-D sensor"
+./Examples/RGB-D/rgbd_tum ./Examples/RGB-D/TUM3.yaml "$pathEvaluation"/"$sequenceName"/ "$pathDataset"/"$sequenceName"/ ./Examples/RGB-D/associations/"$sequenceName".txt
+python3 ./evaluation/evaluate_ate_scale.py "$pathDataset"/"$sequenceName"/groundtruth.txt "$pathEvaluation"/"$sequenceName"/trajectory.txt --verbose --save_path "$pathEvaluation"/"$sequenceName"/
+
+sequenceName='fr3_office_val'
+echo "Launching $sequenceName with RGB-D sensor"
+./Examples/RGB-D/rgbd_tum ./Examples/RGB-D/TUM3.yaml "$pathEvaluation"/"$sequenceName"/ "$pathDataset"/"$sequenceName"/ ./Examples/RGB-D/associations/"$sequenceName".txt
+python3 ./evaluation/evaluate_ate_scale.py "$pathDataset"/"$sequenceName"/groundtruth.txt "$pathEvaluation"/"$sequenceName"/trajectory.txt --verbose --save_path "$pathEvaluation"/"$sequenceName"/
+
+sequenceName='fr3_str_tex_far'
+echo "Launching $sequenceName with RGB-D sensor"
+./Examples/RGB-D/rgbd_tum ./Examples/RGB-D/TUM3.yaml "$pathEvaluation"/"$sequenceName"/ "$pathDataset"/"$sequenceName"/ ./Examples/RGB-D/associations/"$sequenceName".txt
+python3 ./evaluation/evaluate_ate_scale.py "$pathDataset"/"$sequenceName"/groundtruth.txt "$pathEvaluation"/"$sequenceName"/trajectory.txt --verbose --save_path "$pathEvaluation"/"$sequenceName"/
+
+sequenceName='fr3_str_tex_near'
+echo "Launching $sequenceName with RGB-D sensor"
+./Examples/RGB-D/rgbd_tum ./Examples/RGB-D/TUM3.yaml "$pathEvaluation"/"$sequenceName"/ "$pathDataset"/"$sequenceName"/ ./Examples/RGB-D/associations/"$sequenceName".txt
 python3 ./evaluation/evaluate_ate_scale.py "$pathDataset"/"$sequenceName"/groundtruth.txt "$pathEvaluation"/"$sequenceName"/trajectory.txt --verbose --save_path "$pathEvaluation"/"$sequenceName"/

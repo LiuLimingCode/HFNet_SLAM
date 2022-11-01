@@ -78,12 +78,12 @@ public:
     }
 
     virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                        int nKeypointsNum, float threshold, int nRadius) override { return false; };
+                        int nKeypointsNum, float threshold, int nRadius) override { return false; }
 
     virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                        int nKeypointsNum, float threshold, int nRadius) override { return false; };
+                        int nKeypointsNum, float threshold, int nRadius) override { return false; }
 
-    virtual bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors) override { return false; };
+    virtual bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors) override { return false; }
 
     bool IsValid(void) override { return false; }
 

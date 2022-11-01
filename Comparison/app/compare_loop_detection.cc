@@ -7,7 +7,6 @@
 
 #include "../include/Frame.h"
 #include "../include/Extractors/HFextractor.h"
-#include "../include/Extractors/HFNetTFModelV2.h"
 
 #include "ORBextractor.h"
 #include "ORBVocabulary.h"
@@ -19,10 +18,6 @@ using namespace std;
 using namespace Eigen;
 using namespace ORB_SLAM3;
 
-const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
-const string strDatasetPath("/media/llm/Datasets/EuRoC/V203/mav0/cam0/data/");
-// const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-magistrale6_512_16/mav0/cam0/data/");
-
 struct TestKeyFrame
 {
     int mnFrameId;
@@ -33,7 +28,7 @@ struct KeyFrameHFNetSLAM : public TestKeyFrame
 {
     cv::Mat mGlobalDescriptors;
 
-    KeyFrameHFNetSLAM(int id, const cv::Mat im, HFNetTFModelV2* pModelInter, HFNetTFModelV2* pModelGlobal) {
+    KeyFrameHFNetSLAM(int id, const cv::Mat im, BaseModel* pModelInter, BaseModel* pModelGlobal) {
         mnFrameId = id;
         vector<cv::KeyPoint> vKeyPoints;
         cv::Mat localDescriptors, intermediate;
@@ -110,6 +105,14 @@ void ShowImageWithText(const string &title, const cv::Mat &image, const string &
 
 int main(int argc, char** argv)
 {
+    if (argc != 4) {
+        cerr << endl << "Usage: compare_loop_detection path_to_dataset path_to_model path_to_vocabulary" << endl;   
+        return -1;
+    }
+    const string strDatasetPath = string(argv[1]);
+    const string strTFModelPath = string(argv[2]);
+    const string strVocFileORB = string(argv[3]);
+
     // By default, the Eigen will use the maximum number of threads in OpenMP.
     // However, this will somehow slow down the calculation of dense matrix multiplication.
     // Therefore, use only half of the thresds.
@@ -127,12 +130,11 @@ int main(int argc, char** argv)
     }
     std::cout << "Got [" << files.size() << "] images in dataset" << std::endl;
 
-    HFNetTFModelV2 *pModelImageToLocalAndInter = new HFNetTFModelV2(strTFModelPath, kImageToLocalAndIntermediate, {1, ImSize.height, ImSize.width, 1});
-    HFNetTFModelV2 *pModelInterToGlobal = new HFNetTFModelV2(strTFModelPath, kIntermediateToGlobal, {1, ImSize.height/8, ImSize.width/8, 96});
+    BaseModel *pModelImageToLocalAndInter = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, {1, ImSize.height, ImSize.width, 1});
+    BaseModel *pModelInterToGlobal = InitTFModel(strTFModelPath, kIntermediateToGlobal, {1, ImSize.height/8, ImSize.width/8, 96});
 
     ORBextractor extractorORB(1000, 1.2, 8, 20, 7);
 
-    const string strVocFileORB("/home/llm/ROS/HFNet_SLAM/Comparison/Vocabulary/ORBvoc.txt");
     ORBVocabulary vocabORB;
     if(!vocabORB.loadFromTextFile(strVocFileORB))
     {

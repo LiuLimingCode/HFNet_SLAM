@@ -1,16 +1,8 @@
-/**
- * To Test the performance of different dector
- * 
- * What we found in this test:
- * 1. HFNet do not need OctTree as it has NMS
- * 2. It is not necessary to calculate the response of keypoints, because it is only used in OctTree
- */
 #include <chrono>
 #include <fstream>
 #include <dirent.h>
 #include <random>
 
-#include "../include/Extractors/HFNetTFModelV2.h"
 #include "../include/Extractors/HFextractor.h"
 #include "ORBextractor.h"
 
@@ -20,14 +12,15 @@ using namespace cv;
 using namespace std;
 using namespace ORB_SLAM3;
 
-const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
-// const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
-const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
-const int nLevels = 4;
-const float scaleFactor = 1.2f;
-
 int main(int argc, char* argv[])
 {
+    if (argc != 3) {
+        cerr << endl << "Usage: compare_extractors path_to_dataset path_to_model" << endl;
+        return -1;
+    }
+    const string strDatasetPath = string(argv[1]);
+    const string strTFModelPath = string(argv[2]);
+
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     if (files.empty()) {
         cout << "Error, failed to find any valid image in: " << strDatasetPath << endl;
@@ -39,14 +32,16 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    const int nLevels = 4;
+    const float scaleFactor = 1.2f;
     vector<BaseModel*> vpModels;
     float scale = 1.0;
     for (int level = 0; level < nLevels; ++level)
     {
         cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
         BaseModel *pNewModel;
-        if (level == 0) pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
-        else pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocal, inputShape);
+        if (level == 0) pNewModel = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
+        else pNewModel = InitTFModel(strTFModelPath, kImageToLocal, inputShape);
         vpModels.emplace_back(pNewModel);
         scale /= scaleFactor;
     }
@@ -80,7 +75,7 @@ int main(int argc, char* argv[])
         else if (command == 'c') nNMSRadius += 1;
         else if (command == 'q') nFeatures = std::max(nFeatures - 200, 0);
         else if (command == 'e') nFeatures += 200;
-        else if (command == ' ')select = distribution(generator);
+        else if (command == ' ') select = distribution(generator);
         cout << "command: " << command << endl;
         cout << "select: " << select << endl;
         cout << "nFeatures: " << nFeatures << endl;

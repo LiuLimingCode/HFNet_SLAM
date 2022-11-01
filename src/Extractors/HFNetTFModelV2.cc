@@ -206,7 +206,6 @@ bool HFNetTFModelV2::LoadHFNetTFModel(const std::string &strModelDir)
         return false;
     }
 
-    std::cout << "Sucessfully loaded HFNet model" << std::endl;
     return true;
 }
 

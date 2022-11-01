@@ -38,7 +38,7 @@
 #include "Viewer.h"
 #include "ImuTypes.h"
 #include "Settings.h"
-#include "Extractors/HFNetTFModel.h"
+#include "Extractors/BaseModel.h"
 
 using namespace std;
 

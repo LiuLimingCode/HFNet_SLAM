@@ -6,9 +6,8 @@
 #include <fstream>
 #include <sstream>
 
-#include "../include/Settings.h"
 #include "../include/CameraModels/Pinhole.h"
-#include "../include/Extractors/HFNetTFModelV2.h"
+#include "../include/Extractors/HFextractor.h"
 
 #include "ORBextractor.h"
 #include "ORBVocabulary.h"
@@ -18,8 +17,6 @@
 using namespace cv;
 using namespace std;
 using namespace ORB_SLAM3;
-
-Settings *settings;
 
 std::vector<cv::Mat> toDescriptorVector(const cv::Mat &Descriptors)
 {
@@ -319,22 +316,15 @@ int SearchByBoWHFNetSLAM_BFMatcher(float mfNNratio, float threshold, bool mutual
     return vMatches.size();
 }
 
-const string strDatasetPath("/media/llm/Datasets/EuRoC/");
-const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
-const string strVocFileORB("/home/llm/ROS/HFNet_SLAM/Comparison/Vocabulary/ORBvoc.txt");
-const string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2");
+string strDatasetPath;
+string strVocFileORB;
+string strTFModelPath;
 
-const int nFeatures = 350;
+int nFeatures = 350;
 const float scaleFactor = 1.0f;
 const int nLevels = 1;
 const float fThreshold = 0.01;
 const int nNMSRadius = 4;
-
-// const bool needToResize = true;
-// const cv::Size newImSize(600, 350);
-// const float fx = 458.654;
-// const cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0);
-// const cv::Mat distCoeffs = (cv::Mat_<double>(4, 1) << k1, k2, p1, p2);
 
 TicToc timerORB, timerHF_NN, timerHF_NN_Mutual, timerHF_NN_Mutual_Ratio, timerHF_Slow;
 vector<float> vfInlierRatioORB, vfInlierRatioHF_NN, vfInlierRatioHF_NN_Mutual, vfInlierRatioHF_NN_Mutual_Ratio, vfInlierRatioHF_Slow;
@@ -408,28 +398,21 @@ void saveResult(std::string sequenceName)
     f.close();
 }
 
-void evaluation(const string sequenceName, Settings *settings, ORBVocabulary &vocabORB, ORBextractor &extractorORB, HFextractor &extractorHF)
+void evaluation(const string sequenceName, const cv::Mat &cameraMatrix, const cv::Mat &distCoef, 
+    ORBVocabulary &vocabORB, ORBextractor &extractorORB, HFextractor &extractorHF)
 {
     cout << "Running evaluation on " + sequenceName << endl;
-    const std::string strSequencePath = strDatasetPath + "/" + sequenceName + "/mav0";
-    auto sequenceData = ReadEuRoCDataset(strSequencePath); // get all image files
-
-    auto cameraMatrix = settings->camera1()->toK();
-    cv::Mat distCoef;
-    if(settings->needToUndistort()) distCoef = settings->camera1DistortionCoef();
-    else distCoef = cv::Mat::zeros(4,1,CV_32F);
+    const std::string strSequencePath = strDatasetPath + "/" + sequenceName + "/mav0/cam0/data/";
+    vector<string> sequenceData = GetPngFiles(strSequencePath);
     const int interval = 10;
 
     for (size_t select = 0; select < sequenceData.size() - interval; select += interval)
     {
-        auto file1 = std::get<1>(sequenceData[select]);
-        auto file2 = std::get<1>(sequenceData[select + interval]);
-        cv::Mat imageRaw1 = imread(file1, IMREAD_GRAYSCALE);
-        if (settings->needToResize()) cv::resize(imageRaw1, imageRaw1, settings->newImSize());
-        cv::Mat imageRaw2 = imread(file2, IMREAD_GRAYSCALE);
-        if (settings->needToResize()) cv::resize(imageRaw2, imageRaw2, settings->newImSize());
+        auto file1 = sequenceData[select];
+        auto file2 = sequenceData[select + interval];
+        cv::Mat imageRaw1 = imread(strSequencePath + file1, IMREAD_GRAYSCALE);
+        cv::Mat imageRaw2 = imread(strSequencePath + file2, IMREAD_GRAYSCALE);
         vector<int> vLapping = {0,1000};
-
 
         std::vector<cv::KeyPoint> keypointsORB1, keypointsORB2;
         cv::Mat descriptorsORB1, descriptorsORB2;
@@ -443,10 +426,6 @@ void evaluation(const string sequenceName, Settings *settings, ORBVocabulary &vo
         extractorHF(imageRaw1, keypointsHF1, descriptorsHF1, globalDescriptors);
         extractorHF(imageRaw2, keypointsHF2, descriptorsHF2, globalDescriptors);
 
-
-        cv::Mat image1, image2;
-        cv::undistort(imageRaw1, image1, cameraMatrix, distCoef);
-        cv::undistort(imageRaw2, image2, cameraMatrix, distCoef);
         keypointsORB1 = undistortPoints(keypointsORB1, cameraMatrix, distCoef);
         keypointsORB2 = undistortPoints(keypointsORB2, cameraMatrix, distCoef);
         keypointsHF1 = undistortPoints(keypointsHF1, cameraMatrix, distCoef);
@@ -534,25 +513,30 @@ void evaluation(const string sequenceName, Settings *settings, ORBVocabulary &vo
             vfInlierRatioHF_Slow.push_back((float)inlierMatchesHF.size()/(float)(matchesHF.size()));
         }
     }
-
-    
 }
 
 int main(int argc, char* argv[])
 {
+    if (argc != 5) {
+        cerr << endl << "Usage: compare_matchers_euroc path_to_dataset path_to_model path_to_vocabulary feature_number" << endl;   
+        return -1;
+    }
+    strDatasetPath = string(argv[1]);
+    strTFModelPath = string(argv[2]);
+    strVocFileORB = string(argv[3]);
+    nFeatures = atoi(argv[4]);
+
     // By default, the Eigen will use the maximum number of threads in OpenMP.
     // However, this will somehow slow down the calculation of dense matrix multiplication.
     // Therefore, use only half of the thresds.
     Eigen::setNbThreads(std::max(Eigen::nbThreads() / 2, 1));
 
-    settings = new Settings(strSettingsPath, 0);
-
-    cv::Size ImSize = settings->newImSize();
+    cv::Size ImSize(752, 480);
     cv::Vec4i inputShape{1, ImSize.height, ImSize.width, 1};
-    BaseModel *pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
+    BaseModel *pNewModel = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
 
-    ORBextractor extractorORB(500, scaleFactor, nLevels, 20, 7);
-    HFextractor extractorHF(300, fThreshold, nNMSRadius, pNewModel);
+    ORBextractor extractorORB(nFeatures, scaleFactor, nLevels, 20, 7);
+    HFextractor extractorHF(nFeatures, fThreshold, nNMSRadius, pNewModel);
 
     ORBVocabulary vocabORB;
     if(!vocabORB.loadFromTextFile(strVocFileORB))
@@ -561,24 +545,27 @@ int main(int argc, char* argv[])
         exit(-1);
     }
 
+    const cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) << 458.654, 0.0, 367.215, 0.0, 457.296, 248.375, 0.0, 0.0, 1.0);
+    const cv::Mat distCoeffs = (cv::Mat_<double>(4, 1) << -0.28340811, 0.07395907, 0.00019359, 1.76187114e-05);
+
     clearResult();
-    evaluation("MH_01_easy", settings, vocabORB, extractorORB, extractorHF);
-    evaluation("MH_02_easy", settings, vocabORB, extractorORB, extractorHF);
-    evaluation("MH_03_medium", settings, vocabORB, extractorORB, extractorHF);
-    evaluation("MH_04_difficult", settings, vocabORB, extractorORB, extractorHF);
-    evaluation("MH_05_difficult", settings, vocabORB, extractorORB, extractorHF);
+    evaluation("MH_01_easy", cameraMatrix, distCoeffs, vocabORB, extractorORB, extractorHF);
+    evaluation("MH_02_easy", cameraMatrix, distCoeffs, vocabORB, extractorORB, extractorHF);
+    evaluation("MH_03_medium", cameraMatrix, distCoeffs, vocabORB, extractorORB, extractorHF);
+    evaluation("MH_04_difficult", cameraMatrix, distCoeffs, vocabORB, extractorORB, extractorHF);
+    evaluation("MH_05_difficult", cameraMatrix, distCoeffs, vocabORB, extractorORB, extractorHF);
     saveResult("MH");
 
     clearResult();
-    evaluation("V1_01_easy", settings, vocabORB, extractorORB, extractorHF);
-    evaluation("V1_02_medium", settings, vocabORB, extractorORB, extractorHF);
-    evaluation("V1_03_difficult", settings, vocabORB, extractorORB, extractorHF);
+    evaluation("V1_01_easy", cameraMatrix, distCoeffs, vocabORB, extractorORB, extractorHF);
+    evaluation("V1_02_medium", cameraMatrix, distCoeffs, vocabORB, extractorORB, extractorHF);
+    evaluation("V1_03_difficult", cameraMatrix, distCoeffs, vocabORB, extractorORB, extractorHF);
     saveResult("V1");
 
     clearResult();
-    evaluation("V2_01_easy", settings, vocabORB, extractorORB, extractorHF);
-    evaluation("V2_02_medium", settings, vocabORB, extractorORB, extractorHF);
-    evaluation("V2_03_difficult", settings, vocabORB, extractorORB, extractorHF);
+    evaluation("V2_01_easy", cameraMatrix, distCoeffs, vocabORB, extractorORB, extractorHF);
+    evaluation("V2_02_medium", cameraMatrix, distCoeffs, vocabORB, extractorORB, extractorHF);
+    evaluation("V2_03_difficult", cameraMatrix, distCoeffs, vocabORB, extractorORB, extractorHF);
     saveResult("V2");
 
     return 0;
