@@ -179,8 +179,8 @@ int main(int argc, char **argv)
     const string kf_file =  strPathSaving + "trajectory_keyframe.txt";
     const string f_file =  strPathSaving + "trajectory.txt";
     SLAM.PrintTimeStats(strPathSaving);
-    SLAM.SaveTrajectoryTUM(f_file);
-    SLAM.SaveKeyFrameTrajectoryTUM(kf_file);
+    SLAM.SaveTrajectoryEuRoC(f_file);
+    SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
 
     sort(vTimesTrack.begin(),vTimesTrack.end());
     float totaltime = 0;
