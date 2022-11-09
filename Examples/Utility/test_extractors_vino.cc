@@ -101,9 +101,9 @@ void PrintTimer()
 
 struct TestExtractor : public HFextractor
 {
-TestExtractor(int nfeatures, float threshold, int nNMSRadius,
-                float scaleFactor, int nlevels, const std::vector<BaseModel*>& vpModels) :
-    HFextractor(nfeatures, threshold, nNMSRadius, scaleFactor, nLevels, vpModels){}
+TestExtractor(int nfeatures, float threshold, float scaleFactor, 
+              int nlevels, const std::vector<BaseModel*>& vpModels) :
+    HFextractor(nfeatures, threshold, scaleFactor, nLevels, vpModels){}
 
 int ExtractUsingFor(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
                 cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
@@ -123,11 +123,11 @@ int ExtractUsingFor(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
         TimerDetectPerLevel[level].Tic();
         if (level == 0)
         {
-            mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], globalDescriptors, mnFeaturesPerLevel[level], threshold, nNMSRadius);
+            mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], globalDescriptors, mnFeaturesPerLevel[level], threshold);
         }
         else
         {
-            mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level]));
+            mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold);
         }
         TimerDetectPerLevel[level].Toc();
         nKeypoints += allKeypoints[level].size();
@@ -164,11 +164,11 @@ public:
         {
             if (level == 0)
             {
-                mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], *mGlobalDescriptors, mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, mpExtractor->nNMSRadius);
+                mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], *mGlobalDescriptors, mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold);
             }
             else
             {
-                mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, ceil(mpExtractor->nNMSRadius*mpExtractor->GetInverseScaleFactors()[level]));
+                mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold);
             }
         }
     }
@@ -242,7 +242,7 @@ int main(int argc, char* argv[])
         scale /= scaleFactor;
     }
 
-    TestExtractor *pExtractor = new TestExtractor(settings->nFeatures(), settings->threshold(), settings->nNMSRadius(), scaleFactor, nLevels, vpModels);
+    TestExtractor *pExtractor = new TestExtractor(settings->nFeatures(), settings->threshold(), scaleFactor, nLevels, vpModels);
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     
@@ -256,7 +256,6 @@ int main(int argc, char* argv[])
     // randomly detect an image and show the results
     char command = ' ';
     float threshold = 0.005;
-    int nNMSRadius = 4;
     int select = 0;
     while(1)
     {
@@ -265,13 +264,10 @@ int main(int argc, char* argv[])
         else if (command == 'w') select += 1;
         else if (command == 'a') threshold = std::max(threshold - 0.005, 0.005);
         else if (command == 'd') threshold += 0.005;
-        else if (command == 'z') nNMSRadius = std::max(nNMSRadius - 1, 0);
-        else if (command == 'c') nNMSRadius += 1;
         else select = distribution(generator);
         cout << "command: " << command << endl;
         cout << "select: " << select << endl;
         cout << "threshold: " << threshold << endl;
-        cout << "nNMSRadius: " << nNMSRadius << endl;
 
         image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
         if (settings->needToResize())
@@ -332,7 +328,7 @@ int main(int argc, char* argv[])
         cout << endl;
         ClearTimer();
 
-        HFextractor extractor = HFextractor(settings->nFeatures(),settings->threshold(),settings->nNMSRadius(),scaleFactor,nLevels,vpModels);
+        HFextractor extractor = HFextractor(settings->nFeatures(),settings->threshold(),scaleFactor,nLevels,vpModels);
         for (const string& file : files)
         {
             image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);

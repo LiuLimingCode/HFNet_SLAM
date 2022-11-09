@@ -18,8 +18,8 @@ const int PATCH_SIZE = 31;
 const int HALF_PATCH_SIZE = 15;
 const int EDGE_THRESHOLD = 19;
 
-HFextractor::HFextractor(int _nfeatures, float _threshold, int _nNMSRadius, BaseModel* _pModels):
-    nfeatures(_nfeatures), threshold(_threshold), nNMSRadius(_nNMSRadius)
+HFextractor::HFextractor(int _nfeatures, float _threshold, BaseModel* _pModels):
+    nfeatures(_nfeatures), threshold(_threshold)
 {
     mvpModels.resize(1);
     mvpModels[0] = _pModels;
@@ -79,9 +79,9 @@ HFextractor::HFextractor(int _nfeatures, float _threshold, int _nNMSRadius, Base
 }
 
 
-HFextractor::HFextractor(int _nfeatures, float _threshold, int _nNMSRadius, 
-                        float _scaleFactor, int _nlevels, const std::vector<BaseModel*>& _vpModels):
-        nfeatures(_nfeatures), threshold(_threshold), nNMSRadius(_nNMSRadius), mvpModels(_vpModels)
+HFextractor::HFextractor(int _nfeatures, float _threshold, float _scaleFactor, 
+                        int _nlevels, const std::vector<BaseModel*>& _vpModels):
+        nfeatures(_nfeatures), threshold(_threshold), mvpModels(_vpModels)
 {
     scaleFactor = _scaleFactor;
     nlevels = _nlevels;
@@ -175,7 +175,7 @@ void HFextractor::ComputePyramid(const cv::Mat &image)
 int HFextractor::ExtractSingleLayer(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPoints,
                                     cv::Mat &localDescriptors, cv::Mat &globalDescriptors)
 {
-    if (!mvpModels[0]->Detect(image, vKeyPoints, localDescriptors, globalDescriptors, nfeatures, threshold, nNMSRadius))
+    if (!mvpModels[0]->Detect(image, vKeyPoints, localDescriptors, globalDescriptors, nfeatures, threshold))
         cerr << "Error while detecting keypoints" << endl;
 
     return vKeyPoints.size();
@@ -193,12 +193,12 @@ int HFextractor::ExtractMultiLayers(const cv::Mat &image, std::vector<cv::KeyPoi
     {
         if (level == 0)
         {
-            if (!mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], globalDescriptors, mnFeaturesPerLevel[level], threshold, nNMSRadius))
+            if (!mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], globalDescriptors, mnFeaturesPerLevel[level], threshold))
                 cerr << "Error while detecting keypoints" << endl;
         }
         else
         {
-            if (!mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold, ceil(nNMSRadius*mvInvScaleFactor[level])))
+            if (!mvpModels[level]->Detect(mvImagePyramid[level], allKeypoints[level], allDescriptors[level], mnFeaturesPerLevel[level], threshold))
                 cerr << "Error while detecting keypoints" << endl;
         }
         nKeypoints += allKeypoints[level].size();
@@ -231,12 +231,12 @@ public:
         {
             if (level == 0)
             {
-                if (!mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], *mGlobalDescriptors, mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, mpExtractor->nNMSRadius))
+                if (!mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], *mGlobalDescriptors, mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold))
                     cerr << "Error while detecting keypoints" << endl;
             }
             else
             {
-                if (!mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold, ceil(mpExtractor->nNMSRadius*mpExtractor->GetInverseScaleFactors()[level])))
+                if (!mpExtractor->mvpModels[level]->Detect(mpExtractor->mvImagePyramid[level], mAllKeypoints[level], mAllDescriptors[level], mpExtractor->mnFeaturesPerLevel[level], mpExtractor->threshold))
                     cerr << "Error while detecting keypoints" << endl;
             }
         }

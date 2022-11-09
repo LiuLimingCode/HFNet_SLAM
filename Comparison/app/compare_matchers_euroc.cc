@@ -324,7 +324,6 @@ int nFeatures = 350;
 const float scaleFactor = 1.0f;
 const int nLevels = 1;
 const float fThreshold = 0.01;
-const int nNMSRadius = 4;
 
 TicToc timerORB, timerHF_NN, timerHF_NN_Mutual, timerHF_NN_Mutual_Ratio, timerHF_Slow;
 vector<float> vfInlierRatioORB, vfInlierRatioHF_NN, vfInlierRatioHF_NN_Mutual, vfInlierRatioHF_NN_Mutual_Ratio, vfInlierRatioHF_Slow;
@@ -419,7 +418,6 @@ void evaluation(const string sequenceName, const cv::Mat &cameraMatrix, const cv
         extractorORB(imageRaw1, cv::Mat(), keypointsORB1, descriptorsORB1, vLapping);
         extractorORB(imageRaw2, cv::Mat(), keypointsORB2, descriptorsORB2, vLapping);
 
-        extractorHF.nNMSRadius = nNMSRadius;
         extractorHF.threshold = fThreshold;
         std::vector<cv::KeyPoint> keypointsHF1, keypointsHF2;
         cv::Mat descriptorsHF1, descriptorsHF2, globalDescriptors;
@@ -536,7 +534,7 @@ int main(int argc, char* argv[])
     BaseModel *pNewModel = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
 
     ORBextractor extractorORB(nFeatures, scaleFactor, nLevels, 20, 7);
-    HFextractor extractorHF(nFeatures, fThreshold, nNMSRadius, pNewModel);
+    HFextractor extractorHF(nFeatures, fThreshold, pNewModel);
 
     ORBVocabulary vocabORB;
     if(!vocabORB.loadFromTextFile(strVocFileORB))

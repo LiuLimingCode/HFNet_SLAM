@@ -20,8 +20,6 @@ HFNetTFModelV2::HFNetTFModelV2(const std::string &strModelDir, ModelDetectionMod
     if (mMode == kImageToLocalAndGlobal)
     {
         mvInputTensors.emplace_back("image", Tensor(DT_FLOAT, mInputShape));
-        mvInputTensors.emplace_back("pred/simple_nms/radius", Tensor(DT_INT32, TensorShape()));
-        mvInputTensors[1].second.scalar<int>()() = 4;
 
         mvOutputTensorNames.emplace_back("scores_dense_nms");
         mvOutputTensorNames.emplace_back("local_descriptor_map");
@@ -30,8 +28,6 @@ HFNetTFModelV2::HFNetTFModelV2(const std::string &strModelDir, ModelDetectionMod
     else if (mMode == kImageToLocal)
     {
         mvInputTensors.emplace_back("image", Tensor(DT_FLOAT, mInputShape));
-        mvInputTensors.emplace_back("pred/simple_nms/radius", Tensor(DT_INT32, TensorShape()));
-        mvInputTensors[1].second.scalar<int>()() = 4;
 
         mvOutputTensorNames.emplace_back("scores_dense_nms");
         mvOutputTensorNames.emplace_back("local_descriptor_map");
@@ -39,8 +35,6 @@ HFNetTFModelV2::HFNetTFModelV2(const std::string &strModelDir, ModelDetectionMod
     else if (mMode == kImageToLocalAndIntermediate)
     {
         mvInputTensors.emplace_back("image", Tensor(DT_FLOAT, mInputShape));
-        mvInputTensors.emplace_back("pred/simple_nms/radius", Tensor(DT_INT32, TensorShape()));
-        mvInputTensors[1].second.scalar<int>()() = 4;
 
         mvOutputTensorNames.emplace_back("scores_dense_nms");
         mvOutputTensorNames.emplace_back("local_descriptor_map");
@@ -66,32 +60,30 @@ HFNetTFModelV2::HFNetTFModelV2(const std::string &strModelDir, ModelDetectionMod
 }
 
 bool HFNetTFModelV2::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                            int nKeypointsNum, float threshold, int nRadius)
+                            int nKeypointsNum, float threshold)
 {
     if (mMode != kImageToLocalAndGlobal && mMode != kImageToLocalAndIntermediate) return false;
 
     Mat2Tensor(image, &mvInputTensors[0].second);
-    mvInputTensors[1].second.scalar<int>()() = nRadius;
 
     if (!Run(mvNetResults)) return false;
 
     if (mMode == kImageToLocalAndGlobal)
         GetGlobalDescriptorFromTensor(mvNetResults[2], globalDescriptors);
     else Tensor2Mat(&mvNetResults[2], globalDescriptors);
-    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
+    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold);
     return true;
 }
 
 bool HFNetTFModelV2::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                            int nKeypointsNum, float threshold, int nRadius)
+                            int nKeypointsNum, float threshold)
 {
     if (mMode != kImageToLocal) return false;
 
     Mat2Tensor(image, &mvInputTensors[0].second);
-    mvInputTensors[1].second.scalar<int>()() = nRadius;
 
     if (!Run(mvNetResults)) return false;
-    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
+    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold);
     return true;
 }
 
@@ -118,7 +110,7 @@ bool HFNetTFModelV2::Run(std::vector<tensorflow::Tensor> &vNetResults)
 
 void HFNetTFModelV2::GetLocalFeaturesFromTensor(const tensorflow::Tensor &tScoreDense, const tensorflow::Tensor &tDescriptorsMap,
                                                 std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, 
-                                                int nKeypointsNum, float threshold, int nRadius)
+                                                int nKeypointsNum, float threshold)
 {
     auto vResScoresDense = tScoreDense.tensor<float, 3>(); // shape: [1 image.height image.width]
     auto vResLocalDescriptorMap = tDescriptorsMap.tensor<float, 4>();
@@ -147,7 +139,7 @@ void HFNetTFModelV2::GetLocalFeaturesFromTensor(const tensorflow::Tensor &tScore
         }
     }
 
-    // vKeyPoints = NMS(vKeyPoints, width, height, nRadius);
+    // vKeyPoints = NMS(vKeyPoints, width, height, 4);
 
     if (vKeyPoints.size() > nKeypointsNum)
     {

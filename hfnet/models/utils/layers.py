@@ -15,7 +15,6 @@ def simple_nms(scores, radius, iterations=3):
         scores: the score heatmap, with shape `[B, H, W]`.
         size: an interger scalar, the radius of the NMS window.
     """
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!", iterations)
     with tf.name_scope('simple_nms'):
         radius = tf.constant(radius, name='radius')
         size = radius*2 + 1

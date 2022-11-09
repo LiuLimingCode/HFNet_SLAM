@@ -458,7 +458,6 @@ namespace ORB_SLAM3 {
         scaleFactor_ = readParameter<float>(fSettings,"Extractor.scaleFactor",found);
         nLevels_ = readParameter<int>(fSettings,"Extractor.nLevels",found);
         nFeatures_ = readParameter<int>(fSettings,"Extractor.nFeatures",found);
-        nNMSRadius_ = readParameter<int>(fSettings, "Extractor.nNMSRadius",found);
         threshold_ = readParameter<float>(fSettings, "Extractor.threshold",found);
         if (modelType_ == kHFNetTFModel) {
             strTFModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.modelPath",found);
@@ -655,7 +654,6 @@ namespace ORB_SLAM3 {
         output << "\t-Levels of image pyramid: " << settings.nLevels_ << endl;
         output << "\t-Features per image: " << settings.nFeatures_ << endl;
         output << "\t-Detector threshold: " << settings.threshold_ << endl;
-        output << "\t-NMS radius: " << settings.nNMSRadius_ << endl;
         if (settings.modelType_ == kHFNetTFModel)
         {
             output << "\t-TensorFlow model path: " << settings.strTFModelPath_ << endl;

@@ -24,10 +24,10 @@ public:
     virtual ~HFNetVINOModel(void) = default;
 
     bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                int nKeypointsNum, float threshold, int nRadius) override;
+                int nKeypointsNum, float threshold) override;
 
     bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                         int nKeypointsNum, float threshold, int nRadius) override;
+                int nKeypointsNum, float threshold) override;
 
     bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors);
 
@@ -48,7 +48,7 @@ protected:
 
     void GetLocalFeaturesFromTensor(const ov::Tensor &tScoreDense, const ov::Tensor &tDescriptorsMap,
                                     std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, 
-                                    int nKeypointsNum, float threshold, int nRadius);
+                                    int nKeypointsNum, float threshold);
 
     void GetGlobalDescriptorFromTensor(const ov::Tensor &tDescriptors, cv::Mat &globalDescriptors);
 
@@ -77,15 +77,15 @@ class HFNetVINOModel : public BaseModel
 public:
     HFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath, ModelDetectionMode mode, const cv::Vec4i inputShape)
     {
-        std::cerr << "You must set USE_OPENVINO in CMakeLists.txt to enable openvino function." << std::endl;
+        std::cerr << "You must set USE_OPENVINO in CMakeLists.txt to enable openVINO function." << std::endl;
         exit(-1);
     }
 
     virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                        int nKeypointsNum, float threshold, int nRadius) override { return false; }
+                        int nKeypointsNum, float threshold) override { return false; }
 
     virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                        int nKeypointsNum, float threshold, int nRadius) override { return false; }
+                        int nKeypointsNum, float threshold) override { return false; }
 
     virtual bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors) override { return false; }
 

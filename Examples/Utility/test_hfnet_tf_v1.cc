@@ -209,7 +209,7 @@ int main(int argc, char* argv[])
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
         if (settings->needToResize())
             cv::resize(image, image, settings->newImSize());
-        DetectOnlyLocal(image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius());
+        DetectOnlyLocal(image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->threshold(), 4);
         
         timerDetect.clearBuff();
         timerRun.clearBuff();
@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            DetectOnlyLocal(image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius());
+            DetectOnlyLocal(image, vKeyPoints, localDescriptors, settings->nFeatures(), settings->threshold(), 4);
             timerDetect.Toc();
         }
         cout << "Only detect the local keypoints: " << endl
@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
         if (settings->needToResize())
             cv::resize(image, image, settings->newImSize());
-        DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius());
+        DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->threshold(), 4);
         
         timerDetect.clearBuff();
         timerRun.clearBuff();
@@ -240,7 +240,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->threshold(), settings->nNMSRadius());
+            DetectFull(image, vKeyPoints, localDescriptors, globalDescriptors, settings->nFeatures(), settings->threshold(), 4);
             timerDetect.Toc();
         }
         cout << "Detect the full features: " << endl
@@ -248,7 +248,7 @@ int main(int argc, char* argv[])
              << "detect cost time: " << timerDetect.aveCost() << " milliseconds" << endl;
     }
     {
-        HFextractor extractor = HFextractor(settings->nFeatures(),settings->threshold(),settings->nNMSRadius(),pModel);
+        HFextractor extractor = HFextractor(settings->nFeatures(),settings->threshold(),pModel);
         image = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE);
         if (settings->needToResize())
             cv::resize(image, image, settings->newImSize());

@@ -325,7 +325,6 @@ int nFeatures = 1000;
 const int nLevels = 1;
 const float scaleFactor = 1.2f;
 const float fThreshold = 0.01;
-const int nNMSRadius = 4;
 
 std::vector<std::tuple<double, std::string, std::string>> ReadTUMRGBDDataset(const std::string& strDatasetPath)
 {
@@ -454,7 +453,6 @@ void evaluation(const string sequenceName, const cv::Mat &cameraMatrix, const cv
         extractorORB(imageRaw1, cv::Mat(), keypointsORB1, descriptorsORB1, vLapping);
         extractorORB(imageRaw2, cv::Mat(), keypointsORB2, descriptorsORB2, vLapping);
 
-        extractorHF.nNMSRadius = nNMSRadius;
         extractorHF.threshold = fThreshold;
         std::vector<cv::KeyPoint> keypointsHF1, keypointsHF2;
         cv::Mat descriptorsHF1, descriptorsHF2, globalDescriptors;
@@ -587,7 +585,7 @@ int main(int argc, char* argv[])
     }
 
     ORBextractor extractorORB(nFeatures, scaleFactor, nLevels, 20, 7);
-    HFextractor extractorHF(nFeatures, fThreshold, nNMSRadius, scaleFactor, nLevels, vpModels);
+    HFextractor extractorHF(nFeatures, fThreshold, scaleFactor, nLevels, vpModels);
 
     ORBVocabulary vocabORB;
     if(!vocabORB.loadFromTextFile(strVocFileORB))

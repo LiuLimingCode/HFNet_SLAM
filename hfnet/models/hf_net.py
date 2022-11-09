@@ -169,8 +169,8 @@ class HfNet(BaseModel):
                 'descriptor_dim': 256,
                 'detector_grid': 8,
                 'detector_threshold': 0.015,
-                'nms_radius': 0,
-                'num_keypoints': 0,
+                'nms_radius': 4,
+                'num_keypoints': 1000,
             },
             'loss_weights': {
                 'local_desc': 1,

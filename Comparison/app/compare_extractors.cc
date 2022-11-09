@@ -61,7 +61,6 @@ int main(int argc, char* argv[])
 
     char command = 0;
     float threshold = 0.01;
-    int nNMSRadius = 4;
     int nFeatures = 1000;
     int select = 0;
     while(1)
@@ -71,8 +70,6 @@ int main(int argc, char* argv[])
         else if (command == 'd') threshold += 0.001;
         else if (command == 's') select = std::max(select - 1, 0);
         else if (command == 'w') select += 1;
-        else if (command == 'z') nNMSRadius = std::max(nNMSRadius - 1, 0);
-        else if (command == 'c') nNMSRadius += 1;
         else if (command == 'q') nFeatures = std::max(nFeatures - 200, 0);
         else if (command == 'e') nFeatures += 200;
         else if (command == ' ') select = distribution(generator);
@@ -80,7 +77,6 @@ int main(int argc, char* argv[])
         cout << "select: " << select << endl;
         cout << "nFeatures: " << nFeatures << endl;
         cout << "threshold: " << threshold << endl;
-        cout << "nNMSRadius: " << nNMSRadius << endl;
 
         image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
 
@@ -98,7 +94,7 @@ int main(int argc, char* argv[])
 
         {
             cout << "============= HFNet-SLAM =============" << endl;
-            HFextractor extractorHF(nFeatures, threshold, nNMSRadius, scaleFactor, nLevels, vpModels);
+            HFextractor extractorHF(nFeatures, threshold, scaleFactor, nLevels, vpModels);
             auto t1 = chrono::steady_clock::now();
             extractorHF(image, keypoints, localDescripotrs, globlaDescriptors);
             auto t2 = chrono::steady_clock::now();

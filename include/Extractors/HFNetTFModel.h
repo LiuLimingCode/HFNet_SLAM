@@ -30,10 +30,10 @@ public:
     void Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatures);
 
     bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                int nKeypointsNum, float threshold, int nRadius);
+                int nKeypointsNum, float threshold);
 
     bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                         int nKeypointsNum, float threshold, int nRadius);
+                int nKeypointsNum, float threshold);
 
     bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors) { return false; }
 
@@ -52,7 +52,7 @@ private:
     void Mat2Tensor(const cv::Mat &image, tensorflow::Tensor *tensor);
 
     bool Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vNetResults, bool onlyDetectLocalFeatures,
-             int nKeypointsNum, float threshold, int nRadius);
+             int nKeypointsNum, float threshold);
 
     void GetLocalFeaturesFromTensor(const tensorflow::Tensor &tKeyPoints, const tensorflow::Tensor &tDescriptorsMap, const tensorflow::Tensor &tScoreDense,
                                     std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors);
@@ -72,15 +72,15 @@ class [[deprecated]] HFNetTFModel : public BaseModel
 public:
     HFNetTFModel(const std::string &strResamplerDir, const std::string &strModelDir)
     {
-        std::cerr << "You must set USE_TENSORFLOW in CMakeLists.txt to enable tensorflow function." << std::endl;
+        std::cerr << "You must set USE_TENSORFLOW in CMakeLists.txt to enable TensorFlow function." << std::endl;
         exit(-1);
     }
 
     virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                        int nKeypointsNum, float threshold, int nRadius) override { return false; }
+                        int nKeypointsNum, float threshold) override { return false; }
 
     virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                        int nKeypointsNum, float threshold, int nRadius) override { return false; }
+                        int nKeypointsNum, float threshold) override { return false; }
 
     virtual bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors) override { return false; }
 

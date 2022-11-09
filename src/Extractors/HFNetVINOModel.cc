@@ -70,7 +70,7 @@ HFNetVINOModel::HFNetVINOModel(const std::string &strXmlPath, const std::string 
 }
 
 bool HFNetVINOModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                            int nKeypointsNum, float threshold, int nRadius)
+                            int nKeypointsNum, float threshold)
 {
     if (mMode != kImageToLocalAndIntermediate) return false;
 
@@ -79,12 +79,12 @@ bool HFNetVINOModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKe
     if (!Run()) return false;
 
     Tensor2Mat(&mvNetResults[2], globalDescriptors);
-    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
+    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold);
     return true;
 }
 
-bool HFNetVINOModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                            int nKeypointsNum, float threshold, int nRadius)
+bool HFNetVINOModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, 
+                            int nKeypointsNum, float threshold)
 {
     if (mMode != kImageToLocal) return false;
 
@@ -93,7 +93,7 @@ bool HFNetVINOModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKe
     Mat2Tensor(image, &mInputTensor);
 
     if (!Run()) return false;
-    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold, nRadius);
+    GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], vKeyPoints, localDescriptors, nKeypointsNum, threshold);
     return true;
 }
 
@@ -126,7 +126,7 @@ bool HFNetVINOModel::Run(void)
 
 void HFNetVINOModel::GetLocalFeaturesFromTensor(const ov::Tensor &tScoreDense, const ov::Tensor &tDescriptorsMap,
                                                 std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, 
-                                                int nKeypointsNum, float threshold, int nRadius)
+                                                int nKeypointsNum, float threshold)
 {
     const int width = tScoreDense.get_shape()[2], height = tScoreDense.get_shape()[1];
     const float scaleWidth = (tDescriptorsMap.get_shape()[2] - 1.f) / (float)(tScoreDense.get_shape()[2] - 1.f);
@@ -153,7 +153,7 @@ void HFNetVINOModel::GetLocalFeaturesFromTensor(const ov::Tensor &tScoreDense, c
         }
     }
 
-    vKeyPoints = NMS(vKeyPoints, width, height, nRadius);
+    vKeyPoints = NMS(vKeyPoints, width, height, 4);
 
     if (vKeyPoints.size() > nKeypointsNum)
     {

@@ -10,6 +10,7 @@ namespace ORB_SLAM3
 
 enum ModelType {
     kHFNetTFModel,
+    kHFNetRTModel,
     kHFNetVINOModel,
 };
 
@@ -39,10 +40,10 @@ public:
     virtual ~BaseModel(void) = default;
     
     virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                        int nKeypointsNum, float threshold, int nRadius) = 0;
+                        int nKeypointsNum, float threshold) = 0;
 
     virtual bool Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                        int nKeypointsNum, float threshold, int nRadius) = 0;
+                        int nKeypointsNum, float threshold) = 0;
 
     virtual bool Detect(const cv::Mat &intermediate, cv::Mat &globalDescriptors) = 0;
 

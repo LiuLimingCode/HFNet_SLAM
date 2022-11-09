@@ -139,7 +139,7 @@ int main(int argc, char** argv)
 
         vector<cv::KeyPoint> vKeyPoints;
         cv::Mat localDescriptors, globalDescriptors, intermediate;
-        pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, intermediate, 1000, 0.01, 4);
+        pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, intermediate, 1000, 0.01);
         pModelInterToGlobal->Detect(intermediate, globalDescriptors);
 
         KeyFrameHFNetSLAM *pKF = new KeyFrameHFNetSLAM(select, image.clone(), globalDescriptors.clone());
@@ -171,7 +171,7 @@ int main(int argc, char** argv)
 
         vector<cv::KeyPoint> vKeyPoints;
         cv::Mat localDescriptors, globalDescriptors, intermediate;
-        pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, intermediate, 1000, 0.01, 4);
+        pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, intermediate, 1000, 0.01);
         pModelInterToGlobal->Detect(intermediate, globalDescriptors);
 
         KeyFrameHFNetSLAM *pKF = new KeyFrameHFNetSLAM(select, image.clone(), globalDescriptors.clone());

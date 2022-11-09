@@ -680,18 +680,17 @@ void Tracking::newParameterLoader(Settings *settings) {
     mModelType = settings->modelType();
     int nFeatures = settings->nFeatures();
     int nLevels = settings->nLevels();
-    int nNMSRadius = settings->nNMSRadius();
     float fThreshold = settings->threshold();
     float fScaleFactor = settings->scaleFactor();
 
     auto vpModels = GetModelVec();
-    mpExtractorLeft = new HFextractor(nFeatures,fThreshold,nNMSRadius,fScaleFactor,nLevels,vpModels);
+    mpExtractorLeft = new HFextractor(nFeatures,fThreshold,fScaleFactor,nLevels,vpModels);
 
     if(mSensor==System::STEREO || mSensor==System::IMU_STEREO)
-        mpExtractorRight = new HFextractor(nFeatures,fThreshold,nNMSRadius,fScaleFactor,nLevels,vpModels);
+        mpExtractorRight = new HFextractor(nFeatures,fThreshold,fScaleFactor,nLevels,vpModels);
 
     if(mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR)
-        mpIniExtractor = new HFextractor(5*nFeatures,fThreshold,nNMSRadius,fScaleFactor,nLevels,vpModels);
+        mpIniExtractor = new HFextractor(5*nFeatures,fThreshold,fScaleFactor,nLevels,vpModels);
 
     //IMU parameters
     Sophus::SE3f Tbc = settings->Tbc();
@@ -2924,7 +2923,7 @@ void Tracking::UpdateLocalKeyFrames()
         pKF->mnTrackReferenceForFrame = mCurrentFrame.mnId;
     }
 
-    const int nMaxNeighs = 160; // 80
+    const int nMaxNeighs = 160; // 80(120)
     // Include also some not-already-included keyframes that are neighbors to already-included keyframes
     for(vector<KeyFrame*>::const_iterator itKF=mvpLocalKeyFrames.begin(), itEndKF=mvpLocalKeyFrames.end(); itKF!=itEndKF; itKF++)
     {
@@ -2934,7 +2933,7 @@ void Tracking::UpdateLocalKeyFrames()
 
         KeyFrame* pKF = *itKF;
 
-        // const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(40);
+        // const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(15);
         const vector<KeyFrame*> vNeighs = pKF->GetVectorCovisibleKeyFrames();
 
         for(int index = 0; index < vNeighs.size(); ++index)

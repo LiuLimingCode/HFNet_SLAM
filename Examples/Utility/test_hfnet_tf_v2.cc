@@ -560,7 +560,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            if (!pModelImageToLocalAndGlobal->Detect(image, vKeyPoints, localDescriptors, globalDescriptors, nFeatures, fThreshold, nNMSRadius))
+            if (!pModelImageToLocalAndGlobal->Detect(image, vKeyPoints, localDescriptors, globalDescriptors, nFeatures, fThreshold))
                 cerr << "error while detecting!" << endl;
             timerDetect.Toc();
         }
@@ -577,7 +577,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            if (!pModelImageToLocal->Detect(image, vKeyPoints, localDescriptors, nFeatures, fThreshold, nNMSRadius))
+            if (!pModelImageToLocal->Detect(image, vKeyPoints, localDescriptors, nFeatures, fThreshold))
                 cerr << "error while detecting!" << endl;
             timerDetect.Toc();
         }
@@ -594,7 +594,7 @@ int main(int argc, char* argv[])
             if (settings->needToResize())
                 cv::resize(image, image, settings->newImSize());
             timerDetect.Tic();
-            if (!pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, preGlobalDescriptors, nFeatures, fThreshold, nNMSRadius))
+            if (!pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, preGlobalDescriptors, nFeatures, fThreshold))
                 cerr << "error while detecting!" << endl;
             timerDetect.Toc();
             timerDetectGlobal.Tic();

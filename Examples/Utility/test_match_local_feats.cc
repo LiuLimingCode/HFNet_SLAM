@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
     std::default_random_engine generator;
     std::uniform_int_distribution<unsigned int> distribution(dbStart, files.size() - dbEnd);
 
-    HFextractor extractorHF(settings->nFeatures(),settings->threshold(),settings->nNMSRadius(),pModel);
+    HFextractor extractorHF(settings->nFeatures(),settings->threshold(),pModel);
 
     char command = ' ';
     float threshold = 10;

@@ -27,36 +27,34 @@ void HFNetTFModel::Compile(const cv::Vec4i inputSize, bool onlyDetectLocalFeatur
     Mat fakeImg(inputSize(2), inputSize(1), CV_8UC1);
     cv::randu(fakeImg, Scalar(0), Scalar(255));
     vector<tensorflow::Tensor> vNetResults;
-    Run(fakeImg, vNetResults, onlyDetectLocalFeatures, 1000, 0.1, 4);
+    Run(fakeImg, vNetResults, onlyDetectLocalFeatures, 1000, 0.01);
 }
 
 bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors, cv::Mat &globalDescriptors,
-                          int nKeypointsNum, float threshold, int nRadius) 
+                          int nKeypointsNum, float threshold) 
 {
-    Run(image, mvNetResults, false, nKeypointsNum, threshold, nRadius);
+    Run(image, mvNetResults, false, nKeypointsNum, threshold);
     GetGlobalDescriptorFromTensor(mvNetResults[3], globalDescriptors);
     GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], mvNetResults[2], vKeyPoints, localDescriptors);
     return true;
 }
 
 bool HFNetTFModel::Detect(const cv::Mat &image, std::vector<cv::KeyPoint> &vKeyPoints, cv::Mat &localDescriptors,
-                                   int nKeypointsNum, float threshold, int nRadius) 
+                          int nKeypointsNum, float threshold) 
 {
-    Run(image, mvNetResults, true, nKeypointsNum, threshold, nRadius);
+    Run(image, mvNetResults, true, nKeypointsNum, threshold);
     GetLocalFeaturesFromTensor(mvNetResults[0], mvNetResults[1], mvNetResults[2], vKeyPoints, localDescriptors);
     return true;
 }
 
 bool HFNetTFModel::Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vNetResults, bool onlyDetectLocalFeatures,
-                       int nKeypointsNum, float threshold, int nRadius) 
+                       int nKeypointsNum, float threshold) 
 {
     if (!mbVaild) return false;
 
     Tensor tKeypointsNum(DT_INT32, TensorShape());
-    Tensor tRadius(DT_INT32, TensorShape());
     Tensor tThreshold(DT_FLOAT, TensorShape());
     tKeypointsNum.scalar<int>()() = nKeypointsNum;
-    tRadius.scalar<int>()() = nRadius;
     tThreshold.scalar<float>()() = threshold;
 
     Tensor tImage(DT_FLOAT, TensorShape({1, image.rows, image.cols, 1}));
@@ -65,7 +63,6 @@ bool HFNetTFModel::Run(const cv::Mat &image, std::vector<tensorflow::Tensor> &vN
     std::vector<string> outputTensorName = {"keypoints:0", "local_descriptors:0", "scores:0"};
     if (!onlyDetectLocalFeatures) outputTensorName.emplace_back("global_descriptor:0");
     Status status = mSession->Run({{"image:0", tImage},
-                                   {"pred/simple_nms/radius", tRadius},
                                    {"pred/top_k_keypoints/k", tKeypointsNum},
                                    {"pred/keypoint_extraction/GreaterEqual/y", tThreshold}},
                                   outputTensorName, {}, &vNetResults);
