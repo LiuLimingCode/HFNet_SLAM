@@ -16,11 +16,8 @@ Query cost time: 259
 #include <opencv2/opencv.hpp>
 
 #include "Frame.h"
-#include "Settings.h"
 #include "Extractors/HFextractor.h"
-#include "Extractors/HFNetTFModelV2.h"
 #include "utility_common.h"
-#include "CameraModels/Pinhole.h"
 
 #include "utility_common.h"
 
@@ -29,40 +26,44 @@ using namespace std;
 using namespace Eigen;
 using namespace ORB_SLAM3;
 
-Settings *settings;
-
 struct KeyFrameHFNetSLAM
 {
-int mnFrameId;
-const cv::Mat imgLeft;
-const cv::Mat mGlobalDescriptors;
-float mPlaceRecognitionScore = 1.0;
+    cv::Mat mGlobalDescriptors;
+    int mnFrameId;
+    float mPlaceRecognitionScore = 1.0;
 
-KeyFrameHFNetSLAM(int id, const cv::Mat im, const cv::Mat globalDescriptors) :
-mnFrameId(id), imgLeft(im), mGlobalDescriptors(globalDescriptors) {}
+    KeyFrameHFNetSLAM(int id, const cv::Mat im, BaseModel* pModel) {
+        mnFrameId = id;
+        vector<cv::KeyPoint> vKeyPoints;
+        cv::Mat localDescriptors, intermediate;
+        pModel->Detect(im, vKeyPoints, localDescriptors, mGlobalDescriptors, 1000, 0.01);
+    }
 };
 
 typedef vector<KeyFrameHFNetSLAM*> KeyFrameDB;
 
-vector<KeyFrameHFNetSLAM*> GetNCandidateLoopFrameCV(KeyFrameHFNetSLAM* query, const KeyFrameDB &db, int k)
+KeyFrameDB GetNCandidateLoopFrameCV(KeyFrameHFNetSLAM* query, const KeyFrameDB &db, int k)
 {
-    //vector<Frame*> res = db;
-    vector<KeyFrameHFNetSLAM*> res(k);
+    if (db.front()->mnFrameId >= query->mnFrameId - 30) return KeyFrameDB();
+    
+    int count = 0;
     for (auto it = db.begin(); it != db.end(); ++it)
     {
         KeyFrameHFNetSLAM *pKF = *it;
+        if (pKF->mnFrameId > query->mnFrameId - 30) break;
+        count++;
         pKF->mPlaceRecognitionScore = cv::norm(query->mGlobalDescriptors - pKF->mGlobalDescriptors, cv::NORM_L2);
     }
-    //std::nth_element(res.begin(), res.end(), res.begin() + k, )
-    std::partial_sort_copy(db.begin(), db.end(), res.begin(), res.end(), [](KeyFrameHFNetSLAM* const f1, KeyFrameHFNetSLAM* const f2) {
+    KeyFrameDB res(min(k, count));
+    std::partial_sort_copy(db.begin(), db.begin() + count, res.begin(), res.end(), [](KeyFrameHFNetSLAM* const f1, KeyFrameHFNetSLAM* const f2) {
         return f1->mPlaceRecognitionScore < f2->mPlaceRecognitionScore;
     });
     return res;
 }
 
-vector<KeyFrameHFNetSLAM*> GetNCandidateLoopFrameEigen(KeyFrameHFNetSLAM* query, const KeyFrameDB &db, int k)
+KeyFrameDB GetNCandidateLoopFrameEigen(KeyFrameHFNetSLAM* query, const KeyFrameDB &db, int k)
 {
-    if (db.front()->mnFrameId > query->mnFrameId - 30) return vector<KeyFrameHFNetSLAM*>();
+    if (db.front()->mnFrameId >= query->mnFrameId - 30) return KeyFrameDB();
 
     int count = 0;
     Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> queryDescriptors(query->mGlobalDescriptors.ptr<float>(), query->mGlobalDescriptors.rows, query->mGlobalDescriptors.cols);
@@ -74,7 +75,7 @@ vector<KeyFrameHFNetSLAM*> GetNCandidateLoopFrameEigen(KeyFrameHFNetSLAM* query,
         Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const> pKFDescriptors(pKF->mGlobalDescriptors.ptr<float>(), pKF->mGlobalDescriptors.rows, pKF->mGlobalDescriptors.cols);
         pKF->mPlaceRecognitionScore = (queryDescriptors - pKFDescriptors).norm();
     }
-    vector<KeyFrameHFNetSLAM*> res(k);
+    KeyFrameDB res(min(k, count));
     std::partial_sort_copy(db.begin(), db.begin() + count, res.begin(), res.end(), [](KeyFrameHFNetSLAM* const f1, KeyFrameHFNetSLAM* const f2) {
         return f1->mPlaceRecognitionScore < f2->mPlaceRecognitionScore;
     });
@@ -89,61 +90,56 @@ void ShowImageWithText(const string &title, const cv::Mat &image, const string &
     cv::imshow(title, plot);
 }
 
-// const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
-// const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
-// const int dbStart = 420;
-// const int dbEnd = 50;
-
-const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-outdoors7_512_16/mav0/cam0/data/");
-const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
-const int dbStart = 0;
-const int dbEnd = 12000;
-
 int main(int argc, char** argv)
 {
-    settings = new Settings(strSettingsPath, 0);
-    HFNetTFModelV2 *pModelImageToLocalAndInter = new HFNetTFModelV2(settings->strTFModelPath(), kImageToLocalAndIntermediate, {1, settings->newImSize().height, settings->newImSize().width, 1});
-    HFNetTFModelV2 *pModelInterToGlobal = new HFNetTFModelV2(settings->strTFModelPath(), kIntermediateToGlobal, {1, settings->newImSize().height/8, settings->newImSize().width/8, 96});
-    GeometricCamera* pCamera = settings->camera1();
-    cv::Mat distCoef;
-    if(settings->needToUndistort()){
-        distCoef = settings->camera1DistortionCoef();
+    Eigen::setNbThreads(std::max(Eigen::nbThreads() / 2, 1));
+
+    if (argc != 3) {
+        std::cerr << std::endl << "Usage: test_match_global_feats path_to_dataset path_to_model model_type" << std::endl;
+        return -1;
     }
-    else{
-        distCoef = cv::Mat::zeros(4,1,CV_32F);
-    }
+    const string strDatasetPath = string(argv[1]);
+    const string strModelPath = string(argv[2]);
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
-    cout << "Got [" << files.size() << "] images in dataset" << endl;
+    if (files.empty()) {
+        std::cout << "Error, failed to find any valid image in: " << strDatasetPath << std::endl;
+        return 1;
+    }
+    cv::Size ImSize = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE).size();
+    if (ImSize.area() == 0) {
+        std::cout << "Error, failed to read the image at: " << strDatasetPath + files[0] << std::endl;
+        return 1;
+    }
 
-    int end = files.size() - dbEnd;
+    cv::Vec4i inputShape{1, ImSize.height, ImSize.width, 1};
+    auto pModel = InitRTModel(strModelPath, kImageToLocalAndGlobal, inputShape);
+
+    int start = 0;
+    int end = files.size();
+
     std::default_random_engine generator;
-    std::uniform_int_distribution<unsigned int> distribution(dbStart, end);
+    std::uniform_int_distribution<unsigned int> distribution(30, end);
 
     const int step = 4;
-    int nKeyFrame = (dbStart - end) / step;
+    int nKeyFrame = (end - start) / step;
 
     if (nKeyFrame <= 30) exit(-1);
-    cout << "Dataset range: [" << dbStart << " ~ " << end << "]" << ", nKeyFrame: " << nKeyFrame << endl;
+    std::cout << "Dataset range: [" << start << " ~ " << end << "]" << ", nKeyFrame: " << nKeyFrame << std::endl;
 
     KeyFrameDB vKeyFrameDB;
     vKeyFrameDB.reserve(nKeyFrame);
-    vector<cv::Mat> vImageDatabase;
-    float cur = dbStart;
+    float cur = start;
     while (cur < end)
     {
         int select = cur;
         cv::Mat image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        if (settings->needToResize())
-            cv::resize(image, image, settings->newImSize());
 
         vector<cv::KeyPoint> vKeyPoints;
-        cv::Mat localDescriptors, globalDescriptors, intermediate;
-        pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, intermediate, 1000, 0.01);
-        pModelInterToGlobal->Detect(intermediate, globalDescriptors);
+        cv::Mat localDescriptors, globalDescriptors;
 
-        KeyFrameHFNetSLAM *pKF = new KeyFrameHFNetSLAM(select, image.clone(), globalDescriptors.clone());
-        vKeyFrameDB.emplace_back(pKF);
+        KeyFrameHFNetSLAM *pKFHF = new KeyFrameHFNetSLAM(select, image, pModel);
+        vKeyFrameDB.emplace_back(pKFHF);
         cur += step;
     }
 
@@ -160,37 +156,30 @@ int main(int argc, char** argv)
     int select = 0;
     while (1)
     {
-        if (command == 'q') break;
-        else if (command == 'w') select += 1;
-        else if (command == 's') select -= 1;
-        else select = distribution(generator);
+        if (command == 'w') select += 1;
+        else if (command == 'x') select -= 1;
+        else if (command == ' ') select = distribution(generator);
 
         cv::Mat image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        if (settings->needToResize())
-            cv::resize(image, image, settings->newImSize());
 
-        vector<cv::KeyPoint> vKeyPoints;
-        cv::Mat localDescriptors, globalDescriptors, intermediate;
-        pModelImageToLocalAndInter->Detect(image, vKeyPoints, localDescriptors, intermediate, 1000, 0.01);
-        pModelInterToGlobal->Detect(intermediate, globalDescriptors);
-
-        KeyFrameHFNetSLAM *pKF = new KeyFrameHFNetSLAM(select, image.clone(), globalDescriptors.clone());
+        KeyFrameHFNetSLAM *pKFHF = new KeyFrameHFNetSLAM(select, image, pModel);
 
         auto t1 = chrono::steady_clock::now();
-        auto res = GetNCandidateLoopFrameEigen(pKF, vKeyFrameDB, 3);
+        auto res = GetNCandidateLoopFrameEigen(pKFHF, vKeyFrameDB, 3);
         auto t2 = chrono::steady_clock::now();
         auto t = chrono::duration_cast<chrono::microseconds>(t2 - t1).count();
-        cout << "Query cost time: " << t << endl;
+        std::cout << "Query cost time: " << t << std::endl;
 
-        ShowImageWithText("Query Image", image, std::to_string((int)pKF->mnFrameId));
-        for (int index = 0; index < 3; ++index)
+        ShowImageWithText("Query Image", image, std::to_string((int)pKFHF->mnFrameId));
+        for (size_t index = 0; index < 3; ++index)
         {
-            if (index < res.size())
-                ShowImageWithText("Candidate " + std::to_string(index + 1), res[index]->imgLeft,
+            if (index < res.size()) {
+                cv::Mat image = imread(strDatasetPath + files[res[index]->mnFrameId], IMREAD_GRAYSCALE);
+                ShowImageWithText("Candidate " + std::to_string(index + 1), image,
                     std::to_string((int)res[index]->mnFrameId) + ":" + std::to_string(res[index]->mPlaceRecognitionScore));
+            }
             else {
-                Mat empty;
-                empty.create(cv::Size(100,100), CV_8UC1);
+                Mat empty = cv::Mat::zeros(ImSize, CV_8U);
                 cv::imshow("Candidate " + std::to_string(index + 1), empty);
             }
         }
@@ -199,4 +188,6 @@ int main(int argc, char** argv)
     }
 
     system("pause");
+
+    return 0;
 }

@@ -443,33 +443,30 @@ namespace ORB_SLAM3 {
     void Settings::readExtractor(cv::FileStorage &fSettings) {
         bool found;
 
-        // string type = readParameter<string>(fSettings, "Extractor.type",found);
-        // if (type == "HFNetTF") {
-        //     modelType_ = kHFNetTFModel;
-        // }
-        // else if (type == "HFNetVINO") {
-        //     modelType_ = kHFNetVINOModel;
-        // }
-        // else {
-        //     cerr << "Wrong extractor type in setting file!" << endl;
-        //     exit(-1);
-        // }
-        modelType_ = kHFNetTFModel;
+        string type = readParameter<string>(fSettings, "Extractor.type",found);
+        if (type == "HFNetTF") {
+            modelType_ = kHFNetTFModel;
+        }
+        else if (type == "HFNetRT") {
+            modelType_ = kHFNetRTModel;
+        }
+        else if (type == "HFNetVINO") {
+            modelType_ = kHFNetVINOModel;
+        }
+        else {
+            cerr << "Wrong extractor type in setting file!" << endl;
+            exit(-1);
+        }
         scaleFactor_ = readParameter<float>(fSettings,"Extractor.scaleFactor",found);
         nLevels_ = readParameter<int>(fSettings,"Extractor.nLevels",found);
         nFeatures_ = readParameter<int>(fSettings,"Extractor.nFeatures",found);
         threshold_ = readParameter<float>(fSettings, "Extractor.threshold",found);
-        if (modelType_ == kHFNetTFModel) {
-            strTFModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.modelPath",found);
-            // strTFResamplerPath_ = readParameter<string>(fSettings, "Extractor.HFNetTF.resamplerPath",found,false);
-        }
-        else if (modelType_ == kHFNetVINOModel) {
+        strModelPath_ = readParameter<string>(fSettings, "Extractor.modelPath",found);
+        
+        if (modelType_ == kHFNetVINOModel) {
             scaleFactor_ = 1.0;
             nLevels_ = 1;
             cout << "Becase the HFNetVINO model is too time-consuming, the image pyremid function is disabled." << endl;
-
-            strVINOLocalModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetVINO.localModelPath",found);
-            strVINOGlobalModelPath_ = readParameter<string>(fSettings, "Extractor.HFNetVINO.globalModelPath",found);
         }
     }
 
@@ -654,16 +651,7 @@ namespace ORB_SLAM3 {
         output << "\t-Levels of image pyramid: " << settings.nLevels_ << endl;
         output << "\t-Features per image: " << settings.nFeatures_ << endl;
         output << "\t-Detector threshold: " << settings.threshold_ << endl;
-        if (settings.modelType_ == kHFNetTFModel)
-        {
-            output << "\t-TensorFlow model path: " << settings.strTFModelPath_ << endl;
-            // output << "\t-Resampler.so path: " << settings.strTFResamplerPath_ << endl;
-        }
-        else if (settings.modelType_ == kHFNetVINOModel)
-        {
-            output << "\t-VINO local part model path: " << settings.strVINOLocalModelPath_ << endl;
-            output << "\t-VINO global part model path: " << settings.strVINOGlobalModelPath_ << endl;
-        }
+        output << "\t-Load model path: " << settings.strModelPath_ << endl;
 
         return output;
     }

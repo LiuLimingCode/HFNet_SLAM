@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
         return -1;
     }
     const string strDatasetPath = string(argv[1]);
-    const string strTFModelPath = string(argv[2]);
+    const string strModelPath = string(argv[2]);
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
     if (files.empty()) {
@@ -34,17 +34,9 @@ int main(int argc, char* argv[])
 
     const int nLevels = 4;
     const float scaleFactor = 1.2f;
-    vector<BaseModel*> vpModels;
-    float scale = 1.0;
-    for (int level = 0; level < nLevels; ++level)
-    {
-        cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
-        BaseModel *pNewModel;
-        if (level == 0) pNewModel = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
-        else pNewModel = InitTFModel(strTFModelPath, kImageToLocal, inputShape);
-        vpModels.emplace_back(pNewModel);
-        scale /= scaleFactor;
-    }
+    InitAllModels(strModelPath, kHFNetRTModel, ImSize, nLevels, scaleFactor);
+    // InitAllModels(strModelPath, kHFNetTFModel, ImSize, nLevels, scaleFactor);
+    auto vpModels = GetModelVec();
 
     std::default_random_engine generator;
     std::uniform_int_distribution<unsigned int> distribution(0, files.size() - 1);

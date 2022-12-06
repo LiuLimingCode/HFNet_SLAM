@@ -15,30 +15,13 @@ set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
-set(USE_TENSORFLOW ON)
+set(USE_TENSORRT ON)
+set(USE_TENSORFLOW OFF)
 set(USE_OPENVINO OFF)
 
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
-
-if(${USE_OPENVINO}) # OpenVINO is optional
-    ADD_DEFINITIONS(-DUSE_OPENVINO)
-    set(OpenVINO_DIR "/home/llm/src/openvino-2022.1/install/runtime/cmake")
-    find_package(OpenVINO REQUIRED)
-endif()
-
-if(${USE_TENSORFLOW})
-    ADD_DEFINITIONS(-DUSE_TENSORFLOW)
-    set(Tensorflow_Root "~/src/tensorflow_cc-2.9.0/tensorflow_cc/install")
-    set(Tensorflow_INCLUDE_DIRS
-        ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include
-        ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include/src
-    )
-    set(Tensorflow_LIBS
-        ${Tensorflow_Root}/lib/libtensorflow_cc.so
-        ${Tensorflow_Root}/lib/libtensorflow_framework.so)
-endif()
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
@@ -61,6 +44,7 @@ src/Extractors/BaseModel.cc
 src/Extractors/HFextractor.cc
 src/Extractors/HFNetTFModel.cc
 src/Extractors/HFNetTFModelV2.cc
+src/Extractors/HFNetRTModel.cc
 src/Extractors/HFNetVINOModel.cc
 src/Matcher.cc
 src/FrameDrawer.cc
@@ -93,6 +77,7 @@ include/Extractors/HFextractor.h
 include/Extractors/BaseModel.h
 include/Extractors/HFNetTFModel.h
 include/Extractors/HFNetTFModelV2.h
+include/Extractors/HFNetRTModel.h
 include/Extractors/HFNetVINOModel.h
 include/Matcher.h
 include/FrameDrawer.h
@@ -132,24 +117,43 @@ ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lcrypto
 )
 
-if(${USE_OPENVINO})
-    target_link_libraries(openvino::runtime)
+if(${USE_TENSORRT})
+    ADD_DEFINITIONS(-DUSE_TENSORRT)
+
+    find_package(CUDA REQUIRED)
+
+    include_directories(${TENSORRT_INCLUDE_DIR} ${CUDA_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME} nvinfer nvonnxparser)
 endif()
 
 if(${USE_TENSORFLOW})
+    ADD_DEFINITIONS(-DUSE_TENSORFLOW)
+
+    set(Tensorflow_Root "~/src/tensorflow_cc-2.9.0/tensorflow_cc/install")
+    set(Tensorflow_INCLUDE_DIRS
+        ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include
+        ${Tensorflow_Root}/include/tensorflow/bazel-bin/tensorflow/include/src)
+    set(Tensorflow_LIBS
+        ${Tensorflow_Root}/lib/libtensorflow_cc.so
+        ${Tensorflow_Root}/lib/libtensorflow_framework.so)
+
     include_directories(${Tensorflow_INCLUDE_DIRS})
     target_link_libraries(${PROJECT_NAME} ${Tensorflow_LIBS})
 endif()
 
+if(${USE_OPENVINO})
+    ADD_DEFINITIONS(-DUSE_OPENVINO)
+
+    set(OpenVINO_DIR "/home/llm/src/openvino-2022.1/install/runtime/cmake")
+    find_package(OpenVINO REQUIRED)
+
+    target_link_libraries(openvino::runtime)
+endif()
 
 # Build examples
 
 # Utility examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Utility)
-
-add_executable(test_eigen_cv
-        Examples/Utility/test_eigen_cv.cc)
-target_link_libraries(test_eigen_cv ${PROJECT_NAME})
 
 add_executable(test_hfnet_tf_v1
         Examples/Utility/test_hfnet_tf_v1.cc)
@@ -163,13 +167,9 @@ add_executable(test_hfnet_vino
         Examples/Utility/test_hfnet_vino.cc)
 target_link_libraries(test_hfnet_vino ${PROJECT_NAME})
 
-add_executable(test_extractors_tf
-        Examples/Utility/test_extractors_tf.cc)
-target_link_libraries(test_extractors_tf ${PROJECT_NAME})
-
-add_executable(test_extractors_vino
-        Examples/Utility/test_extractors_vino.cc)
-target_link_libraries(test_extractors_vino ${PROJECT_NAME})
+add_executable(test_extractors
+        Examples/Utility/test_extractors.cc)
+target_link_libraries(test_extractors ${PROJECT_NAME})
 
 add_executable(test_match_global_feats
         Examples/Utility/test_match_global_feats.cc)

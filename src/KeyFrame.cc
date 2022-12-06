@@ -99,7 +99,20 @@ void KeyFrame::ComputeGlobalDescription()
 {
     if (mGlobalDescriptors.empty())
     {
-        GetGlobalModel()->Detect(mPreGlobalDescriptors, mGlobalDescriptors);
+        BaseModel* pModel = GetGlobalModel();
+        if (pModel != nullptr)
+        {
+            pModel->Detect(mPreGlobalDescriptors, mGlobalDescriptors);
+        }
+        else
+        {
+            if (mPreGlobalDescriptors.cols != 1)
+            {
+                std::cerr << "Need a global part of model to get global descriptor" << std::endl;
+                exit(-1);
+            }
+            mGlobalDescriptors = mPreGlobalDescriptors;
+        }
     }
 }
 

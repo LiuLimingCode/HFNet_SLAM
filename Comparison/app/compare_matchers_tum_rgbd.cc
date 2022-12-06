@@ -319,7 +319,7 @@ int SearchByBoWHFNetSLAM_BFMatcher(float mfNNratio, float threshold, bool mutual
 
 string strDatasetPath;
 string strVocFileORB;
-string strTFModelPath;
+string strModelPath;
 
 int nFeatures = 1000;
 const int nLevels = 1;
@@ -562,27 +562,19 @@ int main(int argc, char* argv[])
         return -1;
     }
     strDatasetPath = string(argv[1]);
-    strTFModelPath = string(argv[2]);
+    strModelPath = string(argv[2]);
     strVocFileORB = string(argv[3]);
     nFeatures = atoi(argv[4]);
+
+    cout << "nFeatures: " << nFeatures << endl;
 
     // By default, the Eigen will use the maximum number of threads in OpenMP.
     // However, this will somehow slow down the calculation of dense matrix multiplication.
     // Therefore, use only half of the thresds.
     Eigen::setNbThreads(std::max(Eigen::nbThreads() / 2, 1));
 
-    cv::Vec4i inputShape{1, ImSize.height, ImSize.width, 1};
-    vector<BaseModel*> vpModels;
-    float scale = 1.0;
-    for (int level = 0; level < nLevels; ++level)
-    {
-        cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
-        BaseModel *pNewModel;
-        if (level == 0) pNewModel = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
-        else pNewModel = InitTFModel(strTFModelPath, kImageToLocal, inputShape);
-        vpModels.emplace_back(pNewModel);
-        scale /= scaleFactor;
-    }
+    InitAllModels(strModelPath, kHFNetRTModel, ImSize, nLevels, scaleFactor);
+    auto vpModels = GetModelVec();
 
     ORBextractor extractorORB(nFeatures, scaleFactor, nLevels, 20, 7);
     HFextractor extractorHF(nFeatures, fThreshold, scaleFactor, nLevels, vpModels);

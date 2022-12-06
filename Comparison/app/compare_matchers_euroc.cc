@@ -318,7 +318,7 @@ int SearchByBoWHFNetSLAM_BFMatcher(float mfNNratio, float threshold, bool mutual
 
 string strDatasetPath;
 string strVocFileORB;
-string strTFModelPath;
+string strModelPath;
 
 int nFeatures = 350;
 const float scaleFactor = 1.0f;
@@ -520,7 +520,7 @@ int main(int argc, char* argv[])
         return -1;
     }
     strDatasetPath = string(argv[1]);
-    strTFModelPath = string(argv[2]);
+    strModelPath = string(argv[2]);
     strVocFileORB = string(argv[3]);
     nFeatures = atoi(argv[4]);
 
@@ -531,7 +531,8 @@ int main(int argc, char* argv[])
 
     cv::Size ImSize(752, 480);
     cv::Vec4i inputShape{1, ImSize.height, ImSize.width, 1};
-    BaseModel *pNewModel = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
+    BaseModel *pNewModel = InitRTModel(strModelPath, kImageToLocalAndIntermediate, inputShape);
+    // BaseModel *pNewModel = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
 
     ORBextractor extractorORB(nFeatures, scaleFactor, nLevels, 20, 7);
     HFextractor extractorHF(nFeatures, fThreshold, pNewModel);

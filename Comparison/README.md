@@ -20,16 +20,20 @@ bash build.sh
 ```
 
 ORB-SLAM3:
-cost time: 12
+cost time: 12 ms
 key point number: 1010
 
-HFNet-SLAM:
-cost time: 19
+HFNet-SLAM (TensorFlow):
+cost time: 19 ms
+key point number: 1000
+
+HFNet-SLAM (TensorRT):
+cost time: 9 ms
 key point number: 1000
 
 <img src="result/compare_extractors.png" width="600" title="compare_extractors">
 
-**Comment**: The feature extraction of HFNet-SLAM is more likely to extract features with significant textures. But the calculation is more expensive compared with ORB-SLAM3.
+**Comment**: The feature extraction of HFNet-SLAM is more likely to extract features with significant textures. In terms of calculation cost, HFNet-SLAM (TensorFlow) > ORB-SLAM3 > HFNet-SLAM (TensorRT).
 
 ## Compare matchers
 

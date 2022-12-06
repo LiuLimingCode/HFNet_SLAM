@@ -169,7 +169,7 @@ void LoopClosing::Run()
 
                         cout << "mpCurrentKF->mTimeStamp: " << mpCurrentKF->mTimeStamp << " [" << mpCurrentKF->mnFrameId << "]" << endl;
                         cout << "mpMeregeMatchedKF->mTimeStamp: " << mpMergeMatchedKF->mTimeStamp << " [" << mpMergeMatchedKF->mnFrameId << "]" << endl;
-                        cout << "score: " << mpMergeMatchedKF->mPlaceRecognitionScore << ", accScore: " << mpMergeMatchedKF->mPlaceRecognitionAccScore << endl;
+                        // cout << "score: " << mpMergeMatchedKF->mPlaceRecognitionScore << ", accScore: " << mpMergeMatchedKF->mPlaceRecognitionAccScore << endl;
 
 #ifdef REGISTER_TIMES
                         std::chrono::steady_clock::time_point time_StartMerge = std::chrono::steady_clock::now();
@@ -882,39 +882,39 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                         int numProjOptMatches = matcher.SearchByProjection(mpCurrentKF, mScw, vpMapPoints, vpMatchedMP, 5, matcher.TH_LOW);
                         // numProjOptMatches = matcher.FilterMatchesByResponces(mpCurrentKF, vpMatchedMP, 0.02);
 
-                        { // For Debug
-                            cout << "numBoWMatches: " << numBoWMatches << endl
-                                 << "nRANSACInliers: " << nInliers << endl
-                                 << "numOptMatches: " << numOptMatches << endl
-                                 << "useMatchesFromRANSAC: " << useMatchesFromRANSAC << endl
-                                 << "numProjOptMatches: " << numProjOptMatches << endl;
-                            // cout << "\t" << "" << endl <<
-                            //      mScw.matrix3x4() << endl;
+                        // { // For Debug
+                        //     cout << "numBoWMatches: " << numBoWMatches << endl
+                        //          << "nRANSACInliers: " << nInliers << endl
+                        //          << "numOptMatches: " << numOptMatches << endl
+                        //          << "useMatchesFromRANSAC: " << useMatchesFromRANSAC << endl
+                        //          << "numProjOptMatches: " << numProjOptMatches << endl;
+                        //     cout << "\t" << "" << endl <<
+                        //          mScw.matrix3x4() << endl;
 
-                            // vector<cv::DMatch> matches;
-                            // vector<cv::KeyPoint> vKPts;
-                            // vKPts.reserve(mpCurrentKF->N);
+                        //     vector<cv::DMatch> matches;
+                        //     vector<cv::KeyPoint> vKPts;
+                        //     vKPts.reserve(mpCurrentKF->N);
 
-                            // for (int index = 0; index < vpMatchedMP.size(); ++index)
-                            // {
-                            //     if (!vpMatchedMP[index]) continue;
-                            //     cv::DMatch match;
-                            //     match.queryIdx = index;
-                            //     match.trainIdx = vKPts.size();
-                            //     matches.emplace_back(match);
+                        //     for (int index = 0; index < vpMatchedMP.size(); ++index)
+                        //     {
+                        //         if (!vpMatchedMP[index]) continue;
+                        //         cv::DMatch match;
+                        //         match.queryIdx = index;
+                        //         match.trainIdx = vKPts.size();
+                        //         matches.emplace_back(match);
                                 
-                            //     cv::KeyPoint kpt;
-                            //     Eigen::Matrix<float,3,1> P = vpMatchedMP[index]->GetWorldPos();
-                            //     const Eigen::Matrix<float,3,1> Pc = pMostBoWMatchesKF->GetRotation() * P + pMostBoWMatchesKF->GetTranslation();
-                            //     Eigen::Vector2f pt = pMostBoWMatchesKF->mpCamera->project(Pc);
-                            //     kpt.pt.x = pt.x();
-                            //     kpt.pt.y = pt.y();
-                            //     vKPts.emplace_back(kpt);
-                            // }
-                            // cv::Mat outImage;
-                            // cv::drawMatches(mpCurrentKF->imgLeft, mpCurrentKF->mvKeysUn, pMostBoWMatchesKF->imgLeft, vKPts, matches, outImage, cv::Scalar(0, 255, 0), cv::Scalar(-1, -1, -1));
-                            // cv::imwrite("/home/llm/ROS/HFNet_SLAM/output/LoopClosing/" + std::to_string(mpCurrentKF->mnFrameId) + "_3SearchByProjection.jpg", outImage);
-                        }
+                        //         cv::KeyPoint kpt;
+                        //         Eigen::Matrix<float,3,1> P = vpMatchedMP[index]->GetWorldPos();
+                        //         const Eigen::Matrix<float,3,1> Pc = pMostBoWMatchesKF->GetRotation() * P + pMostBoWMatchesKF->GetTranslation();
+                        //         Eigen::Vector2f pt = pMostBoWMatchesKF->mpCamera->project(Pc);
+                        //         kpt.pt.x = pt.x();
+                        //         kpt.pt.y = pt.y();
+                        //         vKPts.emplace_back(kpt);
+                        //     }
+                        //     cv::Mat outImage;
+                        //     cv::drawMatches(mpCurrentKF->imgLeft, mpCurrentKF->mvKeysUn, pMostBoWMatchesKF->imgLeft, vKPts, matches, outImage, cv::Scalar(0, 255, 0), cv::Scalar(-1, -1, -1));
+                        //     cv::imwrite("/home/llm/ROS/HFNet_SLAM/output/LoopClosing/" + std::to_string(mpCurrentKF->mnFrameId) + "_3SearchByProjection.jpg", outImage);
+                        // }
 
                         if(numProjOptMatches >= nProjOptMatches)
                         {

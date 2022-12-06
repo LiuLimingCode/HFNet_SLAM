@@ -5,7 +5,7 @@
 ======================================
 Evaluate the run time perfomance in dataset: 
 test parameter, nFeatures: 300, fThreshold: 0.005000, nNMSRadius: 4
-test dataset: /media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/
+test dataset: TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/
 
 Only detect the local keypoints: 
 run costs: 14.0173 ± 1.08526

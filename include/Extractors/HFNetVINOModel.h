@@ -77,7 +77,7 @@ class HFNetVINOModel : public BaseModel
 public:
     HFNetVINOModel(const std::string &strXmlPath, const std::string &strBinPath, ModelDetectionMode mode, const cv::Vec4i inputShape)
     {
-        std::cerr << "You must set USE_OPENVINO in CMakeLists.txt to enable openVINO function." << std::endl;
+        std::cerr << "You must set USE_OPENVINO in CMakeLists.txt to enable OpenVINO function." << std::endl;
         exit(-1);
     }
 

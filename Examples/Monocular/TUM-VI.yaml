@@ -48,12 +48,13 @@ Viewer.ViewpointF: 500.0
 #--------------------------------------------------------------------------------------------
 
 # Extractor: Type of extractor
-Extractor.type: "HFNetTF" # [HFNetTF HFNetVINO]
+#  - HFNetTF: the original HF-Net running in TensorFlow
+#  - HFNetRT: the HF-Net optimized by TensorRT
+#  - HFNetVINO: the HF-Net optimized by OpenVINO (Disabled because of the bad performance)
+Extractor.type: "HFNetRT" # [HFNetTF HFNetRT HFNetVINO]
 
 # HFNET Extractor
-Extractor.HFNetTF.modelPath: "/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2/"
-Extractor.HFNetVINO.xmlPath: "/home/llm/ROS/HFNet_SLAM/model/hfnet_vino_v2/saved_model.xml"
-Extractor.HFNetVINO.binPath: "/home/llm/ROS/HFNet_SLAM/model/hfnet_vino_v2/saved_model.bin"
+Extractor.modelPath: "/home/llm/ROS/HFNet_SLAM/model/HFNet-RT/"
 
 # Extractor: Scale factor between levels in the scale pyramid 	
 Extractor.scaleFactor: 1.2

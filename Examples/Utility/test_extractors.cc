@@ -1,13 +1,113 @@
 /**
  * To Test the performance of different dector
  * 
-=================kImageToLocalAndGlobal=====================
+================= HFNet TensorRT Float 32: kImageToLocalAndGlobal =====================
 Evaluate the run time perfomance in dataset: 
 
 Detect the full features with TestExtractor ExtractUsingParallel(): 
-Get features number: 767
-pyramid costs: 0.661251 ± 0.428323
-level 0 costs : 19.1058 ± 1.58282
+Get features number: 1000
+pyramid costs: 0.370841 ± 0.202294
+level 0 costs : 11.4856 ± 0.569528
+level 1 costs : 0 ± 0
+level 2 costs : 0 ± 0
+level 3 costs : 0 ± 0
+copy costs: 0.0685001 ± 0.0113844
+total costs: 11.9271 ± 0.685793
+
+Detect the full features with TestExtractor ExtractUsingFor(): 
+Get features number: 1000
+pyramid costs: 0.356541 ± 0.141287
+level 0 costs : 5.95567 ± 0.33487
+level 1 costs : 3.09855 ± 0.199504
+level 2 costs : 2.37011 ± 0.136594
+level 3 costs : 1.73447 ± 0.101819
+copy costs: 0.0695352 ± 0.0169045
+total costs: 13.587 ± 0.889493
+
+Detect the full features with HFextractor: 
+Get features number: 1000
+pyramid costs: 0 ± 0
+level 0 costs : 0 ± 0
+level 1 costs : 0 ± 0
+level 2 costs : 0 ± 0
+level 3 costs : 0 ± 0
+copy costs: 0 ± 0
+total costs: 12.1665 ± 0.829897
+
+================= HFNet TensorRT Float 16: kImageToLocalAndGlobal =====================
+Evaluate the run time perfomance in dataset: 
+
+Detect the full features with TestExtractor ExtractUsingParallel(): 
+Get features number: 1000
+pyramid costs: 0.314499 ± 0.030389
+level 0 costs : 7.14264 ± 0.23482
+level 1 costs : 0 ± 0
+level 2 costs : 0 ± 0
+level 3 costs : 0 ± 0
+copy costs: 0.0684819 ± 0.00474888
+total costs: 7.52749 ± 0.240746
+
+Detect the full features with TestExtractor ExtractUsingFor(): 
+Get features number: 1000
+pyramid costs: 0.323611 ± 0.0215451
+level 0 costs : 3.67066 ± 0.0755506
+level 1 costs : 2.105 ± 0.060039
+level 2 costs : 1.54658 ± 0.0457351
+level 3 costs : 1.18301 ± 0.0288683
+copy costs: 0.0645909 ± 0.00581761
+total costs: 8.89519 ± 0.181361
+
+Detect the full features with HFextractor: 
+Get features number: 1000
+pyramid costs: 0 ± 0
+level 0 costs : 0 ± 0
+level 1 costs : 0 ± 0
+level 2 costs : 0 ± 0
+level 3 costs : 0 ± 0
+copy costs: 0 ± 0
+total costs: 7.56352 ± 0.117819
+
+================= HFNet TensorFlow: kImageToLocalAndIntermediate =====================
+Evaluate the run time perfomance in dataset: 
+
+Detect the full features with TestExtractor ExtractUsingParallel(): 
+Get features number: 1000
+pyramid costs: 0.290319 ± 0.0336965
+level 0 costs : 16.6114 ± 0.745647
+level 1 costs : 0 ± 0
+level 2 costs : 0 ± 0
+level 3 costs : 0 ± 0
+copy costs: 0.0771891 ± 0.0142136
+total costs: 16.9817 ± 0.757257
+
+Detect the full features with TestExtractor ExtractUsingFor(): 
+Get features number: 1000
+pyramid costs: 0.315143 ± 0.028732
+level 0 costs : 7.36702 ± 0.483607
+level 1 costs : 5.22422 ± 0.324976
+level 2 costs : 4.00371 ± 0.340359
+level 3 costs : 3.02608 ± 0.225555
+copy costs: 0.0863364 ± 0.0205967
+total costs: 20.0252 ± 0.986224
+
+Detect the full features with HFextractor: 
+Get features number: 1000
+pyramid costs: 0 ± 0
+level 0 costs : 0 ± 0
+level 1 costs : 0 ± 0
+level 2 costs : 0 ± 0
+level 3 costs : 0 ± 0
+copy costs: 0 ± 0
+total costs: 17.4885 ± 1.36514
+
+
+================= HFNet VINO: kImageToLocalAndIntermediate =====================
+Evaluate the run time perfomance in dataset: 
+
+Detect the full features with TestExtractor ExtractUsingParallel(): 
+Get features number: 728
+pyramid costs: 1.30138 ± 1.69273
+level 0 costs : 170.373 ± 42.9945
 level 1 costs : 0 ± 0
 level 2 costs : 0 ± 0
 level 3 costs : 0 ± 0
@@ -15,25 +115,25 @@ level 4 costs : 0 ± 0
 level 5 costs : 0 ± 0
 level 6 costs : 0 ± 0
 level 7 costs : 0 ± 0
-copy costs: 0.0887773 ± 0.0147211
-total costs: 19.8607 ± 1.94853
+copy costs: 0.104862 ± 0.0486709
+total costs: 171.792 ± 43.0424
 
 Detect the full features with TestExtractor ExtractUsingFor(): 
-Get features number: 767
-pyramid costs: 0.545832 ± 0.104516
-level 0 costs : 8.24998 ± 0.149893
-level 1 costs : 4.15967 ± 0.125181
-level 2 costs : 2.95431 ± 0.110623
-level 3 costs : 2.35679 ± 0.103007
-level 4 costs : 1.76213 ± 0.082669
-level 5 costs : 1.65121 ± 0.0828724
-level 6 costs : 1.72386 ± 0.103847
-level 7 costs : 1.65526 ± 0.0979003
-copy costs: 0.0961109 ± 0.016476
-total costs: 25.1588 ± 0.520166
+Get features number: 1123
+pyramid costs: 2.41067 ± 1.14057
+level 0 costs : 28.6432 ± 0.660343
+level 1 costs : 9.86764 ± 0.401312
+level 2 costs : 6.57248 ± 0.245541
+level 3 costs : 4.60928 ± 0.149062
+level 4 costs : 3.01519 ± 0.108606
+level 5 costs : 2.18284 ± 0.0931418
+level 6 costs : 1.62319 ± 0.0720224
+level 7 costs : 1.1764 ± 0.0617994
+copy costs: 0.174835 ± 0.113503
+total costs: 60.2931 ± 1.74302
 
 Detect the full features with HFextractor: 
-Get features number: 767
+Get features number: 728
 pyramid costs: 0 ± 0
 level 0 costs : 0 ± 0
 level 1 costs : 0 ± 0
@@ -44,62 +144,13 @@ level 5 costs : 0 ± 0
 level 6 costs : 0 ± 0
 level 7 costs : 0 ± 0
 copy costs: 0 ± 0
-total costs: 20.1271 ± 0.657104
-
-=================kImageToLocalAndIntermediate=====================
-Evaluate the run time perfomance in dataset: 
-
-Detect the full features with TestExtractor ExtractUsingParallel(): 
-Get features number: 767
-pyramid costs: 0.600662 ± 0.261487
-level 0 costs : 17.2266 ± 0.543516
-level 1 costs : 0 ± 0
-level 2 costs : 0 ± 0
-level 3 costs : 0 ± 0
-level 4 costs : 0 ± 0
-level 5 costs : 0 ± 0
-level 6 costs : 0 ± 0
-level 7 costs : 0 ± 0
-copy costs: 0.089147 ± 0.015477
-total costs: 17.9213 ± 0.627062
-
-Detect the full features with TestExtractor ExtractUsingFor(): 
-Get features number: 767
-pyramid costs: 0.54974 ± 0.125528
-level 0 costs : 6.26992 ± 0.162424
-level 1 costs : 4.09578 ± 0.131906
-level 2 costs : 2.88828 ± 0.104248
-level 3 costs : 2.35263 ± 0.114001
-level 4 costs : 1.77036 ± 0.111224
-level 5 costs : 1.69519 ± 0.11101
-level 6 costs : 1.69839 ± 0.10068
-level 7 costs : 1.58858 ± 0.0917664
-copy costs: 0.0962834 ± 0.0146409
-total costs: 23.0086 ± 0.541149
-
-Detect the full features with HFextractor: 
-Get features number: 767
-pyramid costs: 0 ± 0
-level 0 costs : 0 ± 0
-level 1 costs : 0 ± 0
-level 2 costs : 0 ± 0
-level 3 costs : 0 ± 0
-level 4 costs : 0 ± 0
-level 5 costs : 0 ± 0
-level 6 costs : 0 ± 0
-level 7 costs : 0 ± 0
-copy costs: 0 ± 0
-total costs: 18.2465 ± 0.538864
-
-
+total costs: 60.0883 ± 4.10698
  */
 #include <chrono>
 #include <fstream>
 #include <dirent.h>
 #include <random>
 
-#include "Settings.h"
-#include "Extractors/HFNetTFModelV2.h"
 #include "Extractors/HFextractor.h"
 #include "utility_common.h"
 
@@ -107,20 +158,7 @@ using namespace cv;
 using namespace std;
 using namespace ORB_SLAM3;
 
-Settings *settings;
-
-// const string strDatasetPath("/media/llm/Datasets/EuRoC/MH_01_easy/mav0/cam0/data/");
-// const string strSettingsPath("Examples/Monocular-Inertial/EuRoC.yaml");
-// const int dbStart = 420;
-// const int dbEnd = 50;
-
-const string strDatasetPath("/media/llm/Datasets/TUM-VI/dataset-corridor4_512_16/mav0/cam0/data/");
-const string strSettingsPath("Examples/Monocular-Inertial/TUM-VI.yaml");
-const int dbStart = 50;
-const int dbEnd = 50;
-
-const std::string strTFModelPath("/home/llm/ROS/HFNet_SLAM/model/hfnet_tf_v2_NMS2/");
-const int nLevels = 8;
+const int nLevels = 4;
 const float scaleFactor = 1.2;
 
 TicToc TimerPyramid;
@@ -274,27 +312,33 @@ int ExtractUsingParallel(const cv::Mat &image, std::vector<cv::KeyPoint>& vKeyPo
 int main(int argc, char* argv[])
 {
     Eigen::setNbThreads(std::max(Eigen::nbThreads() / 2, 1));
-    settings = new Settings(strSettingsPath, 0);
-    vector<BaseModel*> vpModels;
 
-    cv::Size ImSize = settings->newImSize();
-    float scale = 1.0;
-    for (int level = 0; level < nLevels; ++level)
-    {
-        cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
-        BaseModel *pNewModel;
-        if (level == 0) pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
-        else pNewModel = new HFNetTFModelV2(strTFModelPath, kImageToLocal, inputShape);
-        vpModels.emplace_back(pNewModel);
-        scale /= scaleFactor;
+    if (argc != 3) {
+        cerr << endl << "Usage: test_extractors path_to_dataset path_to_model model_type" << endl;
+        return -1;
     }
-
-    TestExtractor *pExtractor = new TestExtractor(settings->nFeatures(), settings->threshold(), scaleFactor, nLevels, vpModels);
+    const string strDatasetPath = string(argv[1]);
+    const string strModelPath = string(argv[2]);
 
     vector<string> files = GetPngFiles(strDatasetPath); // get all image files
+    if (files.empty()) {
+        cout << "Error, failed to find any valid image in: " << strDatasetPath << endl;
+        return 1;
+    }
+    cv::Size ImSize = imread(strDatasetPath + files[0], IMREAD_GRAYSCALE).size();
+    if (ImSize.area() == 0) {
+        cout << "Error, failed to read the image at: " << strDatasetPath + files[0] << endl;
+        return 1;
+    }
+
+    InitAllModels(strModelPath, kHFNetRTModel, ImSize, nLevels, scaleFactor);
+    // InitAllModels(strModelPath, kHFNetTFModel, ImSize, nLevels, scaleFactor);
+    auto vpModels = GetModelVec();
+
+    TestExtractor *pExtractor = new TestExtractor(1000, 0.01, scaleFactor, nLevels, vpModels);
     
     std::default_random_engine generator;
-    std::uniform_int_distribution<unsigned int> distribution(dbStart, files.size() - dbEnd);
+    std::uniform_int_distribution<unsigned int> distribution(0, files.size());
 
     cv::Mat image;
     vector<KeyPoint> vKeyPoints;
@@ -317,12 +361,10 @@ int main(int argc, char* argv[])
         cout << "threshold: " << threshold << endl;
 
         image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
-        if (settings->needToResize())
-            cv::resize(image, image, settings->newImSize());
         
         ClearTimer();
         TimerTotal.Tic();
-        pExtractor->ExtractUsingFor(image, vKeyPoints, localDescriptors, globalDescriptors);
+        pExtractor->ExtractUsingParallel(image, vKeyPoints, localDescriptors, globalDescriptors);
         TimerTotal.Toc();
 
         cout << "Get features number: " << vKeyPoints.size() << endl;
@@ -343,8 +385,6 @@ int main(int argc, char* argv[])
         for (const string& file : files)
         {
             image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
-            if (settings->needToResize())
-                cv::resize(image, image, settings->newImSize());
             TimerTotal.Tic();
             pExtractor->ExtractUsingParallel(image, vKeyPoints, localDescriptors, globalDescriptors);
             TimerTotal.Toc();
@@ -360,8 +400,6 @@ int main(int argc, char* argv[])
         for (const string& file : files)
         {
             image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
-            if (settings->needToResize())
-                cv::resize(image, image, settings->newImSize());
             TimerTotal.Tic();
             pExtractor->ExtractUsingFor(image, vKeyPoints, localDescriptors, globalDescriptors);
             TimerTotal.Toc();
@@ -375,12 +413,10 @@ int main(int argc, char* argv[])
         cout << endl;
         ClearTimer();
 
-        HFextractor extractor = HFextractor(settings->nFeatures(),settings->threshold(),scaleFactor,nLevels,vpModels);
+        HFextractor extractor = HFextractor(1000,0.01,scaleFactor,nLevels,vpModels);
         for (const string& file : files)
         {
             image = imread(strDatasetPath + file, IMREAD_GRAYSCALE);
-            if (settings->needToResize())
-                cv::resize(image, image, settings->newImSize());
             TimerTotal.Tic();
             extractor(image, vKeyPoints, localDescriptors, globalDescriptors);
             TimerTotal.Toc();

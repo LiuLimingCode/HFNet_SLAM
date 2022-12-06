@@ -28,12 +28,11 @@ struct KeyFrameHFNetSLAM : public TestKeyFrame
 {
     cv::Mat mGlobalDescriptors;
 
-    KeyFrameHFNetSLAM(int id, const cv::Mat im, BaseModel* pModelInter, BaseModel* pModelGlobal) {
+    KeyFrameHFNetSLAM(int id, const cv::Mat im, BaseModel* pModel) {
         mnFrameId = id;
         vector<cv::KeyPoint> vKeyPoints;
         cv::Mat localDescriptors, intermediate;
-        pModelInter->Detect(im, vKeyPoints, localDescriptors, intermediate, 1000, 0.01, 4);
-        pModelGlobal->Detect(intermediate, mGlobalDescriptors);
+        pModel->Detect(im, vKeyPoints, localDescriptors, mGlobalDescriptors, 1000, 0.01);
     }
 };
 
@@ -110,7 +109,7 @@ int main(int argc, char** argv)
         return -1;
     }
     const string strDatasetPath = string(argv[1]);
-    const string strTFModelPath = string(argv[2]);
+    const string strModelPath = string(argv[2]);
     const string strVocFileORB = string(argv[3]);
 
     // By default, the Eigen will use the maximum number of threads in OpenMP.
@@ -130,8 +129,8 @@ int main(int argc, char** argv)
     }
     std::cout << "Got [" << files.size() << "] images in dataset" << std::endl;
 
-    BaseModel *pModelImageToLocalAndInter = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, {1, ImSize.height, ImSize.width, 1});
-    BaseModel *pModelInterToGlobal = InitTFModel(strTFModelPath, kIntermediateToGlobal, {1, ImSize.height/8, ImSize.width/8, 96});
+    BaseModel *pModel = InitRTModel(strModelPath, kImageToLocalAndGlobal, {1, ImSize.height, ImSize.width, 1});
+    // BaseModel *pModel = InitTFModel(strModelPath, kImageToLocalAndGlobal, {1, ImSize.height, ImSize.width, 1});
 
     ORBextractor extractorORB(1000, 1.2, 8, 20, 7);
 
@@ -157,14 +156,13 @@ int main(int argc, char** argv)
     KeyFrameDB vKeyFrameDBHFNetSLAM, vKeyFrameDBORBSLAM3;
     vKeyFrameDBHFNetSLAM.reserve(nKeyFrame);
     vKeyFrameDBORBSLAM3.reserve(nKeyFrame);
-    vector<cv::Mat> vImageDatabase;
     float cur = start;
     while (cur < end)
     {
         int select = cur;
         cv::Mat image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
 
-        KeyFrameHFNetSLAM *pKFHF = new KeyFrameHFNetSLAM(select, image, pModelImageToLocalAndInter, pModelInterToGlobal);
+        KeyFrameHFNetSLAM *pKFHF = new KeyFrameHFNetSLAM(select, image, pModel);
         vKeyFrameDBHFNetSLAM.emplace_back(pKFHF);
 
         KeyFrameORBSLAM3 *pKFORB = new KeyFrameORBSLAM3(select, image, &vocabORB, &extractorORB);
@@ -194,7 +192,7 @@ int main(int argc, char** argv)
 
         cv::Mat image = imread(strDatasetPath + files[select], IMREAD_GRAYSCALE);
 
-        KeyFrameHFNetSLAM *pKFHF = new KeyFrameHFNetSLAM(select, image, pModelImageToLocalAndInter, pModelInterToGlobal);
+        KeyFrameHFNetSLAM *pKFHF = new KeyFrameHFNetSLAM(select, image, pModel);
 
         KeyFrameORBSLAM3 *pKFORB = new KeyFrameORBSLAM3(select, image, &vocabORB, &extractorORB);
 

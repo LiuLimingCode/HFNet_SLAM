@@ -101,10 +101,7 @@ namespace ORB_SLAM3 {
         int nLevels() {return nLevels_;}
         float scaleFactor() {return scaleFactor_;}
         float threshold() {return threshold_;} 
-        std::string strTFModelPath() {return strTFModelPath_;}
-        // std::string strTFResamplerPath() {return strTFResamplerPath_;}
-        std::string strVINOLocalModelPath() {return strVINOLocalModelPath_;}
-        std::string strVINOGlobalModelPath() {return strVINOGlobalModelPath_;}
+        std::string strModelPath() {return strModelPath_;}
 
         float keyFrameSize() {return keyFrameSize_;}
         float keyFrameLineWidth() {return keyFrameLineWidth_;}
@@ -212,10 +209,7 @@ namespace ORB_SLAM3 {
         float scaleFactor_;
         int nLevels_;
         float threshold_;
-        std::string strTFModelPath_;
-        // std::string strTFResamplerPath_;
-        std::string strVINOLocalModelPath_;
-        std::string strVINOGlobalModelPath_;
+        std::string strModelPath_;
 
         /*
          * Viewer stuff

@@ -300,7 +300,7 @@ int main(int argc, char* argv[])
         return -1;
     }
     const string strDatasetPath = string(argv[1]);
-    const string strTFModelPath = string(argv[2]);
+    const string strModelPath = string(argv[2]);
     const string strVocFileORB = string(argv[3]);
     
     // By default, the Eigen will use the maximum number of threads in OpenMP.
@@ -319,17 +319,8 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    vector<BaseModel*> vpModels;
-    float scale = 1.0;
-    for (int level = 0; level < 4; ++level)
-    {
-        cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
-        BaseModel *pNewModel;
-        if (level == 0) pNewModel = InitTFModel(strTFModelPath, kImageToLocalAndIntermediate, inputShape);
-        else pNewModel = InitTFModel(strTFModelPath, kImageToLocal, inputShape);
-        vpModels.emplace_back(pNewModel);
-        scale /= 1.2f;
-    }
+    InitAllModels(strModelPath, kHFNetRTModel, ImSize, 4, 1.2f);
+    auto vpModels = GetModelVec();
 
     std::default_random_engine generator(chrono::system_clock::now().time_since_epoch().count());
     std::uniform_int_distribution<unsigned int> distribution(0, files.size() - 20);
@@ -337,7 +328,7 @@ int main(int argc, char* argv[])
     int nFeatures = 700;
     float threshold = 0.02;
     ORBextractor extractorORB(1000, 1.2f, 8, 20, 7);
-    HFextractor extractorHF(nFeatures, threshold, 4, 1.2f, 4, vpModels);
+    HFextractor extractorHF(nFeatures, threshold, 1.2f, 4, vpModels);
 
     ORBVocabulary vocabORB;
     if(!vocabORB.loadFromTextFile(strVocFileORB))

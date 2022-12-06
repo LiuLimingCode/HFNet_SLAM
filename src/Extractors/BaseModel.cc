@@ -2,6 +2,7 @@
 #include "Extractors/BaseModel.h"
 #include "Extractors/HFNetTFModel.h"
 #include "Extractors/HFNetTFModelV2.h"
+#include "Extractors/HFNetRTModel.h"
 #include "Extractors/HFNetVINOModel.h"
 
 using namespace std;
@@ -14,41 +15,78 @@ BaseModel* gpGlobalModel = nullptr;
 
 void InitAllModels(Settings* settings)
 {
+    InitAllModels(settings->strModelPath(), settings->modelType(), settings->newImSize(), settings->nLevels(), settings->scaleFactor());
+}
+
+void InitAllModels(const std::string& strModelPath, ModelType modelType, cv::Size ImSize, int nLevels, float scaleFactor)
+{
+    // Init Local Models
     if (gvpModels.size())
     {
         for (auto pModel : gvpModels) delete pModel;
         gvpModels.clear();
     }
 
-    int nLevels = settings->nLevels();
-    cv::Size ImSize = settings->newImSize();
-    float scaleFactor = settings->scaleFactor();
     gvpModels.reserve(nLevels);
-    
     float scale = 1.0f;
     for (int level = 0; level < nLevels; ++level)
     {
         cv::Vec4i inputShape{1, cvRound(ImSize.height * scale), cvRound(ImSize.width * scale), 1};
-        BaseModel *pNewModel;
+        BaseModel *pNewModel = nullptr;
         ModelDetectionMode mode;
-        // if (settings->modelType() == kHFNetTFModel)
-        // {
-        //     if (level == 0) mode = kImageToLocalAndGlobal;
-        //     else mode = kImageToLocal;
-        // }
-        // else if(settings->modelType() == kHFNetVINOModel)
-        // {
-        //     if (level == 0) mode = kImageToLocalAndIntermediate;
-        //     else mode = kImageToLocal;
-        // }
-        if (level == 0) mode = kImageToLocalAndIntermediate;
-        else mode = kImageToLocal;
-        pNewModel = InitModel(settings, mode, inputShape);
+        if (modelType == kHFNetTFModel)
+        {
+            if (level == 0) mode = kImageToLocalAndIntermediate;
+            else mode = kImageToLocal;
+            pNewModel = InitTFModel(strModelPath, mode, inputShape);
+        }
+        else if (modelType == kHFNetRTModel)
+        {
+            if (level == 0) mode = kImageToLocalAndGlobal;
+            else mode = kImageToLocal;
+            pNewModel = InitRTModel(strModelPath, mode, inputShape);
+        }
+        else if (modelType == kHFNetVINOModel)
+        {
+            if (level == 0) mode = kImageToLocalAndIntermediate;
+            else mode = kImageToLocal;
+            pNewModel = InitVINOModel(strModelPath + "/local_part", mode, inputShape);
+        }
+        else
+        {
+            cerr << "Wrong type of model!" << endl;
+            exit(-1);
+        }
         gvpModels.emplace_back(pNewModel);
         scale /= scaleFactor;
     }
 
-    gpGlobalModel = InitModel(settings, kIntermediateToGlobal, {1, ImSize.height / 8, ImSize.width / 8, 96});
+    // Init Global Model
+    if (gpGlobalModel) delete gpGlobalModel;
+
+    cv::Vec4i inputShape{1, ImSize.height / 8, ImSize.width / 8, 96};
+    BaseModel *pNewModel = nullptr;
+    ModelDetectionMode mode;
+    if (modelType == kHFNetTFModel)
+    {
+        mode = kIntermediateToGlobal;
+        pNewModel = InitTFModel(strModelPath, mode, inputShape);
+    }
+    else if (modelType == kHFNetRTModel)
+    {
+        pNewModel = nullptr;
+    }
+    else if (modelType == kHFNetVINOModel)
+    {
+        mode = kIntermediateToGlobal;
+        pNewModel = InitVINOModel(strModelPath + "/global_part", mode, inputShape);
+    }
+    else
+    {
+        cerr << "Wrong type of model!" << endl;
+        exit(-1);
+    }
+    gpGlobalModel = pNewModel;
 }
 
 std::vector<BaseModel*> GetModelVec(void)
@@ -63,7 +101,7 @@ std::vector<BaseModel*> GetModelVec(void)
 
 BaseModel* GetGlobalModel(void)
 {
-    if (gpGlobalModel == nullptr)
+    if (gvpModels.empty())
     {
         cerr << "Try to get global model before initialize it" << endl;
         exit(-1);
@@ -71,12 +109,30 @@ BaseModel* GetGlobalModel(void)
     return gpGlobalModel;
 }
 
-BaseModel* InitTFModel(const std::string& strModelPath, ModelDetectionMode mode, cv::Vec4i inputShape) {
+BaseModel* InitTFModel(const std::string& strModelPath, ModelDetectionMode mode, cv::Vec4i inputShape)
+{
     BaseModel* pModel;
     pModel = new HFNetTFModelV2(strModelPath, mode, inputShape);
     if (pModel->IsValid())
     {
-        cout << "Successfully loaded HFNetTF model" << endl;
+        cout << "Successfully loaded HFNet TensorFlow model."
+             << " Mode: " << gStrModelDetectionName[mode]
+             << " Shape: " << inputShape.t() << endl;
+    }
+    else exit(-1);
+
+    return pModel;
+}
+
+BaseModel* InitRTModel(const std::string& strModelPath, ModelDetectionMode mode, cv::Vec4i inputShape)
+{
+    BaseModel* pModel;
+    pModel = new HFNetRTModel(strModelPath, mode, inputShape);
+    if (pModel->IsValid())
+    {
+        cout << "Successfully loaded HFNet TensorRT model."
+             << " Mode: " << gStrModelDetectionName[mode]
+             << " Shape: " << inputShape.t() << endl;
     }
     else exit(-1);
 
@@ -90,7 +146,9 @@ BaseModel* InitVINOModel(const std::string &strModelPath, ModelDetectionMode mod
     pModel = new HFNetVINOModel(strXmlPath, strBinPath, mode, inputShape);
     if (pModel->IsValid())
     {
-        cout << "Successfully loaded HFNetTF model" << endl;
+        cout << "Successfully loaded HFNet OpenVINO model."
+             << " Mode: " << gStrModelDetectionName[mode]
+             << " Shape: " << inputShape.t() << endl;
     }
     else exit(-1);
 
@@ -102,13 +160,17 @@ BaseModel* InitModel(Settings *settings, ModelDetectionMode mode, cv::Vec4i inpu
     BaseModel* pModel;
     if (settings->modelType() == kHFNetTFModel)
     {
-        pModel = InitTFModel(settings->strTFModelPath(), mode, inputShape);
+        pModel = InitTFModel(settings->strModelPath(), mode, inputShape);
+    }
+    else if (settings->modelType() == kHFNetRTModel)
+    {
+        pModel = InitRTModel(settings->strModelPath(), mode, inputShape);
     }
     else if (settings->modelType() == kHFNetVINOModel)
     {
         string strModelPath;
-        if (mode != kIntermediateToGlobal) strModelPath = settings->strVINOLocalModelPath();
-        else strModelPath = settings->strVINOGlobalModelPath();
+        if (mode != kIntermediateToGlobal) strModelPath = settings->strModelPath() + "/local_part";
+        else strModelPath = settings->strModelPath() + "/global_part";
 
         pModel = InitVINOModel(strModelPath, mode, inputShape);
     }

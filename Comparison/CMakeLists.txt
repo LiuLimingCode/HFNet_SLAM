@@ -1,9 +1,16 @@
 cmake_minimum_required(VERSION 2.8)
 project(HFNet_SLAM_Comparison)
 
-set(DEFAULT_BUILD_TYPE "RelWithDebInfo")
+set(DEFAULT_BUILD_TYPE "Release")
+if (NOT CMAKE_BUILD_TYPE)
+    message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
+    set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "Choose the type of build." FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif ()
 MESSAGE("build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -fopenmp -march=native -pthread")
+set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS} -g")
+set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
 
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
