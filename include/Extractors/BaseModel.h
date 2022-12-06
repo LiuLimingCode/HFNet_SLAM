@@ -1,7 +1,6 @@
 #ifndef BASEMODEL_H
 #define BASEMODEL_H
 
-#include <list>
 #include <vector>
 #include <opencv2/opencv.hpp>
 

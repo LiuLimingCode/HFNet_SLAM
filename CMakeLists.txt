@@ -17,7 +17,7 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 set(USE_TENSORRT ON)
 set(USE_TENSORFLOW OFF)
-set(USE_OPENVINO OFF)
+set(USE_OPENVINO OFF) # HFNet-SLAM with openVINO has bad performance. So, openVINO is disabled while the code is still keep.
 
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
@@ -123,7 +123,7 @@ if(${USE_TENSORRT})
     find_package(CUDA REQUIRED)
 
     include_directories(${TENSORRT_INCLUDE_DIR} ${CUDA_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} nvinfer nvonnxparser)
+    target_link_libraries(${PROJECT_NAME} nvinfer nvonnxparser ${CUDA_LIBRARIES})
 endif()
 
 if(${USE_TENSORFLOW})
@@ -144,7 +144,7 @@ endif()
 if(${USE_OPENVINO})
     ADD_DEFINITIONS(-DUSE_OPENVINO)
 
-    set(OpenVINO_DIR "/home/llm/src/openvino-2022.1/install/runtime/cmake")
+    set(OpenVINO_DIR "~/src/openvino-2022.1/install/runtime/cmake")
     find_package(OpenVINO REQUIRED)
 
     target_link_libraries(openvino::runtime)
@@ -155,6 +155,7 @@ endif()
 # Utility examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Utility)
 
+if(${USE_TENSORFLOW})
 add_executable(test_hfnet_tf_v1
         Examples/Utility/test_hfnet_tf_v1.cc)
 target_link_libraries(test_hfnet_tf_v1 ${PROJECT_NAME})
@@ -162,10 +163,13 @@ target_link_libraries(test_hfnet_tf_v1 ${PROJECT_NAME})
 add_executable(test_hfnet_tf_v2
         Examples/Utility/test_hfnet_tf_v2.cc)
 target_link_libraries(test_hfnet_tf_v2 ${PROJECT_NAME})
+endif()
 
+if(${USE_OPENVINO})
 add_executable(test_hfnet_vino
         Examples/Utility/test_hfnet_vino.cc)
 target_link_libraries(test_hfnet_vino ${PROJECT_NAME})
+endif()
 
 add_executable(test_extractors
         Examples/Utility/test_extractors.cc)

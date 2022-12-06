@@ -56,6 +56,8 @@ detect global costs: 2.79904 ± 0.0640896
 #include "Extractors/HFNetTFModelV2.h"
 #include "utility_common.h"
 
+#ifdef USE_TENSORFLOW
+
 using namespace cv;
 using namespace std;
 using namespace ORB_SLAM3;
@@ -611,3 +613,12 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
+#else // USE_TENSORFLOW
+
+int main() {
+    cerr << "You must set USE_TENSORFLOW in CMakeLists.txt to enable TensorFlow function." << endl;
+    return -1;
+}
+
+#endif // USE_TENSORFLOW

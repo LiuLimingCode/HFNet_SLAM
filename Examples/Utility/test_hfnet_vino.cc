@@ -617,7 +617,8 @@ int main(int argc, char* argv[])
 #else // USE_OPENVINO
 
 int main() {
-
+    cerr << "You must set USE_OPENVINO in CMakeLists.txt to enable OpenVINO function." << endl;
+    return -1;
 }
 
 #endif // USE_OPENVINO

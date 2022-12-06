@@ -1,12 +1,12 @@
 #include "Extractors/HFNetTFModel.h"
-using namespace cv;
-using namespace std;
-using namespace tensorflow;
-
 namespace ORB_SLAM3
 {
 
 #ifdef USE_TENSORFLOW
+
+using namespace cv;
+using namespace std;
+using namespace tensorflow;
 
 bool HFNetTFModel::mbLoadedResampler = false;
 

@@ -5,6 +5,9 @@
 #include "Extractors/HFNetRTModel.h"
 #include "Extractors/HFNetVINOModel.h"
 
+#include <unordered_set>
+#include <unordered_map>
+
 using namespace std;
 
 namespace ORB_SLAM3

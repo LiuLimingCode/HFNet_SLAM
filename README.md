@@ -24,7 +24,6 @@ More details about the differences can be found in the [HFNet-SLAM vs. ORB-SLAM3
 
 We use OpenCV, CUDA, and cuDNN, TensorRT in HFNet-SLAM. The corresponding version of these libraries should be chosen wisely according to the devices. The following configurations has been tested:
 
-
 | Name   | Version  |
 | --------   | :-------:  |
 | Ubuntu | 20.04     |
