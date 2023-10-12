@@ -1,13 +1,13 @@
 #include "Extractors/HFNetTFModelV2.h"
 
-namespace ORB_SLAM3
-{
-
 #ifdef USE_TENSORFLOW
 
 using namespace cv;
 using namespace std;
 using namespace tensorflow;
+
+namespace ORB_SLAM3
+{
 
 HFNetTFModelV2::HFNetTFModelV2(const std::string &strModelDir, ModelDetectionMode mode, const cv::Vec4i inputShape)
 {
@@ -236,6 +236,6 @@ void HFNetTFModelV2::ResamplerTF(const tensorflow::Tensor &data, const tensorflo
     }
 }
 
-#endif
-
 } // namespace ORB_SLAM3
+
+#endif // USE_TENSORFLOW

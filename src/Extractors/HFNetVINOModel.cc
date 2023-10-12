@@ -1,14 +1,13 @@
 #include "Extractors/HFNetVINOModel.h"
 
+#ifdef USE_OPENVINO
+
 using namespace cv;
 using namespace std;
+using namespace ov;
 
 namespace ORB_SLAM3
 {
-
-#ifdef USE_OPENVINO
-
-using namespace ov;
 
 ov::Core HFNetVINOModel::core;
 
@@ -260,6 +259,6 @@ void HFNetVINOModel::ResamplerOV(const ov::Tensor &data, const ov::Tensor &warp,
     }
 }
 
-#endif // USE_OPENVINO
-
 } // namespace ORB_SLAM3
+
+#endif // USE_OPENVINO

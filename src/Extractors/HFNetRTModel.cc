@@ -1,9 +1,7 @@
 #include "Extractors/HFNetRTModel.h"
 
-namespace ORB_SLAM3
-{
-
 #ifdef USE_TENSORRT
+
 #include <fstream>
 #include <NvOnnxParser.h>
 #include <cuda_runtime.h>
@@ -11,6 +9,9 @@ namespace ORB_SLAM3
 using namespace cv;
 using namespace std;
 using namespace nvinfer1;
+
+namespace ORB_SLAM3
+{
 
 void RTLogger::log(Severity severity, AsciiChar const* msg) noexcept
 {
@@ -445,6 +446,6 @@ void HFNetRTModel::ResamplerRT(const RTTensor &data, const cv::Mat &warp, cv::Ma
     }
 }
 
-#endif // USE_TENSORRT
-
 } // namespace ORB_SLAM3
+
+#endif // USE_TENSORRT

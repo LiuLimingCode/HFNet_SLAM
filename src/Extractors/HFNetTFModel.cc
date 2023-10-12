@@ -1,12 +1,13 @@
 #include "Extractors/HFNetTFModel.h"
-namespace ORB_SLAM3
-{
 
 #ifdef USE_TENSORFLOW
 
 using namespace cv;
 using namespace std;
 using namespace tensorflow;
+
+namespace ORB_SLAM3
+{
 
 bool HFNetTFModel::mbLoadedResampler = false;
 
@@ -152,6 +153,6 @@ void HFNetTFModel::Mat2Tensor(const cv::Mat &image, tensorflow::Tensor *tensor)
     image.convertTo(imagepixel, CV_32F);
 }
 
-#endif
+} // namespace ORB_SLAM3
 
-}
+#endif // USE_TENSORRT
