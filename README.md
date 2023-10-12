@@ -38,7 +38,16 @@ We use OpenCV, CUDA, and cuDNN, TensorRT in HFNet-SLAM. The corresponding versio
 
 ### OpenCV
 
-We use OpenCV to manipulate images and features. Dowload and install instructions can be found at: http://opencv.org.
+We use OpenCV to manipulate images and features.
+
+```
+sudo apt-get install libopencv-dev
+```
+
+Note: While building, please carefully check the output log of the compiler and make sure the OpenCV version is correct. Only 4.2.0 is tested, and a different version might cause terrible compilation problems.
+
+> build type: Release
+> -- Found OpenCV: /usr (found suitable version "4.2.0", minimum required is "4.2.0")
 
 ### TensorRT
 

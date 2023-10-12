@@ -19,9 +19,11 @@ set(USE_TENSORRT ON)
 set(USE_TENSORFLOW OFF)
 set(USE_OPENVINO OFF) # HFNet-SLAM with openVINO has bad performance. So, openVINO is disabled while the code is still keep.
 
-find_package(OpenCV REQUIRED)
+# use the default opencv in ubuntu 20.04
+set(OpenCV_DIR /usr/lib/x86_64-linux-gnu/cmake/opencv4)
+find_package(OpenCV 4.2.0 REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
-find_package(Pangolin REQUIRED)
+find_package(Pangolin 0.6 REQUIRED)
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
