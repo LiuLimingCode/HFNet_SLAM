@@ -207,6 +207,8 @@ void HFNetRTModel::GetGlobalDescriptorFromTensor(const RTTensor &tDescriptors, c
 
 bool HFNetRTModel::LoadHFNetTRModel(void)
 {
+    if(LoadEngineFromFile(DecideEigenFileName(mStrTRModelDir, mMode, mInputShape)))return true;
+
     auto builder = unique_ptr<IBuilder>(createInferBuilder(mLogger));
     if (!builder) return false;
 
@@ -237,7 +239,7 @@ bool HFNetRTModel::LoadHFNetTRModel(void)
     if (mLogger.level >= ILogger::Severity::kINFO) PrintInputAndOutputsInfo(network);
 
     // Save Engine
-    // SaveEngineToFile(DecideEigenFileName(mStrTRModelDir, mMode, mInputShape), serializedEngine);
+    SaveEngineToFile(DecideEigenFileName(mStrTRModelDir, mMode, mInputShape), serializedEngine);
     
     unique_ptr<IRuntime> runtime{createInferRuntime(mLogger)};
     if (!runtime) return false;
